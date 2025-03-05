@@ -1,0 +1,366 @@
+@page "/leaderboard"
+@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Core.Services
+@using Microsoft.Extensions.Logging
+@using Azure.Data.Tables
+@using System.Text.Json
+@using Microsoft.Extensions.Hosting
+@inject NavigationManager Navigation
+@inject IPlayerStorageService PlayerService
+@inject ILogger<Leaderboard> Logger
+@inject IHostEnvironment HostEnvironment
+
+<PageTitle>PoFunQuiz - Leaderboard</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4 px-2 px-sm-6">
+    <MudPaper Elevation="3" Class="pa-3 pa-sm-6">
+        <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-4">Leaderboard</MudText>
+        
+        @if (Loading)
+        {
+            <div class="d-flex justify-center my-4">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            </div>
+        }
+        else if (ErrorMessage != null)
+        {
+            <MudAlert Severity="Severity.Error" Class="my-4">@ErrorMessage</MudAlert>
+            <div class="d-flex flex-column align-center">
+                <MudText Class="my-2">Diagnostic Info:</MudText>
+                <MudText Style="max-width: 100%; overflow-wrap: break-word;" Class="mb-3">@DiagnosticInfo</MudText>
+                <MudButton Variant="Variant.Filled" 
+                         Color="Color.Primary"
+                         OnClick="LoadLeaderboard"
+                         Class="my-2">
+                    RETRY
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                         Color="Color.Secondary"
+                         OnClick="RunTableDiagnostics"
+                         Class="my-2">
+                    RUN DIAGNOSTICS
+                </MudButton>
+            </div>
+        }
+        else if (Players.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Class="my-4">
+                No player data available yet. Play some games to populate the leaderboard!
+            </MudAlert>
+            <div class="d-flex justify-center">
+                <MudButton Variant="Variant.Outlined"
+                         Color="Color.Secondary"
+                         OnClick="RunTableDiagnostics"
+                         Class="my-2">
+                    RUN DIAGNOSTICS
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Top Players</MudText>
+            
+            <div class="table-responsive">
+                <MudTable Items="@Players" 
+                         Dense="true" 
+                         Hover="true" 
+                         Bordered="false" 
+                         Striped="true"
+                         Class="leaderboard-table">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Rank)">Rank</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.Initials)">Player</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.GamesPlayed)">Games</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.GamesWon)">Wins</MudTableSortLabel></MudTh>
+                        <MudTh Class="hide-mobile"><MudTableSortLabel SortBy="new Func<Player, object>(x => (double)x.GamesWon / Math.Max(1, x.GamesPlayed))">Win %</MudTableSortLabel></MudTh>
+                        <MudTh><MudTableSortLabel SortBy="new Func<Player, object>(x => x.TotalScore)">Score</MudTableSortLabel></MudTh>
+                        <MudTh Class="hide-mobile"><MudTableSortLabel SortBy="new Func<Player, object>(x => (double)x.TotalScore / Math.Max(1, x.GamesPlayed))">Avg</MudTableSortLabel></MudTh>
+                        <MudTh Class="hide-mobile"><MudTableSortLabel SortBy="new Func<Player, object>(x => x.TotalCorrectAnswers)">Correct</MudTableSortLabel></MudTh>
+                        <MudTh Class="hide-mobile"><MudTableSortLabel SortBy="new Func<Player, object>(x => (double)x.TotalCorrectAnswers / (Math.Max(1, x.GamesPlayed) * 10))">Accuracy</MudTableSortLabel></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Rank">
+                            @if (context.Rank <= 3)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" 
+                                        Color="@(context.Rank == 1 ? Color.Warning : context.Rank == 2 ? Color.Tertiary : Color.Tertiary)" 
+                                        Size="Size.Small" />
+                            }
+                            @context.Rank
+                        </MudTd>
+                        <MudTd DataLabel="Player">
+                            <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Games">@context.GamesPlayed</MudTd>
+                        <MudTd DataLabel="Wins">@context.GamesWon</MudTd>
+                        <MudTd DataLabel="Win %" Class="hide-mobile">@($"{(double)context.GamesWon / Math.Max(1, context.GamesPlayed):P0}")</MudTd>
+                        <MudTd DataLabel="Score">@context.TotalScore</MudTd>
+                        <MudTd DataLabel="Avg" Class="hide-mobile">@($"{(double)context.TotalScore / Math.Max(1, context.GamesPlayed):F1}")</MudTd>
+                        <MudTd DataLabel="Correct" Class="hide-mobile">@context.TotalCorrectAnswers</MudTd>
+                        <MudTd DataLabel="Accuracy" Class="hide-mobile">@($"{(double)context.TotalCorrectAnswers / (Math.Max(1, context.GamesPlayed) * 10):P0}")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+            
+            <div class="d-flex justify-center mt-3">
+                <MudButton Variant="Variant.Outlined"
+                         Color="Color.Secondary"
+                         OnClick="RunTableDiagnostics"
+                         Class="my-2">
+                    RUN DIAGNOSTICS
+                </MudButton>
+            </div>
+        }
+        
+        <div class="d-flex justify-center mt-4">
+            <MudButton Variant="Variant.Filled" 
+                     Color="Color.Primary" 
+                     Href="/"
+                     Class="my-2">
+                BACK TO MAIN MENU
+            </MudButton>
+            
+            @if (HostEnvironment.IsDevelopment())
+            {
+                <MudButton Variant="Variant.Outlined" 
+                         Color="Color.Error" 
+                         Href="/tablestorage-test"
+                         Class="my-2 ml-2">
+                    DIAGNOSTICS
+                </MudButton>
+            }
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool Loading { get; set; } = true;
+    private string? ErrorMessage { get; set; }
+    private string? DiagnosticInfo { get; set; }
+    private List<Player> Players { get; set; } = new List<Player>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        Logger.LogInformation("Leaderboard page initialized");
+        await LoadLeaderboard();
+    }
+    
+    private async Task LoadLeaderboard()
+    {
+        try
+        {
+            Logger.LogInformation("Starting to load leaderboard data");
+            Loading = true;
+            ErrorMessage = null;
+            DiagnosticInfo = null;
+            StateHasChanged();
+            
+            // Get configuration info for diagnostics
+            var tableSettings = await GetTableSettingsAsync();
+            Logger.LogInformation("Table settings: TableName={TableName}", tableSettings?.TableName ?? "Unknown");
+            
+            // Get all players from storage
+            Logger.LogInformation("Calling PlayerService.GetAllPlayersAsync()");
+            var allPlayers = await PlayerService.GetAllPlayersAsync();
+            Logger.LogInformation("Retrieved {Count} players from storage", allPlayers.Count);
+            
+            // Log some details about the players for diagnostics
+            foreach (var player in allPlayers.Take(3))
+            {
+                Logger.LogInformation("Player: Initials={Initials}, GamesPlayed={GamesPlayed}, LastPlayed={LastPlayed}",
+                    player.Initials, player.GamesPlayed, player.LastPlayed);
+            }
+            
+            // Sort and rank players by total score
+            Players = allPlayers
+                .OrderByDescending(p => p.TotalScore)
+                .Take(10)
+                .Select((p, index) => {
+                    p.Rank = index + 1; // Add rank property
+                    return p;
+                })
+                .ToList();
+            
+            Logger.LogInformation("Leaderboard loaded successfully with {Count} players", Players.Count);
+            Loading = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load leaderboard");
+            ErrorMessage = $"Failed to load leaderboard: {ex.Message}";
+            DiagnosticInfo = $"Exception Type: {ex.GetType().FullName}\nStack Trace: {ex.StackTrace}";
+            
+            if (ex.InnerException != null)
+            {
+                Logger.LogError(ex.InnerException, "Inner exception details");
+                DiagnosticInfo += $"\n\nInner Exception: {ex.InnerException.Message}\nType: {ex.InnerException.GetType().FullName}\nStack Trace: {ex.InnerException.StackTrace}";
+            }
+            
+            Loading = false;
+        }
+    }
+    
+    private async Task RunTableDiagnostics()
+    {
+        try
+        {
+            Logger.LogInformation("Running table diagnostics");
+            Loading = true;
+            ErrorMessage = null;
+            DiagnosticInfo = null;
+            StateHasChanged();
+            
+            var diagnosticInfo = new System.Text.StringBuilder();
+            diagnosticInfo.AppendLine("=== AZURE TABLE STORAGE DIAGNOSTICS ===");
+            
+            // Get table settings
+            var tableSettings = await GetTableSettingsAsync();
+            diagnosticInfo.AppendLine($"Table Name: {tableSettings?.TableName ?? "Unknown"}");
+            
+            // Try to directly access the table
+            var tableInfo = await GetTableInfoAsync(tableSettings?.TableName ?? "PlayerStats");
+            diagnosticInfo.AppendLine(tableInfo);
+            
+            DiagnosticInfo = diagnosticInfo.ToString();
+            Logger.LogInformation("Diagnostics completed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error running diagnostics");
+            ErrorMessage = $"Diagnostics failed: {ex.Message}";
+            DiagnosticInfo = $"Exception Type: {ex.GetType().FullName}\nStack Trace: {ex.StackTrace}";
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+    
+    private async Task<TableStorageSettings?> GetTableSettingsAsync()
+    {
+        try
+        {
+            // Use reflection to access the private field in PlayerService
+            var playerServiceType = PlayerService.GetType();
+            var tableClientField = playerServiceType.GetField("_tableClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (tableClientField != null)
+            {
+                var tableClient = tableClientField.GetValue(PlayerService) as TableClient;
+                if (tableClient != null)
+                {
+                    return new TableStorageSettings
+                    {
+                        TableName = tableClient.Name,
+                        ConnectionString = "[REDACTED]" // Don't expose connection string
+                    };
+                }
+            }
+            
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error getting table settings");
+            return null;
+        }
+    }
+    
+    private async Task<string> GetTableInfoAsync(string tableName)
+    {
+        try
+        {
+            var info = new System.Text.StringBuilder();
+            
+            // Try to get the table client through the PlayerService
+            var playerServiceType = PlayerService.GetType();
+            var tableClientField = playerServiceType.GetField("_tableClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (tableClientField != null)
+            {
+                var tableClient = tableClientField.GetValue(PlayerService) as TableClient;
+                if (tableClient != null)
+                {
+                    // Check if table exists by trying to query it
+                    try
+                    {
+                        var query = tableClient.Query<TableEntity>(maxPerPage: 1);
+                        var enumerator = query.GetEnumerator();
+                        bool hasEntity = enumerator.MoveNext();
+                        info.AppendLine($"Table access: {(hasEntity ? "Success with data" : "Success but empty")}");
+                    }
+                    catch (Exception ex)
+                    {
+                        info.AppendLine($"Error accessing table: {ex.Message}");
+                    }
+                    
+                    // Try to get a few entities to check structure
+                    info.AppendLine("\nAttempting to query first 3 entities:");
+                    
+                    try
+                    {
+                        var entities = tableClient.Query<TableEntity>(maxPerPage: 3);
+                        int count = 0;
+                        
+                        foreach (var entity in entities)
+                        {
+                            count++;
+                            info.AppendLine($"\nEntity {count}:");
+                            info.AppendLine($"  PartitionKey: {entity.PartitionKey}");
+                            info.AppendLine($"  RowKey: {entity.RowKey}");
+                            info.AppendLine($"  Timestamp: {entity.Timestamp}");
+                            
+                            // List all properties
+                            info.AppendLine("  Properties:");
+                            foreach (var prop in entity)
+                            {
+                                info.AppendLine($"    {prop.Key}: {prop.Value} (Type: {prop.Value?.GetType().Name ?? "null"})");
+                            }
+                        }
+                        
+                        if (count == 0)
+                        {
+                            info.AppendLine("No entities found in table.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        info.AppendLine($"Error querying entities: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    info.AppendLine("TableClient is null");
+                }
+            }
+            else
+            {
+                info.AppendLine("Could not access _tableClient field");
+            }
+            
+            return info.ToString();
+        }
+        catch (Exception ex)
+        {
+            return $"Error getting table info: {ex.Message}";
+        }
+    }
+    
+    private Color GetPlayerColor(int rank)
+    {
+        return rank switch
+        {
+            1 => Color.Warning, // Gold
+            2 => Color.Tertiary, // Silver
+            3 => Color.Tertiary, // Bronze (using tertiary as approximation)
+            _ => Color.Default
+        };
+    }
+    
+    // Helper class to match the structure in PlayerStorageService
+    private class TableStorageSettings
+    {
+        public required string ConnectionString { get; set; }
+        public string TableName { get; set; } = "PlayerStats";
+    }
+}

@@ -1,0 +1,405 @@
+@page "/tablestorage-test"
+@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Core.Services
+@using Microsoft.Extensions.Logging
+@using Azure.Data.Tables
+@using System.Text.Json
+@using Microsoft.Extensions.Options
+@using PoFunQuiz.Infrastructure.Services
+@using PoFunQuiz.Infrastructure.Storage
+@inject NavigationManager Navigation
+@inject IPlayerStorageService PlayerService
+@inject ILogger<TableStorageTest> Logger
+@inject IOptions<TableStorageSettings> TableSettings
+
+<PageTitle>PoFunQuiz - Table Storage Test</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-4 px-2 px-sm-6">
+    <MudPaper Elevation="3" Class="pa-3 pa-sm-6">
+        <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-4">Azure Table Storage Diagnostics</MudText>
+        
+        @if (Loading)
+        {
+            <div class="d-flex justify-center my-4">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            </div>
+        }
+        else
+        {
+            <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                <MudTabPanel Text="Connection Info">
+                    <MudAlert Severity="Severity.Info" Class="mb-4">
+                        This page tests the connection to Azure Table Storage and performs basic operations.
+                    </MudAlert>
+                    
+                    <MudText Typo="Typo.h6" Class="mb-2">Table Settings</MudText>
+                    <MudText>Table Name: @(TableName ?? "Unknown")</MudText>
+                    <MudText Class="mb-4">Connection String: [REDACTED]</MudText>
+                    
+                    <div class="d-flex gap-2 flex-wrap">
+                        <MudButton Variant="Variant.Filled" 
+                                 Color="Color.Primary"
+                                 OnClick="TestTableConnection"
+                                 Class="my-2">
+                            TEST CONNECTION
+                        </MudButton>
+                        
+                        <MudButton Variant="Variant.Filled" 
+                                 Color="Color.Secondary"
+                                 OnClick="ListEntities"
+                                 Class="my-2">
+                            LIST ENTITIES
+                        </MudButton>
+                        
+                        <MudButton Variant="Variant.Filled" 
+                                 Color="Color.Tertiary"
+                                 OnClick="TestPlayerRetrieval"
+                                 Class="my-2">
+                            TEST PLAYER RETRIEVAL
+                        </MudButton>
+                    </div>
+                </MudTabPanel>
+                
+                <MudTabPanel Text="Test Results">
+                    @if (string.IsNullOrEmpty(TestResults))
+                    {
+                        <MudText>Run a test to see results here.</MudText>
+                    }
+                    else
+                    {
+                        <MudPaper Class="pa-4" Style="max-height: 500px; overflow-y: auto; white-space: pre-wrap;">
+                            @TestResults
+                        </MudPaper>
+                    }
+                </MudTabPanel>
+                
+                <MudTabPanel Text="Error Details">
+                    @if (string.IsNullOrEmpty(ErrorDetails))
+                    {
+                        <MudText>No errors to display.</MudText>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mb-4">
+                            An error occurred during testing.
+                        </MudAlert>
+                        <MudPaper Class="pa-4" Style="max-height: 500px; overflow-y: auto; white-space: pre-wrap;">
+                            @ErrorDetails
+                        </MudPaper>
+                    }
+                </MudTabPanel>
+            </MudTabs>
+        }
+        
+        <div class="d-flex justify-center mt-4">
+            <MudButton Variant="Variant.Filled" 
+                     Color="Color.Primary" 
+                     Href="/leaderboard"
+                     Class="my-2 mx-2">
+                BACK TO LEADERBOARD
+            </MudButton>
+            
+            <MudButton Variant="Variant.Outlined" 
+                     Color="Color.Primary" 
+                     Href="/"
+                     Class="my-2 mx-2">
+                MAIN MENU
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool Loading { get; set; } = true;
+    private string? TableName { get; set; }
+    private string? TestResults { get; set; }
+    private string? ErrorDetails { get; set; }
+    private TableClient? DirectTableClient { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Logger.LogInformation("Table Storage Test page initialized");
+            
+            // Get table name from settings
+            TableName = TableSettings.Value.TableName;
+            Logger.LogInformation("Table name from settings: {TableName}", TableName);
+            
+            // Try to create a direct table client
+            await InitializeDirectTableClient();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error initializing Table Storage Test page");
+            ErrorDetails = $"Initialization Error: {ex.Message}\n\n{ex.StackTrace}";
+            
+            if (ex.InnerException != null)
+            {
+                ErrorDetails += $"\n\nInner Exception: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}";
+            }
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+    
+    private async Task InitializeDirectTableClient()
+    {
+        try
+        {
+            // Try to get the table client through the PlayerService using reflection
+            var playerServiceType = PlayerService.GetType();
+            var tableClientField = playerServiceType.GetField("_tableClient", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (tableClientField != null)
+            {
+                DirectTableClient = tableClientField.GetValue(PlayerService) as TableClient;
+                Logger.LogInformation("Successfully retrieved TableClient from PlayerService");
+            }
+            else
+            {
+                Logger.LogWarning("Could not access _tableClient field via reflection");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error initializing direct table client");
+            throw;
+        }
+    }
+    
+    private async Task TestTableConnection()
+    {
+        try
+        {
+            Loading = true;
+            TestResults = "Testing connection to Azure Table Storage...\n";
+            ErrorDetails = null;
+            StateHasChanged();
+            
+            var results = new System.Text.StringBuilder();
+            
+            if (DirectTableClient == null)
+            {
+                results.AppendLine("❌ Direct TableClient is null. Could not access the table client.");
+                TestResults = results.ToString();
+                return;
+            }
+            
+            // Test if table exists
+            results.AppendLine($"Table Name: {DirectTableClient.Name}");
+            
+            try
+            {
+                // Try to query a single entity to check if table exists and is accessible
+                var query = DirectTableClient.Query<TableEntity>(maxPerPage: 1);
+                var enumerator = query.GetEnumerator();
+                bool hasEntity = enumerator.MoveNext();
+                
+                results.AppendLine($"Table Access: {(hasEntity ? "✅ Success" : "✅ Table exists but is empty")}");
+            }
+            catch (Exception ex)
+            {
+                results.AppendLine($"❌ Error accessing table: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    results.AppendLine($"Inner exception: {ex.InnerException.Message}");
+                }
+            }
+            
+            TestResults = results.ToString();
+            Logger.LogInformation("Table connection test completed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing table connection");
+            ErrorDetails = $"Connection Test Error: {ex.Message}\n\n{ex.StackTrace}";
+            
+            if (ex.InnerException != null)
+            {
+                ErrorDetails += $"\n\nInner Exception: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}";
+            }
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+    
+    private async Task ListEntities()
+    {
+        try
+        {
+            Loading = true;
+            TestResults = "Listing entities from Azure Table Storage...\n";
+            ErrorDetails = null;
+            StateHasChanged();
+            
+            var results = new System.Text.StringBuilder();
+            
+            if (DirectTableClient == null)
+            {
+                results.AppendLine("❌ Direct TableClient is null. Could not access the table client.");
+                TestResults = results.ToString();
+                return;
+            }
+            
+            // Query entities
+            try
+            {
+                results.AppendLine($"Querying entities from table '{DirectTableClient.Name}'...");
+                
+                var entities = DirectTableClient.Query<TableEntity>(maxPerPage: 10);
+                int count = 0;
+                
+                foreach (var entity in entities)
+                {
+                    count++;
+                    results.AppendLine($"\n--- Entity {count} ---");
+                    results.AppendLine($"PartitionKey: {entity.PartitionKey}");
+                    results.AppendLine($"RowKey: {entity.RowKey}");
+                    results.AppendLine($"Timestamp: {entity.Timestamp}");
+                    
+                    // List properties
+                    results.AppendLine("Properties:");
+                    foreach (var prop in entity)
+                    {
+                        var valueType = prop.Value?.GetType().Name ?? "null";
+                        var valueString = prop.Value?.ToString() ?? "null";
+                        
+                        // Special handling for DateTime properties
+                        if (prop.Value is DateTime dateTime)
+                        {
+                            valueString = $"{dateTime} (UTC: {dateTime.ToUniversalTime()})";
+                        }
+                        
+                        results.AppendLine($"  {prop.Key}: {valueString} (Type: {valueType})");
+                    }
+                }
+                
+                if (count == 0)
+                {
+                    results.AppendLine("No entities found in the table.");
+                }
+                else
+                {
+                    results.AppendLine($"\nTotal entities retrieved: {count}");
+                }
+            }
+            catch (Exception ex)
+            {
+                results.AppendLine($"❌ Error querying entities: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    results.AppendLine($"Inner exception: {ex.InnerException.Message}");
+                }
+            }
+            
+            TestResults = results.ToString();
+            Logger.LogInformation("Entity listing completed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error listing entities");
+            ErrorDetails = $"Entity Listing Error: {ex.Message}\n\n{ex.StackTrace}";
+            
+            if (ex.InnerException != null)
+            {
+                ErrorDetails += $"\n\nInner Exception: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}";
+            }
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+    
+    private async Task TestPlayerRetrieval()
+    {
+        try
+        {
+            Loading = true;
+            TestResults = "Testing player retrieval through PlayerStorageService...\n";
+            ErrorDetails = null;
+            StateHasChanged();
+            
+            var results = new System.Text.StringBuilder();
+            
+            // Test GetAllPlayersAsync
+            try
+            {
+                results.AppendLine("Calling PlayerService.GetAllPlayersAsync()...");
+                var players = await PlayerService.GetAllPlayersAsync();
+                
+                results.AppendLine($"✅ Successfully retrieved {players.Count} players");
+                
+                if (players.Count > 0)
+                {
+                    results.AppendLine("\nPlayer details (first 5):");
+                    foreach (var player in players.Take(5))
+                    {
+                        results.AppendLine($"\n--- Player: {player.Initials} ---");
+                        results.AppendLine($"ID: {player.Id}");
+                        results.AppendLine($"Games Played: {player.GamesPlayed}");
+                        results.AppendLine($"Games Won: {player.GamesWon}");
+                        results.AppendLine($"Total Score: {player.TotalScore}");
+                        results.AppendLine($"Total Correct Answers: {player.TotalCorrectAnswers}");
+                        results.AppendLine($"Last Played: {player.LastPlayed} (UTC: {player.LastPlayed.ToUniversalTime()})");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                results.AppendLine($"❌ Error retrieving players: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    results.AppendLine($"Inner exception: {ex.InnerException.Message}");
+                }
+                
+                // Try to get more details about the exception
+                results.AppendLine("\nException details:");
+                results.AppendLine($"Type: {ex.GetType().FullName}");
+                results.AppendLine($"Stack trace: {ex.StackTrace}");
+            }
+            
+            // Test GetOrCreatePlayerAsync with a test player
+            try
+            {
+                results.AppendLine("\n\nTesting GetOrCreatePlayerAsync with test player 'TST'...");
+                var testPlayer = await PlayerService.GetOrCreatePlayerAsync("TST");
+                
+                results.AppendLine("✅ Successfully retrieved/created test player:");
+                results.AppendLine($"Initials: {testPlayer.Initials}");
+                results.AppendLine($"Games Played: {testPlayer.GamesPlayed}");
+                results.AppendLine($"Last Played: {testPlayer.LastPlayed}");
+            }
+            catch (Exception ex)
+            {
+                results.AppendLine($"❌ Error with GetOrCreatePlayerAsync: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    results.AppendLine($"Inner exception: {ex.InnerException.Message}");
+                }
+            }
+            
+            TestResults = results.ToString();
+            Logger.LogInformation("Player retrieval test completed");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error testing player retrieval");
+            ErrorDetails = $"Player Retrieval Test Error: {ex.Message}\n\n{ex.StackTrace}";
+            
+            if (ex.InnerException != null)
+            {
+                ErrorDetails += $"\n\nInner Exception: {ex.InnerException.Message}\n{ex.InnerException.StackTrace}";
+            }
+        }
+        finally
+        {
+            Loading = false;
+        }
+    }
+} 

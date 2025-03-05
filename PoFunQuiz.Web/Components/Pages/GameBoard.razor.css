@@ -1,0 +1,86 @@
+/* GameBoard Mobile Styles */
+
+/* Base styles for the game container */
+.game-container {
+    outline: none;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Styles for answer options */
+.answer-option {
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+}
+
+.answer-option:hover {
+    transform: translateX(4px);
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.selected-option {
+    background-color: rgba(25, 118, 210, 0.1);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    /* Stack player columns on mobile */
+    ::deep .player-column {
+        margin-bottom: 16px;
+    }
+    
+    /* Make the game timer more compact */
+    ::deep .mud-paper {
+        padding: 8px !important;
+    }
+    
+    /* Reduce font sizes for mobile */
+    ::deep .mud-typography-h5 {
+        font-size: 1.2rem;
+    }
+    
+    ::deep .mud-typography-h6 {
+        font-size: 1rem;
+    }
+    
+    /* Make buttons more touch-friendly */
+    ::deep .mud-button {
+        min-height: 42px;
+        margin: 4px;
+    }
+    
+    /* Adjust question container for mobile */
+    .question-container {
+        padding: 12px !important;
+    }
+    
+    /* Make avatars smaller on mobile */
+    ::deep .mud-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+    
+    /* Adjust spacing for mobile */
+    ::deep .mud-grid {
+        padding: 0 !important;
+    }
+    
+    /* Make the control hint smaller */
+    .control-hint {
+        font-size: 0.7rem;
+    }
+}
+
+/* Add touch support for mobile */
+@media (hover: none) {
+    .answer-option:active {
+        background-color: rgba(25, 118, 210, 0.1);
+        transform: translateX(4px);
+    }
+} 

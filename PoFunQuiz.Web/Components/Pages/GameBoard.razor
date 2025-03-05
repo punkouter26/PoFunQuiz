@@ -1,0 +1,690 @@
+@page "/game-board"
+@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
+@using System.Timers
+@using System.Diagnostics
+@inject NavigationManager Navigation
+@inject IGameSessionService GameSessionService
+@inject GameState GameState
+@inject ConnectionState ConnectionState
+@inject IJSRuntime JS
+@inject ILogger<GameBoard> Logger
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Game</PageTitle>
+
+@if (!isConnected)
+{
+    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+        <MudText Typo="Typo.h4" Class="mb-4">Connection Lost!</MudText>
+        <MudText Class="mb-4">Attempting to reconnect... (@reconnectCountdown)</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReloadPage">Reload Page</MudButton>
+    </MudContainer>
+}
+else if (GameState.CurrentGame == null || 
+     GameState.CurrentGame.Player1Questions == null || 
+     GameState.CurrentGame.Player2Questions == null)
+{
+    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+        <MudText Typo="Typo.h4" Class="mb-4">Game session not ready.</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
+    </MudContainer>
+}
+else
+{
+    <div @onkeydown="HandleKeyDown" tabindex="0" @ref="gameContainer" id="gameContainer" @onclick="FocusGameContainer" class="game-container">
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-0 px-2">
+            <!-- Game Timer -->
+            <MudPaper Elevation="3" Class="d-flex justify-center align-center pa-2 pa-sm-3 mb-2 mb-sm-3" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
+                <MudText Typo="Typo.h5" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
+                    Time: @TimeRemaining s
+                </MudText>
+            </MudPaper>
+            
+            <MudGrid Class="pa-0 ma-0 game-grid" Style="height: auto; min-height: 85vh;">
+                <!-- Player 1 Side -->
+                <MudItem xs="12" md="6" Class="pa-1 pa-sm-2 player-column" Style="height: 100%;">
+                    <MudPaper Class="pa-2 pa-sm-4" Style="height: 100%; position: relative; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" Elevation="3">
+                        <div class="d-flex justify-space-between align-center mb-2 mb-sm-4">
+                            <div class="d-flex align-center">
+                                <MudAvatar Color="Color.Primary" Style="margin-right: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                                    @GameState.CurrentGame.Player1.Initials
+                                </MudAvatar>
+                                <MudText Typo="Typo.h5">Player 1</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: bold;">Score: @Player1Score</MudText>
+                        </div>
+                        
+                        <MudProgressLinear Value="@((Player1QuestionIndex + 1) * 10)" Color="Color.Primary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
+                        <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
+                            Question @(Player1QuestionIndex + 1) of 10
+                        </MudText>
+                        
+                        @if (Player1HasFinished)
+                        {
+                            <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Large" />
+                                <MudText Typo="Typo.h4" Color="Color.Success" Class="mt-2 mt-sm-4">Quiz Complete!</MudText>
+                                <MudText Typo="Typo.h5" Class="mt-2 mt-sm-4">Time Bonus: +@Player1TimeBonus points</MudText>
+                                <MudText Typo="Typo.h5">Final Score: @(Player1Score + Player1TimeBonus)</MudText>
+                                
+                                @if (Player2HasFinished)
+                                {
+                                    <div class="d-flex flex-column flex-sm-row mt-2 mt-sm-4">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/results" Class="mx-1 mx-sm-2 mb-2 mb-sm-0">
+                                            View Results
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1 mx-sm-2">
+                                            Return to Main Menu
+                                        </MudButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body1" Class="mt-2 mt-sm-4">Waiting for other player to finish...</MudText>
+                                }
+                            </div>
+                        }
+                        else if (Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
+                        {
+                            <MudPaper Elevation="0" Class="question-container pa-4 mb-4" Style="background-color: #f5f5f5; border-radius: 8px;">
+                                <MudText Typo="Typo.h6" Class="mb-4 question-text" Style="font-weight: 500; color: #333;">
+                                    @GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Text
+                                </MudText>
+                                
+                                <div class="pa-0" Style="margin-top: 16px;">
+                                    @for (var i = 0; i < GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options.Count; i++)
+                                    {
+                                        var optionIndex = i;
+                                        var option = GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options[i];
+                                        var optionNumber = i + 1;
+                                        <div class="answer-option @GetOptionClass(1, optionIndex)" @onclick="() => HandlePlayerAnswer(1, optionIndex)">
+                                            <div class="d-flex align-center pa-2 w-100">
+                                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="margin-right: 12px;">@optionNumber</MudAvatar>
+                                                <MudText Typo="Typo.body1">@option</MudText>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                
+                                @if (Player1FeedbackVisible)
+                                {
+                                    <MudAlert Severity="@(Player1LastAnswerCorrect ? Severity.Success : Severity.Error)" 
+                                            Class="mt-4" Style="border-radius: 6px;">
+                                        @(Player1LastAnswerCorrect ? "Correct!" : "Incorrect!")
+                                    </MudAlert>
+                                }
+                            </MudPaper>
+                        }
+                        
+                        <MudPaper Class="pa-1 pa-sm-2 d-flex justify-center" Style="position: absolute; bottom: 8px; left: 8px; right: 8px; border-radius: 6px; background-color: #f0f0f0;">
+                            <MudText Typo="Typo.caption" Class="control-hint">Use keys 1-4 or tap to answer</MudText>
+                        </MudPaper>
+                    </MudPaper>
+                </MudItem>
+                
+                <!-- Player 2 Side -->
+                <MudItem xs="12" md="6" Class="pa-1 pa-sm-2 player-column" Style="height: 100%;">
+                    <MudPaper Class="pa-2 pa-sm-4" Style="height: 100%; position: relative; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" Elevation="3">
+                        <div class="d-flex justify-space-between align-center mb-2 mb-sm-4">
+                            <div class="d-flex align-center">
+                                <MudAvatar Color="Color.Secondary" Style="margin-right: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
+                                    @GameState.CurrentGame.Player2.Initials
+                                </MudAvatar>
+                                <MudText Typo="Typo.h5">Player 2</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: bold;">Score: @Player2Score</MudText>
+                        </div>
+                        
+                        <MudProgressLinear Value="@((Player2QuestionIndex + 1) * 10)" Color="Color.Secondary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
+                        <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
+                            Question @(Player2QuestionIndex + 1) of 10
+                        </MudText>
+                        
+                        @if (Player2HasFinished)
+                        {
+                            <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Large" />
+                                <MudText Typo="Typo.h4" Color="Color.Success" Class="mt-2 mt-sm-4">Quiz Complete!</MudText>
+                                <MudText Typo="Typo.h5" Class="mt-2 mt-sm-4">Time Bonus: +@Player2TimeBonus points</MudText>
+                                <MudText Typo="Typo.h5">Final Score: @(Player2Score + Player2TimeBonus)</MudText>
+                                
+                                @if (Player1HasFinished)
+                                {
+                                    <div class="d-flex flex-column flex-sm-row mt-2 mt-sm-4">
+                                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/results" Class="mx-1 mx-sm-2 mb-2 mb-sm-0">
+                                            View Results
+                                        </MudButton>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1 mx-sm-2">
+                                            Return to Main Menu
+                                        </MudButton>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body1" Class="mt-2 mt-sm-4">Waiting for other player to finish...</MudText>
+                                }
+                            </div>
+                        }
+                        else if (Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
+                        {
+                            <MudPaper Elevation="0" Class="question-container pa-4 mb-4" Style="background-color: #f5f5f5; border-radius: 8px;">
+                                <MudText Typo="Typo.h6" Class="mb-4 question-text" Style="font-weight: 500; color: #333;">
+                                    @GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Text
+                                </MudText>
+                                
+                                <div class="pa-0" Style="margin-top: 16px;">
+                                    @for (var i = 0; i < GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options.Count; i++)
+                                    {
+                                        var optionIndex = i;
+                                        var option = GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options[i];
+                                        var optionNumber = i + 6; // Player 2 uses keys 6-9
+                                        <div class="answer-option @GetOptionClass(2, optionIndex)" @onclick="() => HandlePlayerAnswer(2, optionIndex)">
+                                            <div class="d-flex align-center pa-2 w-100">
+                                                <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="margin-right: 12px;">@optionNumber</MudAvatar>
+                                                <MudText Typo="Typo.body1">@option</MudText>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                
+                                @if (Player2FeedbackVisible)
+                                {
+                                    <MudAlert Severity="@(Player2LastAnswerCorrect ? Severity.Success : Severity.Error)" 
+                                            Class="mt-4" Style="border-radius: 6px;">
+                                        @(Player2LastAnswerCorrect ? "Correct!" : "Incorrect!")
+                                    </MudAlert>
+                                }
+                            </MudPaper>
+                        }
+                        
+                        <MudPaper Class="pa-1 pa-sm-2 d-flex justify-center" Style="position: absolute; bottom: 8px; left: 8px; right: 8px; border-radius: 6px; background-color: #f0f0f0;">
+                            <MudText Typo="Typo.caption" Class="control-hint">Use keys 6-9 or tap to answer</MudText>
+                        </MudPaper>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </div>
+}
+
+@code {
+    private ElementReference gameContainer;
+    private Timer? gameTimer;
+    private Timer? feedbackTimer;
+    private Timer? reconnectTimer;
+    private int TimeRemaining { get; set; } = 60;
+    private bool isConnected = true;
+    private int reconnectCountdown = 10;
+    private bool isInitialized = false;
+    
+    // Player 1 state
+    private int Player1QuestionIndex { get; set; } = 0;
+    private int Player1Score { get; set; } = 0;
+    private int Player1TimeBonus { get; set; } = 0;
+    private bool Player1HasFinished { get; set; } = false;
+    private bool Player1FeedbackVisible { get; set; } = false;
+    private bool Player1LastAnswerCorrect { get; set; } = false;
+    private List<int> Player1Selections { get; set; } = new List<int>();
+    
+    // Player 2 state
+    private int Player2QuestionIndex { get; set; } = 0;
+    private int Player2Score { get; set; } = 0;
+    private int Player2TimeBonus { get; set; } = 0;
+    private bool Player2HasFinished { get; set; } = false;
+    private bool Player2FeedbackVisible { get; set; } = false;
+    private bool Player2LastAnswerCorrect { get; set; } = false;
+    private List<int> Player2Selections { get; set; } = new List<int>();
+
+    private DotNetObjectReference<GameBoard>? objRef;
+    private bool isMobileDevice = false;
+
+    protected override void OnInitialized()
+    {
+        Logger.LogInformation("🔵 GameBoard OnInitialized called at {Time}", DateTime.Now);
+        Console.WriteLine($"🔵 GameBoard OnInitialized called at {DateTime.Now}");
+        
+        try
+        {
+            base.OnInitialized();
+            
+            // Check if we're already connected
+            isConnected = ConnectionState.IsConnected;
+            Logger.LogInformation("🔌 Initial connection state is {State}", isConnected ? "Connected" : "Disconnected");
+            Console.WriteLine($"🔌 Initial connection state is {(isConnected ? "Connected" : "Disconnected")}");
+            
+            // Subscribe to connection state changes
+            ConnectionState.ConnectionChanged += HandleConnectionChanged;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error in OnInitialized: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error in OnInitialized: {ex.Message}");
+        }
+    }
+    
+    private void HandleConnectionChanged(bool isConnected)
+    {
+        try
+        {
+            Logger.LogInformation("📶 Connection state changed to {IsConnected} at {Time}", 
+                isConnected ? "Connected" : "Disconnected", DateTime.Now);
+            Console.WriteLine($"📶 Connection state changed to {(isConnected ? "Connected" : "Disconnected")} at {DateTime.Now}");
+            
+            InvokeAsync(() => {
+                this.isConnected = isConnected;
+                
+                if (!isConnected)
+                {
+                    Logger.LogInformation("⏱️ Stopping game timer due to disconnection");
+                    Console.WriteLine("⏱️ Stopping game timer due to disconnection");
+                    gameTimer?.Stop();
+                    StartReconnectCountdown();
+                }
+                else if (isInitialized)
+                {
+                    Logger.LogInformation("⏱️ Restarting game timer after reconnection");
+                    Console.WriteLine("⏱️ Restarting game timer after reconnection");
+                    reconnectTimer?.Stop();
+                    StartGameTimer();
+                }
+                
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error in HandleConnectionChanged: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error in HandleConnectionChanged: {ex.Message}");
+        }
+    }
+    
+    private async Task FocusGameContainer()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("focusGameContainer", "gameContainer");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error focusing game container");
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                Logger.LogInformation("🔵 GameBoard first render at {Time}", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
+                Console.WriteLine($"🔵 GameBoard first render at {DateTime.Now}");
+                
+                if (GameState.CurrentGame == null)
+                {
+                    Logger.LogWarning("⚠️ GameState.CurrentGame is null, navigating to home");
+                    Console.WriteLine("⚠️ GameState.CurrentGame is null, navigating to home");
+                    Navigation.NavigateTo("/");
+                    return;
+                }
+                
+                // Check if we're on a mobile device
+                isMobileDevice = await JS.InvokeAsync<bool>("isMobileDevice");
+                Logger.LogInformation("Game board initialized. Mobile device: {IsMobile}", isMobileDevice);
+                
+                if (isMobileDevice)
+                {
+                    // Add touch support for mobile devices
+                    objRef = DotNetObjectReference.Create(this);
+                    await JS.InvokeVoidAsync("addTouchSupport", "gameContainer", objRef);
+                }
+                
+                // Start the game timer
+                StartGameTimer();
+                
+                isInitialized = true;
+                Logger.LogInformation("✅ GameBoard initialization complete");
+                Console.WriteLine("✅ GameBoard initialization complete");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "❌ Error during GameBoard first render: {Message}", ex.Message);
+                Console.WriteLine($"❌ Error during GameBoard first render: {ex.Message}");
+            }
+        }
+        else
+        {
+            try
+            {
+                // Add touch feedback after each render to ensure new options get the handlers
+                await JS.InvokeVoidAsync("addTouchFeedback");
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't crash the component
+                Logger.LogWarning(ex, "⚠️ Error adding touch feedback: {Message}", ex.Message);
+                Console.WriteLine($"⚠️ Error adding touch feedback: {ex.Message}");
+            }
+        }
+    }
+
+    private void StartGameTimer()
+    {
+        try
+        {
+            Logger.LogInformation("⏱️ StartGameTimer called at {Time}", DateTime.Now);
+            Console.WriteLine($"⏱️ StartGameTimer called at {DateTime.Now}");
+            
+            gameTimer?.Stop();
+            gameTimer?.Dispose();
+            
+            gameTimer = new Timer(1000);
+            gameTimer.Elapsed += OnGameTimerElapsed;
+            gameTimer.AutoReset = true;
+            gameTimer.Enabled = true;
+            
+            Logger.LogInformation("✅ Game timer successfully started");
+            Console.WriteLine("✅ Game timer successfully started");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error starting game timer: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error starting game timer: {ex.Message}");
+        }
+    }
+    
+    private void OnGameTimerElapsed(object sender, ElapsedEventArgs e)
+    {
+        try
+        {
+            InvokeAsync(() => 
+            {
+                TimeRemaining--;
+                
+                if (TimeRemaining % 5 == 0 || TimeRemaining <= 10)
+                {
+                    Logger.LogInformation("⏱️ Timer update: {TimeRemaining} seconds remaining at {Time}", 
+                        TimeRemaining, DateTime.Now);
+                    Console.WriteLine($"⏱️ Timer update: {TimeRemaining} seconds remaining at {DateTime.Now}");
+                }
+                
+                if (TimeRemaining <= 0)
+                {
+                    Logger.LogInformation("⏱️ Timer reached zero, ending game");
+                    Console.WriteLine("⏱️ Timer reached zero, ending game");
+                    EndGame();
+                }
+                
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error in timer callback: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error in timer callback: {ex.Message}");
+        }
+    }
+
+    private void StartReconnectCountdown()
+    {
+        Logger.LogInformation("⏱️ StartReconnectCountdown called at {Time}", DateTime.Now);
+        Console.WriteLine($"⏱️ StartReconnectCountdown called at {DateTime.Now}");
+        
+        reconnectTimer?.Dispose();
+        reconnectCountdown = 10;
+        
+        reconnectTimer = new Timer(1000);
+        reconnectTimer.Elapsed += (sender, e) => {
+            InvokeAsync(() => {
+                reconnectCountdown--;
+                Logger.LogInformation("⏱️ Reconnect countdown: {Countdown} seconds", reconnectCountdown);
+                Console.WriteLine($"⏱️ Reconnect countdown: {reconnectCountdown} seconds");
+                
+                if (reconnectCountdown <= 0)
+                {
+                    Logger.LogInformation("⏱️ Reconnect countdown expired, reloading page");
+                    Console.WriteLine("⏱️ Reconnect countdown expired, reloading page");
+                    ReloadPage();
+                }
+                StateHasChanged();
+            });
+        };
+        reconnectTimer.AutoReset = true;
+        reconnectTimer.Enabled = true;
+    }
+
+    private void ReloadPage()
+    {
+        Logger.LogInformation("🔄 Reloading page at {Time}", DateTime.Now);
+        Console.WriteLine($"🔄 Reloading page at {DateTime.Now}");
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+    
+    private string GetOptionClass(int playerNumber, int optionIndex)
+    {
+        if (playerNumber == 1)
+        {
+            return Player1Selections.Contains(optionIndex) ? "selected-option" : "";
+        }
+        else
+        {
+            return Player2Selections.Contains(optionIndex) ? "selected-option" : "";
+        }
+    }
+    
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        Logger.LogInformation("⌨️ Key pressed: {Key} at {Time}", e.Key, DateTime.Now);
+        Console.WriteLine($"⌨️ Key pressed: {e.Key} at {DateTime.Now}");
+        
+        // Handle Player 1 inputs (keys 1-4)
+        if (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4")
+        {
+            int index = int.Parse(e.Key) - 1;
+            Logger.LogInformation("⌨️ Player 1 selected option {Index}", index + 1);
+            Console.WriteLine($"⌨️ Player 1 selected option {index + 1}");
+            HandlePlayerAnswer(1, index);
+        }
+        
+        // Handle Player 2 inputs (keys 6-9)
+        if (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9")
+        {
+            int index = int.Parse(e.Key) - 6;
+            Logger.LogInformation("⌨️ Player 2 selected option {Index}", index + 1);
+            Console.WriteLine($"⌨️ Player 2 selected option {index + 1}");
+            HandlePlayerAnswer(2, index);
+        }
+    }
+    
+    private void HandlePlayerAnswer(int playerNumber, int selectedOptionIndex)
+    {
+        try
+        {
+            Logger.LogInformation("🎮 HandlePlayerAnswer called for Player {PlayerNumber}, option {OptionIndex}", 
+                playerNumber, selectedOptionIndex);
+            Console.WriteLine($"🎮 HandlePlayerAnswer called for Player {playerNumber}, option {selectedOptionIndex}");
+            
+            if (playerNumber == 1 && !Player1HasFinished && Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
+            {
+                var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
+                bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
+                
+                Player1LastAnswerCorrect = isCorrect;
+                Player1FeedbackVisible = true;
+                Player1Selections.Add(selectedOptionIndex);
+                
+                if (isCorrect)
+                {
+                    Player1Score += 1;
+                    Logger.LogInformation("✅ Player 1 answered correctly, score is now {Score}", Player1Score);
+                    Console.WriteLine($"✅ Player 1 answered correctly, score is now {Player1Score}");
+                }
+                else
+                {
+                    Logger.LogInformation("❌ Player 1 answered incorrectly");
+                    Console.WriteLine("❌ Player 1 answered incorrectly");
+                }
+                
+                ShowFeedbackThenAdvance(playerNumber);
+            }
+            else if (playerNumber == 2 && !Player2HasFinished && Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
+            {
+                var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
+                bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
+                
+                Player2LastAnswerCorrect = isCorrect;
+                Player2FeedbackVisible = true;
+                Player2Selections.Add(selectedOptionIndex);
+                
+                if (isCorrect)
+                {
+                    Player2Score += 1;
+                    Logger.LogInformation("✅ Player 2 answered correctly, score is now {Score}", Player2Score);
+                    Console.WriteLine($"✅ Player 2 answered correctly, score is now {Player2Score}");
+                }
+                else
+                {
+                    Logger.LogInformation("❌ Player 2 answered incorrectly");
+                    Console.WriteLine("❌ Player 2 answered incorrectly");
+                }
+                
+                ShowFeedbackThenAdvance(playerNumber);
+            }
+            else
+            {
+                Logger.LogWarning("⚠️ HandlePlayerAnswer called in invalid state. Player: {Player}, HasFinished: {HasFinished}", 
+                    playerNumber, playerNumber == 1 ? Player1HasFinished : Player2HasFinished);
+                Console.WriteLine($"⚠️ HandlePlayerAnswer called in invalid state. Player: {playerNumber}, HasFinished: {(playerNumber == 1 ? Player1HasFinished : Player2HasFinished)}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error in HandlePlayerAnswer: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error in HandlePlayerAnswer: {ex.Message}");
+        }
+    }
+    
+    private void ShowFeedbackThenAdvance(int playerNumber)
+    {
+        // Show feedback for 1 second, then advance to next question
+        feedbackTimer = new Timer(1000);
+        feedbackTimer.Elapsed += (sender, e) => 
+        {
+            InvokeAsync(() => {
+                if (playerNumber == 1)
+                {
+                    Player1FeedbackVisible = false;
+                    Player1Selections.Clear();
+                    Player1QuestionIndex++;
+                    
+                    if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count)
+                    {
+                        Player1HasFinished = true;
+                        CalculateTimeBonus(playerNumber);
+                    }
+                }
+                else
+                {
+                    Player2FeedbackVisible = false;
+                    Player2Selections.Clear();
+                    Player2QuestionIndex++;
+                    
+                    if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count)
+                    {
+                        Player2HasFinished = true;
+                        CalculateTimeBonus(playerNumber);
+                    }
+                }
+                
+                // Check if both players have finished
+                if (Player1HasFinished && Player2HasFinished)
+                {
+                    EndGame();
+                }
+                
+                StateHasChanged();
+            });
+            
+            feedbackTimer.Dispose();
+        };
+        feedbackTimer.AutoReset = false;
+        feedbackTimer.Enabled = true;
+    }
+    
+    private void CalculateTimeBonus(int playerNumber)
+    {
+        // Calculate time bonus based on remaining time (max 3 points)
+        int bonus = Math.Min(3, (int)Math.Ceiling(TimeRemaining / 20.0));
+        
+        if (playerNumber == 1)
+            Player1TimeBonus = bonus;
+        else
+            Player2TimeBonus = bonus;
+    }
+    
+    private void EndGame()
+    {
+        // Stop timers
+        gameTimer?.Stop();
+        feedbackTimer?.Stop();
+        
+        // Calculate final scores if players haven't finished
+        if (!Player1HasFinished)
+        {
+            Player1HasFinished = true;
+            CalculateTimeBonus(1);
+        }
+        
+        if (!Player2HasFinished)
+        {
+            Player2HasFinished = true;
+            CalculateTimeBonus(2);
+        }
+        
+        // Update game session with results
+        GameState.CurrentGame.Player1Score = Player1Score + Player1TimeBonus;
+        GameState.CurrentGame.Player2Score = Player2Score + Player2TimeBonus;
+        GameState.CurrentGame.EndTime = DateTime.UtcNow;
+        
+        // Save game results
+        GameSessionService.SaveGameResultsAsync(GameState.CurrentGame);
+        
+        // Update UI to show both players have finished
+        StateHasChanged();
+    }
+    
+    [JSInvokable]
+    public void HandleSwipe(string direction)
+    {
+        Logger.LogInformation("Swipe detected: {Direction}", direction);
+        // Handle swipe actions if needed
+    }
+    
+    public void Dispose()
+    {
+        try
+        {
+            Logger.LogInformation("♻️ Disposing GameBoard component at {Time}", DateTime.Now);
+            Console.WriteLine($"♻️ Disposing GameBoard component at {DateTime.Now}");
+            
+            // Unsubscribe from connection state changes
+            ConnectionState.ConnectionChanged -= HandleConnectionChanged;
+            
+            gameTimer?.Stop();
+            gameTimer?.Dispose();
+            feedbackTimer?.Stop();
+            feedbackTimer?.Dispose();
+            reconnectTimer?.Stop();
+            reconnectTimer?.Dispose();
+            
+            // Dispose of the .NET object reference
+            objRef?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "❌ Error in Dispose: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error in Dispose: {ex.Message}");
+        }
+    }
+}

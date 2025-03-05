@@ -1,0 +1,72 @@
+/* Leaderboard Mobile Styles */
+
+@media (max-width: 768px) {
+    /* Make the table more compact on mobile */
+    ::deep .mud-table {
+        font-size: 0.85rem;
+    }
+    
+    /* Hide less important columns on small screens */
+    ::deep .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Make the container take full width on mobile */
+    ::deep .mud-container {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    
+    /* Reduce padding in the paper component */
+    ::deep .mud-paper {
+        padding: 12px !important;
+    }
+    
+    /* Make the title smaller on mobile */
+    ::deep .mud-typography-h3 {
+        font-size: 1.75rem;
+    }
+    
+    /* Make table cells more compact */
+    ::deep .mud-table-cell {
+        padding: 8px 6px !important;
+    }
+    
+    /* Adjust chip size for mobile */
+    ::deep .mud-chip {
+        height: 24px;
+    }
+}
+
+/* Responsive table styles */
+::deep .table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+/* Add some animation to the leaderboard entries */
+::deep .mud-table-row {
+    transition: background-color 0.2s ease;
+}
+
+::deep .mud-table-row:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Style for top 3 players */
+::deep .mud-table-row:nth-child(1) {
+    background-color: rgba(255, 215, 0, 0.1);
+}
+
+::deep .mud-table-row:nth-child(2) {
+    background-color: rgba(192, 192, 192, 0.1);
+}
+
+::deep .mud-table-row:nth-child(3) {
+    background-color: rgba(205, 127, 50, 0.1);
+}
+
+/* Ensure buttons are touch-friendly on mobile */
+::deep .mud-button {
+    min-height: 42px;
+} 

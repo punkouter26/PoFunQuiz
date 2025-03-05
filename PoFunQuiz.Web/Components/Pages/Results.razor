@@ -1,0 +1,271 @@
+@page "/results"
+@using PoFunQuiz.Core.Services
+@inject NavigationManager Navigation
+@inject IPlayerStorageService PlayerService
+@inject GameState GameState
+
+<PageTitle>PoFunQuiz - Results</PageTitle>
+
+@if (GameState.CurrentGame == null)
+{
+    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+        <MudText Typo="Typo.h4" Class="mb-4">No game results available.</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
+    </MudContainer>
+}
+else
+{
+    <MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
+        <MudPaper Elevation="3" Class="pa-6">
+            <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-6">Game Results</MudText>
+            
+            @if (WinnerDeclared)
+            {
+                <MudAlert Severity="Severity.Success" Class="my-4" Variant="Variant.Filled">
+                    <MudText Typo="Typo.h5">
+                        @if (IsTie)
+                        {
+                            <span>It's a Tie!</span>
+                        }
+                        else
+                        {
+                            <span>Winner: Player @WinnerNumber (@Winner.Initials) - Congratulations!</span>
+                        }
+                    </MudText>
+                </MudAlert>
+            }
+            
+            <MudGrid Class="mt-4">
+                <!-- Player 1 Results -->
+                <MudItem xs="12" md="6">
+                    <MudCard Class="pa-4" Style="height: 100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <div class="d-flex align-center">
+                                    <MudAvatar Color="Color.Primary" Class="mr-2">
+                                        @GameState.CurrentGame.Player1.Initials
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.h5">Player 1</MudText>
+                                </div>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudList T="string">
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.QuestionAnswer">
+                                    <MudText>Questions Answered: @GetQuestionsAnswered(1) of 10</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Check">
+                                    <MudText>Correct Answers: @GetCorrectAnswers(1)</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Close">
+                                    <MudText>Incorrect Answers: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Timer">
+                                    <MudText>Time Bonus: +@GetTimeBonus(1) points</MudText>
+                                </MudListItem>
+                                <MudDivider Class="my-3" />
+                                <MudListItem T="string">
+                                    <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player1Score points</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                
+                <!-- Player 2 Results -->
+                <MudItem xs="12" md="6">
+                    <MudCard Class="pa-4" Style="height: 100%;">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <div class="d-flex align-center">
+                                    <MudAvatar Color="Color.Secondary" Class="mr-2">
+                                        @GameState.CurrentGame.Player2.Initials
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.h5">Player 2</MudText>
+                                </div>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudList T="string">
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.QuestionAnswer">
+                                    <MudText>Questions Answered: @GetQuestionsAnswered(2) of 10</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Check">
+                                    <MudText>Correct Answers: @GetCorrectAnswers(2)</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Close">
+                                    <MudText>Incorrect Answers: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</MudText>
+                                </MudListItem>
+                                <MudListItem T="string" Icon="@Icons.Material.Filled.Timer">
+                                    <MudText>Time Bonus: +@GetTimeBonus(2) points</MudText>
+                                </MudListItem>
+                                <MudDivider Class="my-3" />
+                                <MudListItem T="string">
+                                    <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player2Score points</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+                
+                <!-- Game Statistics -->
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4 mt-4" Elevation="0" Outlined>
+                        <MudText Typo="Typo.subtitle1">Game Statistics</MudText>
+                        <MudGrid>
+                            <MudItem xs="6" md="3">
+                                <MudText Typo="Typo.body2">Game Duration: @GetGameDuration()</MudText>
+                            </MudItem>
+                            <MudItem xs="6" md="3">
+                                <MudText Typo="Typo.body2">Total Questions: 20</MudText>
+                            </MudItem>
+                            <MudItem xs="6" md="3">
+                                <MudText Typo="Typo.body2">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</MudText>
+                            </MudItem>
+                            <MudItem xs="6" md="3">
+                                <MudText Typo="Typo.body2">Game ID: @GameState.CurrentGame.GameId.Substring(0, 8)</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+            
+            <div class="d-flex justify-center mt-6">
+                <MudButton Variant="Variant.Filled" 
+                        Color="Color.Primary" 
+                        Class="mx-2"
+                        OnClick="@PlayAgain">
+                    PLAY AGAIN
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" 
+                        Color="Color.Primary" 
+                        Class="mx-2"
+                        Href="/leaderboard">
+                    VIEW LEADERBOARD
+                </MudButton>
+                <MudButton Variant="Variant.Text" 
+                        Color="Color.Primary" 
+                        Class="mx-2"
+                        Href="/">
+                    MAIN MENU
+                </MudButton>
+            </div>
+        </MudPaper>
+    </MudContainer>
+}
+
+@code {
+    private bool WinnerDeclared => GameState.CurrentGame?.Player1Score != null && GameState.CurrentGame?.Player2Score != null;
+    private bool IsTie => GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
+    private int WinnerNumber => GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2;
+    private Core.Models.Player Winner => WinnerNumber == 1 ? GameState.CurrentGame.Player1 : GameState.CurrentGame.Player2;
+    
+    protected override void OnInitialized()
+    {
+        // Redirect to home if no game session exists
+        if (GameState.CurrentGame == null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        
+        // Update player statistics in the background
+        UpdatePlayerStatisticsAsync();
+    }
+    
+    private int GetCorrectAnswers(int playerNumber)
+    {
+        // In a real implementation, this would come from the game session tracking
+        // For now we'll use a simplified calculation
+        var baseScore = playerNumber == 1 
+            ? GameState.CurrentGame.Player1Score - GetTimeBonus(1) 
+            : GameState.CurrentGame.Player2Score - GetTimeBonus(2);
+        
+        return Math.Max(0, baseScore);
+    }
+    
+    private int GetTimeBonus(int playerNumber)
+    {
+        // In a real implementation, this would be stored explicitly in the game session
+        // For simplicity, we'll assume a maximum of 3 points time bonus
+        var totalScore = playerNumber == 1 
+            ? GameState.CurrentGame.Player1Score 
+            : GameState.CurrentGame.Player2Score;
+        
+        var correctAnswers = GetQuestionsAnswered(playerNumber);
+        
+        return Math.Min(3, Math.Max(0, totalScore - correctAnswers));
+    }
+    
+    private int GetQuestionsAnswered(int playerNumber)
+    {
+        // In a real implementation, this would come from the game session tracking
+        // For now we'll assume all 10 questions were answered
+        return 10;
+    }
+    
+    private string GetGameDuration()
+    {
+        if (GameState.CurrentGame.StartTime.HasValue && GameState.CurrentGame.EndTime.HasValue)
+        {
+            var duration = GameState.CurrentGame.EndTime.Value - GameState.CurrentGame.StartTime.Value;
+            return $"{duration.Minutes:D2}:{duration.Seconds:D2}";
+        }
+        
+        return "00:00";
+    }
+    
+    private void PlayAgain()
+    {
+        // Reset game state but keep the same players
+        var player1 = GameState.CurrentGame.Player1;
+        var player2 = GameState.CurrentGame.Player2;
+        
+        // Create a new game session with the same players
+        GameState.CurrentGame = new Core.Models.GameSession
+        {
+            Player1 = player1,
+            Player2 = player2,
+            StartTime = DateTime.UtcNow,
+            GameId = Guid.NewGuid().ToString()
+        };
+        
+        // Navigate to game setup
+        Navigation.NavigateTo("/game-setup");
+    }
+    
+    private async Task UpdatePlayerStatisticsAsync()
+    {
+        try
+        {
+            // Update player 1 stats
+            await UpdatePlayerStats(GameState.CurrentGame.Player1, 
+                                   WinnerNumber == 1, 
+                                   GetCorrectAnswers(1),
+                                   GameState.CurrentGame.Player1Score);
+            
+            // Update player 2 stats
+            await UpdatePlayerStats(GameState.CurrentGame.Player2, 
+                                   WinnerNumber == 2,
+                                   GetCorrectAnswers(2),
+                                   GameState.CurrentGame.Player2Score);
+        }
+        catch (Exception ex)
+        {
+            // In a real app, we would log this error
+            Console.WriteLine($"Error updating player statistics: {ex.Message}");
+        }
+    }
+    
+    private async Task UpdatePlayerStats(Core.Models.Player player, bool isWinner, int correctAnswers, int totalScore)
+    {
+        // Update player stats
+        player.GamesPlayed++;
+        if (isWinner) player.GamesWon++;
+        player.TotalScore += totalScore;
+        player.TotalCorrectAnswers += correctAnswers;
+        
+        // Save updated player stats to storage
+        await PlayerService.UpdatePlayerAsync(player);
+    }
+}
