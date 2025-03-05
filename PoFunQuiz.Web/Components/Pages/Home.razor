@@ -10,14 +10,14 @@
 
 <PageTitle>PoFunQuiz - Home</PageTitle>
 
-<MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
-    <MudText Typo="Typo.h2" Class="mb-8" Color="Color.Primary">Welcome to PoFunQuiz</MudText>
+<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height: 85vh; padding: 1rem;">
+    <MudText Typo="Typo.h3" Class="mb-4 text-center" Color="Color.Primary">Welcome to PoFunQuiz</MudText>
     
-    <MudCard Class="pa-4" Style="width: 500px;">
+    <MudCard Class="pa-3" Style="width: 100%; max-width: 450px;">
         <MudCardContent>
-            <MudText Typo="Typo.h5" Class="mb-4">Enter Player Initials</MudText>
+            <MudText Typo="Typo.h5" Class="mb-3">Enter Player Initials</MudText>
             
-            <div class="d-flex align-center gap-4 mb-4">
+            <div class="d-flex align-center gap-3 mb-3">
                 <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
                 <MudTextField @bind-Value="@Player1Initials" 
                               Label="Player 1 Initials" 
@@ -30,7 +30,7 @@
                               TextChanged="(s) => OnTextChanged(s, 1)" />
             </div>
             
-            <div class="d-flex align-center gap-4 mb-4">
+            <div class="d-flex align-center gap-3 mb-3">
                 <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Secondary" />
                 <MudTextField @bind-Value="@Player2Initials" 
                               Label="Player 2 Initials" 
@@ -43,7 +43,7 @@
                               TextChanged="(s) => OnTextChanged(s, 2)" />
             </div>
             
-            <MudText Typo="Typo.body2" Class="mb-4">
+            <MudText Typo="Typo.body2" Class="mb-3">
                 Enter 3-letter initials for each player to begin. Players will share the same screen during the quiz.
             </MudText>
 
@@ -89,30 +89,33 @@
                        Color="Color.Primary" 
                        FullWidth="true"
                        Href="/leaderboard">LEADERBOARD</MudButton>
-                       
-            @if (HostEnvironment.IsDevelopment())
-            {
-                <MudButton Variant="Variant.Outlined" 
-                           Color="Color.Error" 
-                           FullWidth="true"
-                           Href="/tablestorage-test"
-                           Class="mt-2">DIAGNOSTICS</MudButton>
-            }
         </MudCardActions>
     </MudCard>
     
-    <MudPaper Elevation="0" Class="mt-8 pa-4">
+    <MudPaper Elevation="0" Class="mt-4 pa-3" Style="width: 100%; max-width: 450px;">
         <MudText Typo="Typo.h6" Class="mb-2">Player Controls:</MudText>
-        <div class="d-flex gap-8 align-center">
+        <div class="d-flex flex-column flex-sm-row gap-2 align-center">
             <div>
-                <MudText Typo="Typo.body1"><b>Player 1:</b> Use keys 1-4 to select answers</MudText>
+                <MudText Typo="Typo.body2"><b>Player 1:</b> Use keys 1-4 to select answers</MudText>
             </div>
             <div>
-                <MudText Typo="Typo.body1"><b>Player 2:</b> Use keys 6-9 to select answers</MudText>
+                <MudText Typo="Typo.body2"><b>Player 2:</b> Use keys 6-9 to select answers</MudText>
             </div>
         </div>
     </MudPaper>
 </MudContainer>
+
+<style>
+    @@media (max-width: 600px) {
+        .mud-typography-h3 {
+            font-size: 1.75rem;
+        }
+        
+        .mud-typography-h5 {
+            font-size: 1.25rem;
+        }
+    }
+</style>
 
 @code {
     private string Player1Initials { get; set; } = "";
