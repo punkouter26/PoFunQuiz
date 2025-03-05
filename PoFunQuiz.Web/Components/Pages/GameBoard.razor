@@ -58,7 +58,14 @@ else
                         
                         <MudProgressLinear Value="@((Player1QuestionIndex + 1) * 10)" Color="Color.Primary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
                         <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
-                            Question @(Player1QuestionIndex + 1) of 10
+                            @if (Player1HasFinished)
+                            {
+                                <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
+                            }
+                            else
+                            {
+                                <text>Question @(Player1QuestionIndex + 1) of 10</text>
+                            }
                         </MudText>
                         
                         @if (Player1HasFinished)
@@ -139,7 +146,14 @@ else
                         
                         <MudProgressLinear Value="@((Player2QuestionIndex + 1) * 10)" Color="Color.Secondary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
                         <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
-                            Question @(Player2QuestionIndex + 1) of 10
+                            @if (Player2HasFinished)
+                            {
+                                <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
+                            }
+                            else
+                            {
+                                <text>Question @(Player2QuestionIndex + 1) of 10</text>
+                            }
                         </MudText>
                         
                         @if (Player2HasFinished)
