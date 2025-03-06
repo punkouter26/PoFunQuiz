@@ -57,6 +57,13 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+build/
+[Oo]ut/
+publish/
+msbuild.log
+msbuild.err
+msbuild.wrn
+site.zip
 
 # Visual Studio 2019 cache/options directory
 .vs/
@@ -92,6 +99,7 @@ PublishProfiles/
 *.pubxml.*
 publish/
 orleans.codegen.cs
+deploy/
 
 # User-specific files
 *.suo
@@ -99,6 +107,7 @@ orleans.codegen.cs
 *.userosscache
 *.sln.docstates
 *.userprefs
+*.rsuser
 
 # NuGet Packages
 *.nupkg
@@ -111,6 +120,7 @@ orleans.codegen.cs
 
 # Local logs folder
 logs/
+npm-debug.log*
 
 # NuGet v3's project.json files produces more ignoreable files
 *.nuget.props
@@ -135,3 +145,9 @@ ServiceFabricBackup/
 # Tools
 *.exe
 *.DotSettings.user
+
+# Environment settings
+.env
+appsettings.Development.json
+appsettings.local.json
+launchSettings.json

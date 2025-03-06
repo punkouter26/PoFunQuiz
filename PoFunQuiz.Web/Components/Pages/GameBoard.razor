@@ -256,11 +256,11 @@ else
 
     protected override void OnInitialized()
     {
-        Logger.LogInformation("🔵 GameBoard OnInitialized called at {Time}", DateTime.Now);
-        Console.WriteLine($"🔵 GameBoard OnInitialized called at {DateTime.Now}");
-        
         try
         {
+            Logger.LogInformation("🔵 GameBoard OnInitialized called at {Time}", DateTime.Now);
+            Console.WriteLine($"🔵 GameBoard OnInitialized called at {DateTime.Now}");
+            
             base.OnInitialized();
             
             // Check if we're already connected
@@ -342,6 +342,9 @@ else
                     Navigation.NavigateTo("/");
                     return;
                 }
+                
+                // Set focus to the container to enable keyboard events
+                await JS.InvokeVoidAsync("focusElement", gameContainer);
                 
                 // Check if we're on a mobile device
                 isMobileDevice = await JS.InvokeAsync<bool>("isMobileDevice");
@@ -489,25 +492,33 @@ else
     
     private void HandleKeyDown(KeyboardEventArgs e)
     {
-        Logger.LogInformation("⌨️ Key pressed: {Key} at {Time}", e.Key, DateTime.Now);
-        Console.WriteLine($"⌨️ Key pressed: {e.Key} at {DateTime.Now}");
-        
-        // Handle Player 1 inputs (keys 1-4)
-        if (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4")
+        try
         {
-            int index = int.Parse(e.Key) - 1;
-            Logger.LogInformation("⌨️ Player 1 selected option {Index}", index + 1);
-            Console.WriteLine($"⌨️ Player 1 selected option {index + 1}");
-            HandlePlayerAnswer(1, index);
+            Logger.LogInformation("⌨️ Key pressed: {Key} at {Time}", e.Key, DateTime.Now);
+            Console.WriteLine($"⌨️ Key pressed: {e.Key} at {DateTime.Now}");
+            
+            // Handle Player 1 inputs (keys 1-4)
+            if (!Player1HasFinished && (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4"))
+            {
+                int index = int.Parse(e.Key) - 1;
+                Logger.LogInformation("⌨️ Player 1 selected option {Index}", index + 1);
+                Console.WriteLine($"⌨️ Player 1 selected option {index + 1}");
+                HandlePlayerAnswer(1, index);
+            }
+            
+            // Handle Player 2 inputs (keys 6-9)
+            if (!Player2HasFinished && (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9"))
+            {
+                int index = int.Parse(e.Key) - 6;
+                Logger.LogInformation("⌨️ Player 2 selected option {Index}", index + 1);
+                Console.WriteLine($"⌨️ Player 2 selected option {index + 1}");
+                HandlePlayerAnswer(2, index);
+            }
         }
-        
-        // Handle Player 2 inputs (keys 6-9)
-        if (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9")
+        catch (Exception ex)
         {
-            int index = int.Parse(e.Key) - 6;
-            Logger.LogInformation("⌨️ Player 2 selected option {Index}", index + 1);
-            Console.WriteLine($"⌨️ Player 2 selected option {index + 1}");
-            HandlePlayerAnswer(2, index);
+            Logger.LogError(ex, "❌ Error handling keyboard input: {Message}", ex.Message);
+            Console.WriteLine($"❌ Error handling keyboard input: {ex.Message}");
         }
     }
     

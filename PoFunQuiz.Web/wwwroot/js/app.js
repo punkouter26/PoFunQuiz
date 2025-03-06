@@ -23,6 +23,32 @@ window.focusElement = (element) => {
     }
 };
 
+// Handle element focusing for keyboard input
+window.focusGameContainer = function (elementId) {
+    console.log("Attempting to focus element", elementId);
+    const element = document.getElementById(elementId);
+    if (element) {
+        try {
+            element.focus();
+            console.log("Element focused successfully");
+            
+            // Add a click event to ensure focus is maintained
+            element.addEventListener('click', function() {
+                this.focus();
+                console.log("Element refocused after click");
+            });
+            
+            return true;
+        } catch (e) {
+            console.error("Error focusing element:", e);
+            return false;
+        }
+    } else {
+        console.warn("Element not found for focusing");
+        return false;
+    }
+};
+
 // Helper function to suppress default keyboard events when needed
 window.suppressKeyboardEvent = (event, keys) => {
     console.log("Key pressed:", event.key);
