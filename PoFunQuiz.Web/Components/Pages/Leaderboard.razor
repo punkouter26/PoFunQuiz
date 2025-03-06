@@ -7,8 +7,10 @@
 @using Microsoft.Extensions.Hosting
 @inject NavigationManager Navigation
 @inject IPlayerStorageService PlayerService
+@inject IGameSessionService GameSessionService
 @inject ILogger<Leaderboard> Logger
 @inject IHostEnvironment HostEnvironment
+@inject IJSRuntime JSRuntime
 
 <PageTitle>PoFunQuiz - Leaderboard</PageTitle>
 
@@ -81,36 +83,156 @@
                 </MudTable>
             </div>
             
-            <MudExpansionPanels Class="mt-2 d-none d-sm-flex">
-                <MudExpansionPanel Text="Show Additional Stats">
-                    <MudTable Items="@Players" 
-                             Dense="true" 
-                             Hover="true" 
-                             Bordered="false" 
-                             Striped="true"
-                             Breakpoint="Breakpoint.None"
-                             Class="leaderboard-table">
-                        <HeaderContent>
-                            <MudTh>Rank</MudTh>
-                            <MudTh>Player</MudTh>
-                            <MudTh>Win %</MudTh>
-                            <MudTh>Avg Score</MudTh>
-                            <MudTh>Correct</MudTh>
-                            <MudTh>Accuracy</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>@context.Rank</MudTd>
-                            <MudTd>
-                                <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
-                            </MudTd>
-                            <MudTd>@($"{(double)context.GamesWon / Math.Max(1, context.GamesPlayed):P0}")</MudTd>
-                            <MudTd>@($"{(double)context.TotalScore / Math.Max(1, context.GamesPlayed):F1}")</MudTd>
-                            <MudTd>@context.TotalCorrectAnswers</MudTd>
-                            <MudTd>@($"{(double)context.TotalCorrectAnswers / (Math.Max(1, context.GamesPlayed) * 10):P0}")</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudExpansionPanel>
-            </MudExpansionPanels>
+            <!-- Additional Statistics Section - Now Always Visible -->
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-3">Game Statistics</MudText>
+            
+            <!-- Individual Player Statistics -->
+            <MudText Typo="Typo.subtitle1" Class="mt-3 mb-2">Player Performance</MudText>
+            <MudTable Items="@Players" 
+                     Dense="true" 
+                     Hover="true" 
+                     Bordered="false" 
+                     Striped="true"
+                     Breakpoint="Breakpoint.None"
+                     Class="leaderboard-table">
+                <HeaderContent>
+                    <MudTh>Rank</MudTh>
+                    <MudTh>Player</MudTh>
+                    <MudTh>Win %</MudTh>
+                    <MudTh>Avg Score</MudTh>
+                    <MudTh>Correct</MudTh>
+                    <MudTh>Accuracy</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Rank</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
+                    </MudTd>
+                    <MudTd>@($"{(double)context.GamesWon / Math.Max(1, context.GamesPlayed):P0}")</MudTd>
+                    <MudTd>@($"{(double)context.TotalScore / Math.Max(1, context.GamesPlayed):F1}")</MudTd>
+                    <MudTd>@context.TotalCorrectAnswers</MudTd>
+                    <MudTd>@($"{(double)context.TotalCorrectAnswers / (Math.Max(1, context.GamesPlayed) * 10):P0}")</MudTd>
+                </RowTemplate>
+            </MudTable>
+            
+            <!-- Global Statistics -->
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Global Statistics</MudText>
+            
+            <MudGrid>
+                <!-- Total Questions Answered -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="0" Class="pa-3" Outlined>
+                        <MudText Typo="Typo.subtitle2">Questions Summary</MudText>
+                        <MudList T="string" Dense="true">
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.QuestionAnswer" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Total Questions Asked: @TotalQuestionsAsked</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Total Correct Answers: @TotalCorrectAnswers</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Percent" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Overall Accuracy: @($"{OverallAccuracy:P1}")</MudText>
+                                </div>
+                            </MudListItem>
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+
+                <!-- Game Statistics -->
+                <MudItem xs="12" md="6">
+                    <MudPaper Elevation="0" Class="pa-3" Outlined>
+                        <MudText Typo="Typo.subtitle2">Game Summary</MudText>
+                        <MudList T="string" Dense="true">
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Total Games Played: @TotalGamesPlayed</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Average Game Duration: @AverageGameDuration</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudListItem T="string">
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.EmojiPeople" Class="mr-2" />
+                                    <MudText Typo="Typo.body2">Total Players: @Players.Count</MudText>
+                                </div>
+                            </MudListItem>
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+            
+            <!-- Daily Activity Charts -->
+            <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-2">Daily Activity</MudText>
+            
+            <!-- Games Per Day -->
+            <MudPaper Elevation="0" Class="pa-3 mb-3" Outlined>
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Games Played Per Day</MudText>
+                <div class="chart-container">
+                    @foreach (var dayData in GamesPlayedPerDay.OrderBy(d => d.Key))
+                    {
+                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 10));
+                        <div class="chart-item">
+                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--mud-palette-primary);">
+                                <span class="chart-value">@dayData.Value</span>
+                            </div>
+                            <div class="chart-label">@FormatDayLabel(dayData.Key)</div>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
+            
+            <!-- Questions Per Day -->
+            <MudPaper Elevation="0" Class="pa-3 mb-3" Outlined>
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Questions Asked Per Day</MudText>
+                <div class="chart-container">
+                    @foreach (var dayData in QuestionsAskedPerDay.OrderBy(d => d.Key))
+                    {
+                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 5));
+                        <div class="chart-item">
+                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--mud-palette-secondary);">
+                                <span class="chart-value">@dayData.Value</span>
+                            </div>
+                            <div class="chart-label">@FormatDayLabel(dayData.Key)</div>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
+            
+            <!-- Player Accuracy Chart -->
+            <MudPaper Elevation="0" Class="pa-3" Outlined>
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Player Accuracy Comparison</MudText>
+                <div class="chart-container accuracy-chart">
+                    @foreach (var player in Players.Take(5))
+                    {
+                        var accuracy = (double)player.TotalCorrectAnswers / (Math.Max(1, player.GamesPlayed) * 10);
+                        var barWidth = Math.Max(20, Math.Min(100, accuracy * 100));
+                        <div class="accuracy-item">
+                            <div class="accuracy-label">@player.Initials</div>
+                            <div class="accuracy-bar-container">
+                                <div class="accuracy-bar" style="width: @(barWidth)%;">
+                                    <span>@($"{accuracy:P0}")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </MudPaper>
         }
         
         <div class="d-flex justify-center mt-3">
@@ -129,6 +251,80 @@
     .table-responsive {
         overflow-x: auto;
         width: 100%;
+    }
+    
+    .chart-container {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 140px;
+        gap: 8px;
+    }
+    
+    .chart-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 40px;
+    }
+    
+    .chart-bar {
+        width: 30px;
+        border-radius: 4px 4px 0 0;
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+    }
+    
+    .chart-value {
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        padding: 2px;
+    }
+    
+    .chart-label {
+        font-size: 10px;
+        margin-top: 4px;
+        text-align: center;
+    }
+    
+    .accuracy-chart {
+        flex-direction: column;
+        height: auto;
+        align-items: stretch;
+    }
+    
+    .accuracy-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .accuracy-label {
+        flex: 0 0 40px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .accuracy-bar-container {
+        flex: 1;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 4px;
+        overflow: hidden;
+        height: 24px;
+    }
+    
+    .accuracy-bar {
+        background-color: var(--mud-palette-primary);
+        height: 100%;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        padding-left: 8px;
+        color: white;
+        font-size: 12px;
     }
     
     @@media (max-width: 600px) {
@@ -162,6 +358,18 @@
             font-size: 1.1rem !important;
             margin-bottom: 0.5rem !important;
         }
+        
+        .chart-container {
+            height: 100px;
+        }
+        
+        .chart-item {
+            width: 30px;
+        }
+        
+        .chart-bar {
+            width: 20px;
+        }
     }
 </style>
 
@@ -169,6 +377,18 @@
     private bool Loading { get; set; } = true;
     private string? ErrorMessage { get; set; }
     private List<Player> Players { get; set; } = new List<Player>();
+    private List<GameSession> RecentGames { get; set; } = new List<GameSession>();
+    
+    // Global statistics
+    private int TotalGamesPlayed => Players.Sum(p => p.GamesPlayed);
+    private int TotalQuestionsAsked => TotalGamesPlayed * 20; // 10 questions per player, 2 players per game
+    private int TotalCorrectAnswers => Players.Sum(p => p.TotalCorrectAnswers);
+    private double OverallAccuracy => TotalQuestionsAsked > 0 ? (double)TotalCorrectAnswers / TotalQuestionsAsked : 0;
+    private string AverageGameDuration => CalculateAverageGameDuration();
+    
+    // Daily statistics
+    private Dictionary<DateTime, int> GamesPlayedPerDay { get; set; } = new Dictionary<DateTime, int>();
+    private Dictionary<DateTime, int> QuestionsAskedPerDay { get; set; } = new Dictionary<DateTime, int>();
     
     protected override async Task OnInitializedAsync()
     {
@@ -197,6 +417,13 @@
                     player.Initials, player.GamesPlayed, player.LastPlayed);
             }
             
+            // Get recent game sessions
+            RecentGames = await GameSessionService.GetRecentGameSessionsAsync(null, 50);
+            Logger.LogInformation("Retrieved {Count} recent game sessions", RecentGames.Count);
+            
+            // Calculate per-day statistics
+            CalculateDailyStatistics();
+            
             // Sort and rank players by total score
             Players = allPlayers
                 .OrderByDescending(p => p.TotalScore)
@@ -216,6 +443,76 @@
             ErrorMessage = $"Failed to load leaderboard: {ex.Message}";
             Loading = false;
         }
+    }
+    
+    // Calculate daily statistics
+    private void CalculateDailyStatistics()
+    {
+        GamesPlayedPerDay.Clear();
+        QuestionsAskedPerDay.Clear();
+        
+        // Default data for the last 7 days if there's no actual data
+        var today = DateTime.Today;
+        for (int i = 6; i >= 0; i--)
+        {
+            var day = today.AddDays(-i);
+            GamesPlayedPerDay[day] = 0;
+            QuestionsAskedPerDay[day] = 0;
+        }
+        
+        // Process real data from game sessions
+        foreach (var game in RecentGames.Where(g => g.EndTime.HasValue))
+        {
+            var gameDate = game.EndTime!.Value.Date;
+            
+            // Add or update games per day
+            if (GamesPlayedPerDay.ContainsKey(gameDate))
+                GamesPlayedPerDay[gameDate]++;
+            else
+                GamesPlayedPerDay[gameDate] = 1;
+            
+            // Add or update questions per day (20 questions per game - 10 for each player)
+            if (QuestionsAskedPerDay.ContainsKey(gameDate))
+                QuestionsAskedPerDay[gameDate] += 20;
+            else
+                QuestionsAskedPerDay[gameDate] = 20;
+        }
+        
+        // Keep only the 7 most recent days with data
+        GamesPlayedPerDay = GamesPlayedPerDay
+            .OrderByDescending(d => d.Key)
+            .Take(7)
+            .ToDictionary(d => d.Key, d => d.Value);
+            
+        QuestionsAskedPerDay = QuestionsAskedPerDay
+            .OrderByDescending(d => d.Key)
+            .Take(7)
+            .ToDictionary(d => d.Key, d => d.Value);
+    }
+    
+    // Calculate average game duration
+    private string CalculateAverageGameDuration()
+    {
+        if (RecentGames.Count == 0)
+            return "0:00";
+            
+        var completedGames = RecentGames.Where(g => g.StartTime.HasValue && g.EndTime.HasValue).ToList();
+        if (completedGames.Count == 0)
+            return "0:00";
+            
+        var totalDuration = completedGames.Sum(g => (g.EndTime!.Value - g.StartTime!.Value).TotalSeconds);
+        var averageSeconds = totalDuration / completedGames.Count;
+        
+        var minutes = (int)(averageSeconds / 60);
+        var seconds = (int)(averageSeconds % 60);
+        
+        return $"{minutes}:{seconds:00}";
+    }
+    
+    // Format date for chart labels
+    private string FormatDayLabel(DateTime date)
+    {
+        return date.ToString("MM/dd");
     }
     
     // Helper method to get color for player rank
