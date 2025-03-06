@@ -43,13 +43,16 @@
                               TextChanged="(s) => OnTextChanged(s, 2)" />
             </div>
             
-            <MudText Typo="Typo.body2" Class="mb-3">
+            <MudText Typo="Typo.body2" Class="mb-3 d-none d-sm-block">
                 Enter 3-letter initials for each player to begin. Players will share the same screen during the quiz.
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-2 d-block d-sm-none">
+                Enter 3-letter initials for each player.
             </MudText>
 
             @if (!IsFormValid)
             {
-                <MudAlert Severity="Severity.Warning" Class="mt-2 mb-2">
+                <MudAlert Severity="Severity.Warning" Class="mt-2 mb-2" Dense="true">
                     @if (string.IsNullOrWhiteSpace(Player1Initials))
                     {
                         <div>Player 1 initials required.</div>
@@ -92,7 +95,7 @@
         </MudCardActions>
     </MudCard>
     
-    <MudPaper Elevation="0" Class="mt-4 pa-3" Style="width: 100%; max-width: 450px;">
+    <MudPaper Elevation="0" Class="mt-4 pa-3 d-none d-sm-block" Style="width: 100%; max-width: 450px;">
         <MudText Typo="Typo.h6" Class="mb-2">Player Controls:</MudText>
         <div class="d-flex flex-column flex-sm-row gap-2 align-center">
             <div>
@@ -103,16 +106,32 @@
             </div>
         </div>
     </MudPaper>
+    
+    <MudPaper Elevation="0" Class="mt-2 pa-2 d-block d-sm-none" Style="width: 100%; max-width: 450px;">
+        <div class="d-flex flex-column gap-1">
+            <MudText Typo="Typo.caption"><b>P1:</b> Keys 1-4</MudText>
+            <MudText Typo="Typo.caption"><b>P2:</b> Keys 6-9</MudText>
+        </div>
+    </MudPaper>
 </MudContainer>
 
 <style>
     @@media (max-width: 600px) {
         .mud-typography-h3 {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
         }
         
         .mud-typography-h5 {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
+        }
+        
+        .mud-container {
+            padding: 0.5rem !important;
+            min-height: 100vh !important;
+        }
+        
+        .mud-card {
+            margin-top: 0 !important;
         }
     }
 </style>

@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
 using PoFunQuiz.Core.Configuration;
+using System.Linq;
 
 namespace PoFunQuiz.Infrastructure.Services
 {
@@ -443,21 +444,63 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                 }
             };
             
-            // Use random ones from our predefined list to fill up to the count
+            // Ensure we don't request more questions than we have available
+            count = Math.Min(count, questions.Length);
+            
+            // Create a shuffled list of indices to ensure we get unique questions
             var random = new Random();
+            var indices = Enumerable.Range(0, questions.Length).ToList();
+            
+            // Fisher-Yates shuffle algorithm to randomize the indices
+            for (int i = indices.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(i + 1);
+                (indices[i], indices[j]) = (indices[j], indices[i]);
+            }
+            
+            // Take the first 'count' indices to get unique questions
             for (int i = 0; i < count; i++)
             {
-                var question = questions[random.Next(questions.Length)];
+                var questionIndex = indices[i];
+                var question = questions[questionIndex];
+                
+                // Create a copy of the options
+                var options = new List<string>(question.Options);
+                
+                // Get the correct answer
+                var correctAnswer = options[question.CorrectIndex];
+                
+                // Randomize the order of options
+                var randomizedOptions = new List<string>();
+                var newCorrectIndex = 0;
+                
+                // Shuffle the options
+                while (options.Count > 0)
+                {
+                    int index = random.Next(options.Count);
+                    string option = options[index];
+                    
+                    // If this is the correct answer, note its new position
+                    if (option == correctAnswer)
+                    {
+                        newCorrectIndex = randomizedOptions.Count;
+                    }
+                    
+                    randomizedOptions.Add(option);
+                    options.RemoveAt(index);
+                }
+                
                 fallbackQuestions.Add(new QuizQuestion 
                 { 
                     Text = question.Text,
-                    Options = new List<string>(question.Options),
-                    CorrectOptionIndex = question.CorrectIndex,
+                    Options = randomizedOptions,
+                    CorrectOptionIndex = newCorrectIndex,
                     Category = question.Category,
                     Difficulty = "Medium"
                 });
             }
             
+            _logger.LogInformation("Generated {Count} unique fallback questions", fallbackQuestions.Count);
             return fallbackQuestions;
         }
     }

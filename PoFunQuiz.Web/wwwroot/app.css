@@ -151,3 +151,75 @@ h1:focus {
         font-size: 1.2rem !important;
     }
 }
+
+/* Enhanced mobile responsiveness for portrait mode */
+@media (max-width: 600px) {
+    /* General typography adjustments */
+    .mud-typography-h3 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .mud-typography-h4 {
+        font-size: 1.3rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .mud-typography-h5 {
+        font-size: 1.1rem !important;
+    }
+    
+    .mud-typography-h6 {
+        font-size: 1rem !important;
+    }
+    
+    .mud-typography-body1 {
+        font-size: 0.9rem !important;
+    }
+    
+    .mud-typography-body2 {
+        font-size: 0.8rem !important;
+    }
+    
+    /* Container and spacing adjustments */
+    .mud-container {
+        padding: 0.5rem !important;
+    }
+    
+    .mud-card-content {
+        padding: 8px !important;
+    }
+    
+    .mud-card-actions {
+        padding: 8px !important;
+    }
+    
+    /* Game board specific adjustments */
+    .question-container {
+        min-height: 200px !important;
+        padding: 8px !important;
+    }
+    
+    /* Reduce padding and margins throughout */
+    .pa-4 {
+        padding: 8px !important;
+    }
+    
+    .ma-4 {
+        margin: 8px !important;
+    }
+    
+    .mb-4 {
+        margin-bottom: 8px !important;
+    }
+    
+    .mt-4 {
+        margin-top: 8px !important;
+    }
+    
+    /* Ensure content fits in viewport height */
+    .game-container, .question-container {
+        max-height: calc(100vh - 120px) !important;
+        overflow-y: auto !important;
+    }
+}

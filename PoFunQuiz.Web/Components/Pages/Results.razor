@@ -16,13 +16,13 @@
 else
 {
     <MudContainer MaxWidth="MaxWidth.Large" Class="py-6">
-        <MudPaper Elevation="3" Class="pa-6">
-            <MudText Typo="Typo.h3" Align="Align.Center" Class="mb-6">Game Results</MudText>
+        <MudPaper Elevation="3" Class="pa-4 pa-sm-6">
+            <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Game Results</MudText>
             
             @if (WinnerDeclared)
             {
-                <MudAlert Severity="Severity.Success" Class="my-4" Variant="Variant.Filled">
-                    <MudText Typo="Typo.h5">
+                <MudAlert Severity="Severity.Success" Class="my-3" Variant="Variant.Filled">
+                    <MudText Typo="Typo.h6">
                         @if (IsTie)
                         {
                             <span>It's a Tie!</span>
@@ -35,35 +35,35 @@ else
                 </MudAlert>
             }
             
-            <MudGrid Class="mt-4">
+            <MudGrid Class="mt-3">
                 <!-- Player 1 Results -->
                 <MudItem xs="12" md="6">
-                    <MudCard Class="pa-4" Style="height: 100%;">
+                    <MudCard Class="pa-2 pa-sm-4" Style="height: 100%;">
                         <MudCardHeader>
                             <CardHeaderContent>
                                 <div class="d-flex align-center">
-                                    <MudAvatar Color="Color.Primary" Class="mr-2">
+                                    <MudAvatar Color="Color.Primary" Class="mr-2" Size="Size.Small">
                                         @GameState.CurrentGame.Player1.Initials
                                     </MudAvatar>
-                                    <MudText Typo="Typo.h5">Player 1</MudText>
+                                    <MudText Typo="Typo.h6">Player 1</MudText>
                                 </div>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudList T="string">
+                            <MudList T="string" Dense="true">
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.QuestionAnswer">
-                                    <MudText>Questions Answered: @GetQuestionsAnswered(1) of 10</MudText>
+                                    <MudText Typo="Typo.body2">Questions: @GetQuestionsAnswered(1) of 10</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Check">
-                                    <MudText>Correct Answers: @GetCorrectAnswers(1)</MudText>
+                                    <MudText Typo="Typo.body2">Correct: @GetCorrectAnswers(1)</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Close">
-                                    <MudText>Incorrect Answers: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</MudText>
+                                    <MudText Typo="Typo.body2">Incorrect: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Timer">
-                                    <MudText>Time Bonus: +@GetTimeBonus(1) points</MudText>
+                                    <MudText Typo="Typo.body2">Time Bonus: +@GetTimeBonus(1) points</MudText>
                                 </MudListItem>
-                                <MudDivider Class="my-3" />
+                                <MudDivider Class="my-2" />
                                 <MudListItem T="string">
                                     <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player1Score points</MudText>
                                 </MudListItem>
@@ -74,32 +74,32 @@ else
                 
                 <!-- Player 2 Results -->
                 <MudItem xs="12" md="6">
-                    <MudCard Class="pa-4" Style="height: 100%;">
+                    <MudCard Class="pa-2 pa-sm-4" Style="height: 100%;">
                         <MudCardHeader>
                             <CardHeaderContent>
                                 <div class="d-flex align-center">
-                                    <MudAvatar Color="Color.Secondary" Class="mr-2">
+                                    <MudAvatar Color="Color.Secondary" Class="mr-2" Size="Size.Small">
                                         @GameState.CurrentGame.Player2.Initials
                                     </MudAvatar>
-                                    <MudText Typo="Typo.h5">Player 2</MudText>
+                                    <MudText Typo="Typo.h6">Player 2</MudText>
                                 </div>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
-                            <MudList T="string">
+                            <MudList T="string" Dense="true">
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.QuestionAnswer">
-                                    <MudText>Questions Answered: @GetQuestionsAnswered(2) of 10</MudText>
+                                    <MudText Typo="Typo.body2">Questions: @GetQuestionsAnswered(2) of 10</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Check">
-                                    <MudText>Correct Answers: @GetCorrectAnswers(2)</MudText>
+                                    <MudText Typo="Typo.body2">Correct: @GetCorrectAnswers(2)</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Close">
-                                    <MudText>Incorrect Answers: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</MudText>
+                                    <MudText Typo="Typo.body2">Incorrect: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</MudText>
                                 </MudListItem>
                                 <MudListItem T="string" Icon="@Icons.Material.Filled.Timer">
-                                    <MudText>Time Bonus: +@GetTimeBonus(2) points</MudText>
+                                    <MudText Typo="Typo.body2">Time Bonus: +@GetTimeBonus(2) points</MudText>
                                 </MudListItem>
-                                <MudDivider Class="my-3" />
+                                <MudDivider Class="my-2" />
                                 <MudListItem T="string">
                                     <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player2Score points</MudText>
                                 </MudListItem>
@@ -110,42 +110,45 @@ else
                 
                 <!-- Game Statistics -->
                 <MudItem xs="12">
-                    <MudPaper Class="pa-4 mt-4" Elevation="0" Outlined>
-                        <MudText Typo="Typo.subtitle1">Game Statistics</MudText>
+                    <MudPaper Class="pa-2 pa-sm-4 mt-3" Elevation="0" Outlined>
+                        <MudText Typo="Typo.subtitle2">Game Statistics</MudText>
                         <MudGrid>
                             <MudItem xs="6" md="3">
-                                <MudText Typo="Typo.body2">Game Duration: @GetGameDuration()</MudText>
+                                <MudText Typo="Typo.caption">Game Duration: @GetGameDuration()</MudText>
                             </MudItem>
                             <MudItem xs="6" md="3">
-                                <MudText Typo="Typo.body2">Total Questions: 20</MudText>
+                                <MudText Typo="Typo.caption">Total Questions: 20</MudText>
                             </MudItem>
                             <MudItem xs="6" md="3">
-                                <MudText Typo="Typo.body2">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</MudText>
+                                <MudText Typo="Typo.caption">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</MudText>
                             </MudItem>
                             <MudItem xs="6" md="3">
-                                <MudText Typo="Typo.body2">Game ID: @GameState.CurrentGame.GameId.Substring(0, 8)</MudText>
+                                <MudText Typo="Typo.caption">Game ID: @GameState.CurrentGame.GameId.Substring(0, 8)</MudText>
                             </MudItem>
                         </MudGrid>
                     </MudPaper>
                 </MudItem>
             </MudGrid>
             
-            <div class="d-flex justify-center mt-6">
+            <div class="d-flex flex-column flex-sm-row justify-center mt-4">
                 <MudButton Variant="Variant.Filled" 
                         Color="Color.Primary" 
-                        Class="mx-2"
+                        Class="mx-1 mb-2 mb-sm-0"
+                        Size="Size.Small"
                         OnClick="@PlayAgain">
                     PLAY AGAIN
                 </MudButton>
                 <MudButton Variant="Variant.Outlined" 
                         Color="Color.Primary" 
-                        Class="mx-2"
+                        Class="mx-1 mb-2 mb-sm-0"
+                        Size="Size.Small"
                         Href="/leaderboard">
                     VIEW LEADERBOARD
                 </MudButton>
                 <MudButton Variant="Variant.Text" 
                         Color="Color.Primary" 
-                        Class="mx-2"
+                        Class="mx-1"
+                        Size="Size.Small"
                         Href="/">
                     MAIN MENU
                 </MudButton>
@@ -269,3 +272,24 @@ else
         await PlayerService.UpdatePlayerAsync(player);
     }
 }
+
+<style>
+    @@media (max-width: 600px) {
+        .mud-container {
+            padding: 0.5rem !important;
+        }
+        
+        .mud-card-content {
+            padding: 8px !important;
+        }
+        
+        .mud-card-header {
+            padding: 8px !important;
+        }
+        
+        .mud-list-item {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+        }
+    }
+</style>

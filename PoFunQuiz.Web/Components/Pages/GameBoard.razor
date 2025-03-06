@@ -14,214 +14,282 @@
 
 <PageTitle>PoFunQuiz - Game</PageTitle>
 
-@if (!isConnected)
-{
-    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
-        <MudText Typo="Typo.h4" Class="mb-4">Connection Lost!</MudText>
-        <MudText Class="mb-4">Attempting to reconnect... (@reconnectCountdown)</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReloadPage">Reload Page</MudButton>
-    </MudContainer>
-}
-else if (GameState.CurrentGame == null || 
-     GameState.CurrentGame.Player1Questions == null || 
-     GameState.CurrentGame.Player2Questions == null)
-{
-    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
-        <MudText Typo="Typo.h4" Class="mb-4">Game session not ready.</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
-    </MudContainer>
-}
-else
-{
-    <div @onkeydown="HandleKeyDown" tabindex="0" @ref="gameContainer" id="gameContainer" @onclick="FocusGameContainer" class="game-container">
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-0 px-2">
-            <!-- Game Timer -->
-            <MudPaper Elevation="3" Class="d-flex justify-center align-center pa-2 pa-sm-3 mb-2 mb-sm-3" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
-                <MudText Typo="Typo.h5" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
-                    Time: @TimeRemaining s
-                </MudText>
-            </MudPaper>
-            
-            <MudGrid Class="pa-0 ma-0 game-grid" Style="height: auto; min-height: 85vh;">
-                <!-- Player 1 Side -->
-                <MudItem xs="12" md="6" Class="pa-1 pa-sm-2 player-column" Style="height: 100%;">
-                    <MudPaper Class="pa-2 pa-sm-4" Style="height: 100%; position: relative; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" Elevation="3">
-                        <div class="d-flex justify-space-between align-center mb-2 mb-sm-4">
-                            <div class="d-flex align-center">
-                                <MudAvatar Color="Color.Primary" Style="margin-right: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                                    @GameState.CurrentGame.Player1.Initials
-                                </MudAvatar>
-                                <MudText Typo="Typo.h5">Player 1</MudText>
-                            </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: bold;">Score: @Player1Score</MudText>
-                        </div>
-                        
-                        <MudProgressLinear Value="@((Player1QuestionIndex + 1) * 10)" Color="Color.Primary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
-                        <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
-                            @if (Player1HasFinished)
-                            {
-                                <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
-                            }
-                            else
-                            {
-                                <text>Question @(Player1QuestionIndex + 1) of 10</text>
-                            }
-                        </MudText>
-                        
-                        @if (Player1HasFinished)
-                        {
-                            <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
-                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Large" />
-                                <MudText Typo="Typo.h4" Color="Color.Success" Class="mt-2 mt-sm-4">Quiz Complete!</MudText>
-                                <MudText Typo="Typo.h5" Class="mt-2 mt-sm-4">Time Bonus: +@Player1TimeBonus points</MudText>
-                                <MudText Typo="Typo.h5">Final Score: @(Player1Score + Player1TimeBonus)</MudText>
-                                
-                                @if (Player2HasFinished)
-                                {
-                                    <div class="d-flex flex-column flex-sm-row mt-2 mt-sm-4">
-                                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/results" Class="mx-1 mx-sm-2 mb-2 mb-sm-0">
-                                            View Results
-                                        </MudButton>
-                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1 mx-sm-2">
-                                            Return to Main Menu
-                                        </MudButton>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <MudText Typo="Typo.body1" Class="mt-2 mt-sm-4">Waiting for other player to finish...</MudText>
-                                }
-                            </div>
-                        }
-                        else if (Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
-                        {
-                            <MudPaper Elevation="0" Class="question-container pa-4 mb-4" Style="background-color: #f5f5f5; border-radius: 8px;">
-                                <MudText Typo="Typo.h6" Class="mb-4 question-text" Style="font-weight: 500; color: #333;">
-                                    @GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Text
-                                </MudText>
-                                
-                                <div class="pa-0" Style="margin-top: 16px;">
-                                    @for (var i = 0; i < GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options.Count; i++)
-                                    {
-                                        var optionIndex = i;
-                                        var option = GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options[i];
-                                        var optionNumber = i + 1;
-                                        <div class="answer-option @GetOptionClass(1, optionIndex)" @onclick="() => HandlePlayerAnswer(1, optionIndex)">
-                                            <div class="d-flex align-center pa-2 w-100">
-                                                <MudAvatar Size="Size.Small" Color="Color.Primary" Style="margin-right: 12px;">@optionNumber</MudAvatar>
-                                                <MudText Typo="Typo.body1">@option</MudText>
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                                
-                                @if (Player1FeedbackVisible)
-                                {
-                                    <MudAlert Severity="@(Player1LastAnswerCorrect ? Severity.Success : Severity.Error)" 
-                                            Class="mt-4" Style="border-radius: 6px;">
-                                        @(Player1LastAnswerCorrect ? "Correct!" : "Incorrect!")
-                                    </MudAlert>
-                                }
-                            </MudPaper>
-                        }
-                        
-                        <MudPaper Class="pa-1 pa-sm-2 d-flex justify-center" Style="position: absolute; bottom: 8px; left: 8px; right: 8px; border-radius: 6px; background-color: #f0f0f0;">
-                            <MudText Typo="Typo.caption" Class="control-hint">Use keys 1-4 or tap to answer</MudText>
-                        </MudPaper>
-                    </MudPaper>
-                </MudItem>
+<div class="game-page">
+    @if (!isConnected)
+    {
+        <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+            <MudText Typo="Typo.h4" Class="mb-4">Connection Lost!</MudText>
+            <MudText Class="mb-4">Attempting to reconnect... (@reconnectCountdown)</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReloadPage">Reload Page</MudButton>
+        </MudContainer>
+    }
+    else if (GameState.CurrentGame == null || 
+         GameState.CurrentGame.Player1Questions == null || 
+         GameState.CurrentGame.Player2Questions == null)
+    {
+        <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+            <MudText Typo="Typo.h4" Class="mb-4">Game session not ready.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
+        </MudContainer>
+    }
+    else
+    {
+        <div @onkeydown="HandleKeyDown" tabindex="0" @ref="gameContainer" id="gameContainer" @onclick="FocusGameContainer" class="game-container">
+            <MudContainer MaxWidth="MaxWidth.Large" Class="pa-2 mt-2">
+                <!-- Game Timer -->
+                <MudPaper Elevation="3" Class="d-flex justify-center align-center pa-1 mb-2" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
+                    <MudText Typo="Typo.body1" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
+                        Time: @TimeRemaining s
+                    </MudText>
+                </MudPaper>
                 
-                <!-- Player 2 Side -->
-                <MudItem xs="12" md="6" Class="pa-1 pa-sm-2 player-column" Style="height: 100%;">
-                    <MudPaper Class="pa-2 pa-sm-4" Style="height: 100%; position: relative; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" Elevation="3">
-                        <div class="d-flex justify-space-between align-center mb-2 mb-sm-4">
-                            <div class="d-flex align-center">
-                                <MudAvatar Color="Color.Secondary" Style="margin-right: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-                                    @GameState.CurrentGame.Player2.Initials
-                                </MudAvatar>
-                                <MudText Typo="Typo.h5">Player 2</MudText>
+                <!-- Global Controls - Results and Menu buttons -->
+                @if (Player1HasFinished && Player2HasFinished)
+                {
+                    <MudPaper Elevation="2" Class="d-flex justify-center align-center pa-2 mb-2" Style="border-radius: 8px;">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/results" Class="mx-1" Size="Size.Small">
+                            Results
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1" Size="Size.Small">
+                            Menu
+                        </MudButton>
+                    </MudPaper>
+                }
+                
+                <MudGrid Class="pa-0 ma-0 game-grid" Style="height: auto;">
+                    <!-- Player 1 Side -->
+                    <MudItem xs="12" md="6" Class="pa-1 player-column" Style="height: 100%;">
+                        <MudPaper Class="pa-1" Style="height: 100%; position: relative; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" Elevation="2">
+                            <div class="d-flex justify-space-between align-center mb-1">
+                                <div class="d-flex align-center">
+                                    <MudAvatar Color="Color.Primary" Style="margin-right: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" Size="Size.Small">
+                                        @GameState.CurrentGame.Player1.Initials
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.body2">P1</MudText>
+                                </div>
+                                <div class="score-container">
+                                    <MudText Typo="Typo.body2" Style="font-weight: bold;">@Player1Score</MudText>
+                                </div>
                             </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: bold;">Score: @Player2Score</MudText>
-                        </div>
-                        
-                        <MudProgressLinear Value="@((Player2QuestionIndex + 1) * 10)" Color="Color.Secondary" Class="my-4" Style="height: 8px; border-radius: 4px;" />
-                        <MudText Typo="Typo.body1" Class="mud-text-secondary mb-2">
-                            @if (Player2HasFinished)
-                            {
-                                <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
-                            }
-                            else
-                            {
-                                <text>Question @(Player2QuestionIndex + 1) of 10</text>
-                            }
-                        </MudText>
-                        
-                        @if (Player2HasFinished)
-                        {
-                            <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
-                                <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Large" />
-                                <MudText Typo="Typo.h4" Color="Color.Success" Class="mt-2 mt-sm-4">Quiz Complete!</MudText>
-                                <MudText Typo="Typo.h5" Class="mt-2 mt-sm-4">Time Bonus: +@Player2TimeBonus points</MudText>
-                                <MudText Typo="Typo.h5">Final Score: @(Player2Score + Player2TimeBonus)</MudText>
-                                
+                            
+                            <MudProgressLinear Value="@((Player1QuestionIndex + 1) * 10)" Color="Color.Primary" Class="my-1" Style="height: 4px; border-radius: 2px;" />
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">
                                 @if (Player1HasFinished)
                                 {
-                                    <div class="d-flex flex-column flex-sm-row mt-2 mt-sm-4">
-                                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/results" Class="mx-1 mx-sm-2 mb-2 mb-sm-0">
-                                            View Results
-                                        </MudButton>
-                                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1 mx-sm-2">
-                                            Return to Main Menu
-                                        </MudButton>
-                                    </div>
+                                    <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
                                 }
                                 else
                                 {
-                                    <MudText Typo="Typo.body1" Class="mt-2 mt-sm-4">Waiting for other player to finish...</MudText>
+                                    <text>Q @(Player1QuestionIndex + 1)/10</text>
                                 }
-                            </div>
-                        }
-                        else if (Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
-                        {
-                            <MudPaper Elevation="0" Class="question-container pa-4 mb-4" Style="background-color: #f5f5f5; border-radius: 8px;">
-                                <MudText Typo="Typo.h6" Class="mb-4 question-text" Style="font-weight: 500; color: #333;">
-                                    @GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Text
-                                </MudText>
-                                
-                                <div class="pa-0" Style="margin-top: 16px;">
-                                    @for (var i = 0; i < GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options.Count; i++)
+                            </MudText>
+                            
+                            @if (Player1HasFinished)
+                            {
+                                <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body1" Color="Color.Success" Class="mt-1">Quiz Complete!</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-1">Time Bonus: +@Player1TimeBonus</MudText>
+                                    <MudText Typo="Typo.body2">Final: @(Player1Score + Player1TimeBonus)</MudText>
+                                    
+                                    @if (Player2HasFinished)
                                     {
-                                        var optionIndex = i;
-                                        var option = GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options[i];
-                                        var optionNumber = i + 6; // Player 2 uses keys 6-9
-                                        <div class="answer-option @GetOptionClass(2, optionIndex)" @onclick="() => HandlePlayerAnswer(2, optionIndex)">
-                                            <div class="d-flex align-center pa-2 w-100">
-                                                <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="margin-right: 12px;">@optionNumber</MudAvatar>
-                                                <MudText Typo="Typo.body1">@option</MudText>
-                                            </div>
-                                        </div>
+                                        <MudText Typo="Typo.caption" Class="mt-1">Both players finished!</MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Class="mt-1">Waiting for P2...</MudText>
                                     }
                                 </div>
+                            }
+                            else if (Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
+                            {
+                                <MudPaper Elevation="0" Class="question-container pa-2 mb-2" Style="background-color: #f5f5f5; border-radius: 6px; min-height: 60px; overflow-y: auto; max-height: 120px;">
+                                    <MudText Typo="Typo.body2" Class="mb-1 question-text" Style="font-weight: 500; color: #333;">
+                                        @GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Text
+                                    </MudText>
+                                </MudPaper>
                                 
-                                @if (Player2FeedbackVisible)
-                                {
-                                    <MudAlert Severity="@(Player2LastAnswerCorrect ? Severity.Success : Severity.Error)" 
-                                            Class="mt-4" Style="border-radius: 6px;">
-                                        @(Player2LastAnswerCorrect ? "Correct!" : "Incorrect!")
-                                    </MudAlert>
-                                }
-                            </MudPaper>
-                        }
-                        
-                        <MudPaper Class="pa-1 pa-sm-2 d-flex justify-center" Style="position: absolute; bottom: 8px; left: 8px; right: 8px; border-radius: 6px; background-color: #f0f0f0;">
-                            <MudText Typo="Typo.caption" Class="control-hint">Use keys 6-9 or tap to answer</MudText>
+                                <MudList T="string" Dense="true" disableGutters="true" Class="pa-0 answer-list">
+                                    @foreach (var (option, index) in GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options.Select((o, i) => (o, i)))
+                                    {
+                                        var optionIndex = index;
+                                        var isSelected = Player1Selections.Contains(optionIndex);
+                                        <MudListItem T="string" 
+                                                   Class="@(isSelected ? "selected-option answer-option" : "answer-option")"
+                                                   Style="border-radius: 4px; margin-bottom: 4px; transition: all 0.2s ease; padding: 4px 6px;"
+                                                   OnClick="() => HandlePlayerAnswer(1, optionIndex)">
+                                            <div class="d-flex align-center">
+                                                <MudAvatar Color="Color.Primary" Size="Size.Small" Style="margin-right: 8px; height: 24px; width: 24px; min-width: 24px;">@(optionIndex + 1)</MudAvatar>
+                                                <MudText Typo="Typo.caption" Style="overflow: hidden; text-overflow: ellipsis;">@option</MudText>
+                                            </div>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                                
+                                <MudText Typo="Typo.caption" Class="mt-1 d-block d-md-none" Style="color: #666;">
+                                    Keys 1-4
+                                </MudText>
+                            }
                         </MudPaper>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudContainer>
-    </div>
-}
+                    </MudItem>
+                    
+                    <!-- Player 2 Side -->
+                    <MudItem xs="12" md="6" Class="pa-1 player-column" Style="height: 100%;">
+                        <MudPaper Class="pa-1" Style="height: 100%; position: relative; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" Elevation="2">
+                            <div class="d-flex justify-space-between align-center mb-1">
+                                <div class="d-flex align-center">
+                                    <MudAvatar Color="Color.Secondary" Style="margin-right: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" Size="Size.Small">
+                                        @GameState.CurrentGame.Player2.Initials
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.body2">P2</MudText>
+                                </div>
+                                <div class="score-container">
+                                    <MudText Typo="Typo.body2" Style="font-weight: bold;">@Player2Score</MudText>
+                                </div>
+                            </div>
+                            
+                            <MudProgressLinear Value="@((Player2QuestionIndex + 1) * 10)" Color="Color.Secondary" Class="my-1" Style="height: 4px; border-radius: 2px;" />
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">
+                                @if (Player2HasFinished)
+                                {
+                                    <span style="font-weight: bold; color: #2e7d32;">DONE!</span>
+                                }
+                                else
+                                {
+                                    <text>Q @(Player2QuestionIndex + 1)/10</text>
+                                }
+                            </MudText>
+                            
+                            @if (Player2HasFinished)
+                            {
+                                <div class="d-flex flex-column align-center justify-center" style="height: 80%;">
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small" />
+                                    <MudText Typo="Typo.body1" Color="Color.Success" Class="mt-1">Quiz Complete!</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-1">Time Bonus: +@Player2TimeBonus</MudText>
+                                    <MudText Typo="Typo.body2">Final: @(Player2Score + Player2TimeBonus)</MudText>
+                                    
+                                    @if (Player1HasFinished)
+                                    {
+                                        <MudText Typo="Typo.caption" Class="mt-1">Both players finished!</MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Class="mt-1">Waiting for P1...</MudText>
+                                    }
+                                </div>
+                            }
+                            else if (Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
+                            {
+                                <MudPaper Elevation="0" Class="question-container pa-2 mb-2" Style="background-color: #f5f5f5; border-radius: 6px; min-height: 60px; overflow-y: auto; max-height: 120px;">
+                                    <MudText Typo="Typo.body2" Class="mb-1 question-text" Style="font-weight: 500; color: #333;">
+                                        @GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Text
+                                    </MudText>
+                                </MudPaper>
+                                
+                                <MudList T="string" Dense="true" disableGutters="true" Class="pa-0 answer-list">
+                                    @foreach (var (option, index) in GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options.Select((o, i) => (o, i)))
+                                    {
+                                        var optionIndex = index;
+                                        var isSelected = Player2Selections.Contains(optionIndex);
+                                        <MudListItem T="string" 
+                                                   Class="@(isSelected ? "selected-option answer-option" : "answer-option")"
+                                                   Style="border-radius: 4px; margin-bottom: 4px; transition: all 0.2s ease; padding: 4px 6px;"
+                                                   OnClick="() => HandlePlayerAnswer(2, optionIndex)">
+                                            <div class="d-flex align-center">
+                                                <MudAvatar Color="Color.Secondary" Size="Size.Small" Style="margin-right: 8px; height: 24px; width: 24px; min-width: 24px;">@(optionIndex + 6)</MudAvatar>
+                                                <MudText Typo="Typo.caption" Style="overflow: hidden; text-overflow: ellipsis;">@option</MudText>
+                                            </div>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                                
+                                <MudText Typo="Typo.caption" Class="mt-1 d-block d-md-none" Style="color: #666;">
+                                    Keys 6-9
+                                </MudText>
+                            }
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudContainer>
+        </div>
+    }
+</div>
+
+<style>
+    .game-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 20px;
+    }
+    
+    .game-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    
+    .answer-list {
+        margin-bottom: 10px;
+        overflow-y: auto;
+        max-height: 200px;
+    }
+    
+    .selected-option {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .score-container {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+        padding: 2px 8px;
+        min-width: 30px;
+        text-align: center;
+        margin-right: 4px;
+    }
+    
+    @@media (max-width: 768px) {
+        .game-grid {
+            display: flex;
+            flex-direction: column;
+            width: 95%;
+            margin: 0 auto !important;
+        }
+        
+        .player-column {
+            margin-bottom: 8px;
+        }
+        
+        .question-container {
+            min-height: 50px;
+            max-height: 100px;
+        }
+        
+        .answer-option {
+            padding: 3px 4px !important;
+            margin-bottom: 3px !important;
+        }
+        
+        .mud-list-item {
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
+        }
+        
+        .answer-list {
+            max-height: 160px;
+        }
+        
+        .mud-typography-body1 {
+            font-size: 0.875rem !important;
+        }
+        
+        .mud-typography-body2 {
+            font-size: 0.8125rem !important;
+        }
+    }
+</style>
 
 @code {
     private ElementReference gameContainer;

@@ -14,21 +14,22 @@
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="py-2 px-1 px-sm-4">
     <MudPaper Elevation="3" Class="pa-2 pa-sm-4">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-2">Leaderboard</MudText>
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2">Leaderboard</MudText>
         
         @if (Loading)
         {
             <div class="d-flex justify-center my-2">
-                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+                <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
             </div>
         }
         else if (ErrorMessage != null)
         {
-            <MudAlert Severity="Severity.Error" Class="my-2">@ErrorMessage</MudAlert>
+            <MudAlert Severity="Severity.Error" Class="my-2" Dense="true">@ErrorMessage</MudAlert>
             <div class="d-flex flex-column align-center">
                 <MudButton Variant="Variant.Filled" 
                          Color="Color.Primary"
                          OnClick="LoadLeaderboard"
+                         Size="Size.Small"
                          Class="my-2">
                     RETRY
                 </MudButton>
@@ -36,13 +37,13 @@
         }
         else if (Players.Count == 0)
         {
-            <MudAlert Severity="Severity.Info" Class="my-2">
+            <MudAlert Severity="Severity.Info" Class="my-2" Dense="true">
                 No player data available yet. Play some games to populate the leaderboard!
             </MudAlert>
         }
         else
         {
-            <MudText Typo="Typo.subtitle1" Class="mb-2">Top Players</MudText>
+            <MudText Typo="Typo.subtitle2" Class="mb-2">Top Players</MudText>
             
             <div class="table-responsive">
                 <MudTable Items="@Players" 
@@ -51,13 +52,14 @@
                          Bordered="false" 
                          Striped="true"
                          FixedHeader="true"
+                         Breakpoint="Breakpoint.None"
                          Class="leaderboard-table">
                     <HeaderContent>
-                        <MudTh Style="min-width: 50px;">Rank</MudTh>
-                        <MudTh Style="min-width: 70px;">Player</MudTh>
-                        <MudTh Style="min-width: 60px;">Games</MudTh>
-                        <MudTh Style="min-width: 50px;">Wins</MudTh>
-                        <MudTh Style="min-width: 60px;">Score</MudTh>
+                        <MudTh Style="min-width: 40px;">Rank</MudTh>
+                        <MudTh Style="min-width: 60px;">Player</MudTh>
+                        <MudTh Style="min-width: 50px;">Games</MudTh>
+                        <MudTh Style="min-width: 40px;">Wins</MudTh>
+                        <MudTh Style="min-width: 50px;">Score</MudTh>
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd>
@@ -86,6 +88,7 @@
                              Hover="true" 
                              Bordered="false" 
                              Striped="true"
+                             Breakpoint="Breakpoint.None"
                              Class="leaderboard-table">
                         <HeaderContent>
                             <MudTh>Rank</MudTh>
@@ -114,6 +117,7 @@
             <MudButton Variant="Variant.Filled" 
                      Color="Color.Primary" 
                      Href="/"
+                     Size="Size.Small"
                      Class="my-2">
                 BACK TO MAIN MENU
             </MudButton>
@@ -129,11 +133,34 @@
     
     @@media (max-width: 600px) {
         .leaderboard-table {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
         }
         
         .mud-table-cell {
-            padding: 8px 6px;
+            padding: 4px 3px;
+        }
+        
+        .mud-chip {
+            height: 24px;
+            font-size: 0.7rem;
+        }
+        
+        .mud-chip-icon {
+            font-size: 1rem;
+            margin-right: 2px;
+        }
+        
+        .mud-container {
+            padding: 0.5rem !important;
+        }
+        
+        .mud-paper {
+            padding: 8px !important;
+        }
+        
+        .mud-typography-h5 {
+            font-size: 1.1rem !important;
+            margin-bottom: 0.5rem !important;
         }
     }
 </style>
