@@ -187,25 +187,6 @@
                 </div>
             </MudPaper>
             
-            <!-- Player Accuracy Chart -->
-            <MudPaper Elevation="0" Class="pa-3" Outlined>
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Player Accuracy Comparison</MudText>
-                <div class="chart-container accuracy-chart">
-                    @foreach (var player in Players.Take(5))
-                    {
-                        var accuracy = (double)player.TotalCorrectAnswers / (Math.Max(1, player.GamesPlayed) * 10);
-                        var barWidth = Math.Max(20, Math.Min(100, accuracy * 100));
-                        <div class="accuracy-item">
-                            <div class="accuracy-label">@player.Initials</div>
-                            <div class="accuracy-bar-container">
-                                <div class="accuracy-bar" style="width: @(barWidth)%;">
-                                    <span>@($"{accuracy:P0}")</span>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </MudPaper>
         }
         
         <div class="d-flex justify-center mt-3">
