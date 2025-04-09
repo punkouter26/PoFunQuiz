@@ -12,7 +12,7 @@
 @inject IHostEnvironment HostEnvironment
 @inject IJSRuntime JSRuntime
 
-<PageTitle>PoFunQuiz - Leaderboard</PageTitle>
+<PageTitle>PoFunQuiz</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="py-2 px-1 px-sm-4">
     <MudPaper Elevation="3" Class="pa-2 pa-sm-4">
@@ -45,50 +45,9 @@
         }
         else
         {
-            <MudText Typo="Typo.subtitle2" Class="mb-2">Top Players</MudText>
-            
-            <div class="table-responsive">
-                <MudTable Items="@Players" 
-                         Dense="true" 
-                         Hover="true" 
-                         Bordered="false" 
-                         Striped="true"
-                         FixedHeader="true"
-                         Breakpoint="Breakpoint.None"
-                         Class="leaderboard-table">
-                    <HeaderContent>
-                        <MudTh Style="min-width: 40px;">Rank</MudTh>
-                        <MudTh Style="min-width: 60px;">Player</MudTh>
-                        <MudTh Style="min-width: 50px;">Games</MudTh>
-                        <MudTh Style="min-width: 40px;">Wins</MudTh>
-                        <MudTh Style="min-width: 50px;">Score</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>
-                            @if (context.Rank <= 3)
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" 
-                                        Color="@(context.Rank == 1 ? Color.Warning : context.Rank == 2 ? Color.Tertiary : Color.Tertiary)" 
-                                        Size="Size.Small" />
-                            }
-                            @context.Rank
-                        </MudTd>
-                        <MudTd>
-                            <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
-                        </MudTd>
-                        <MudTd>@context.GamesPlayed</MudTd>
-                        <MudTd>@context.GamesWon</MudTd>
-                        <MudTd>@context.TotalScore</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </div>
-            
-            <!-- Additional Statistics Section - Now Always Visible -->
-            <MudDivider Class="my-4" />
-            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-3">Game Statistics</MudText>
             
             <!-- Individual Player Statistics -->
-            <MudText Typo="Typo.subtitle1" Class="mt-3 mb-2">Player Performance</MudText>
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-3">Player Leaderboard & Statistics</MudText>
             <MudTable Items="@Players" 
                      Dense="true" 
                      Hover="true" 
@@ -99,16 +58,30 @@
                 <HeaderContent>
                     <MudTh>Rank</MudTh>
                     <MudTh>Player</MudTh>
+                    <MudTh>Games</MudTh>
+                    <MudTh>Wins</MudTh>
+                    <MudTh>Score</MudTh>
                     <MudTh>Win %</MudTh>
                     <MudTh>Avg Score</MudTh>
                     <MudTh>Correct</MudTh>
                     <MudTh>Accuracy</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd>@context.Rank</MudTd>
+                    <MudTd>
+                        @if (context.Rank <= 3)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" 
+                                     Color="@(context.Rank == 1 ? Color.Warning : context.Rank == 2 ? Color.Tertiary : Color.Tertiary)" 
+                                     Size="Size.Small" />
+                        }
+                        @context.Rank
+                    </MudTd>
                     <MudTd>
                         <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
                     </MudTd>
+                    <MudTd>@context.GamesPlayed</MudTd>
+                    <MudTd>@context.GamesWon</MudTd>
+                    <MudTd>@context.TotalScore</MudTd>
                     <MudTd>@($"{(double)context.GamesWon / Math.Max(1, context.GamesPlayed):P0}")</MudTd>
                     <MudTd>@($"{(double)context.TotalScore / Math.Max(1, context.GamesPlayed):F1}")</MudTd>
                     <MudTd>@context.TotalCorrectAnswers</MudTd>

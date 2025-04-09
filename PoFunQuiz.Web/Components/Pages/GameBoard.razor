@@ -12,7 +12,7 @@
 @implements IDisposable
 @rendermode InteractiveServer
 
-<PageTitle>PoFunQuiz - Game</PageTitle>
+<PageTitle>PoFunQuiz</PageTitle>
 
 <!-- Import the separate CSS file for mobile styles -->
 <link href="css/gameboard-mobile.css" rel="stylesheet" />
@@ -41,7 +41,7 @@
             <MudContainer MaxWidth="MaxWidth.Large" Class="pa-2 mt-2">
                 <!-- Game Timer -->
                 <MudPaper Elevation="3" Class="d-flex justify-center align-center pa-1 mb-2" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
-                    <MudText Typo="Typo.body1" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
+                    <MudText Typo="Typo.body1" Class="@(TimeRemaining <= 5 ? "timer-pulse" : "")" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
                         Time: @TimeRemaining s
                     </MudText>
                 </MudPaper>
@@ -60,7 +60,7 @@
                                     <MudText Typo="Typo.body2">P1</MudText>
                                 </div>
                                 <div class="score-container">
-                                    <MudText Typo="Typo.body2" Style="font-weight: bold;">@Player1Score</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight: bold;" Class="score-text">@Player1Score</MudText>
                                 </div>
                             </div>
                             
@@ -110,9 +110,9 @@
                                     @foreach (var (option, index) in (currentQuestion?.Options ?? new List<string>()).Select((o, i) => (o, i)))
                                     {
                                         var optionIndex = index;
-                                        var isSelected = Player1Selections.Contains(optionIndex);
-                                        <MudListItem T="string" 
-                                                   Class="@(isSelected ? "selected-option answer-option" : "answer-option")"
+                                        // var isSelected = Player1Selections.Contains(optionIndex); // Replaced by GetAnswerItemClass call below
+                                        <MudListItem T="string"
+                                                   Class="@GetAnswerItemClass(1, optionIndex)"
                                                    Style="border-radius: 4px; margin-bottom: 4px; transition: all 0.2s ease; padding: 4px 6px;"
                                                    OnClick="() => HandlePlayerAnswer(1, optionIndex)">
                                             <div class="d-flex align-center">
@@ -141,7 +141,7 @@
                                     <MudText Typo="Typo.body2">P2</MudText>
                                 </div>
                                 <div class="score-container">
-                                    <MudText Typo="Typo.body2" Style="font-weight: bold;">@Player2Score</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight: bold;" Class="score-text">@Player2Score</MudText>
                                 </div>
                             </div>
                             
@@ -191,9 +191,9 @@
                                     @foreach (var (option, index) in (currentQuestion?.Options ?? new List<string>()).Select((o, i) => (o, i)))
                                     {
                                         var optionIndex = index;
-                                        var isSelected = Player2Selections.Contains(optionIndex);
-                                        <MudListItem T="string" 
-                                                   Class="@(isSelected ? "selected-option answer-option" : "answer-option")"
+                                        // var isSelected = Player2Selections.Contains(optionIndex); // Replaced by GetAnswerItemClass call below
+                                        <MudListItem T="string"
+                                                   Class="@GetAnswerItemClass(2, optionIndex)"
                                                    Style="border-radius: 4px; margin-bottom: 4px; transition: all 0.2s ease; padding: 4px 6px;"
                                                    OnClick="() => HandlePlayerAnswer(2, optionIndex)">
                                             <div class="d-flex align-center">
@@ -217,6 +217,40 @@
 </div>
 
 <style>
+    /* --- Animation Styles --- */
+    @@keyframes correctAnswerFlash {
+      0%, 100% { background-color: var(--mud-palette-background-grey); transform: scale(1); } /* Use a subtle background */
+      50% { background-color: var(--mud-palette-success); color: white; transform: scale(1.03); } /* Flash success color */
+    }
+
+    @@keyframes incorrectAnswerShake {
+      0%, 100% { background-color: var(--mud-palette-background-grey); transform: translateX(0); } /* Use a subtle background */
+      10%, 30%, 50%, 70%, 90% { background-color: var(--mud-palette-error); color: white; transform: translateX(-3px); } /* Flash error color and shake */
+      20%, 40%, 60%, 80% { background-color: var(--mud-palette-error); color: white; transform: translateX(3px); }
+    }
+
+    @@keyframes timerPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .correct-answer-flash {
+      animation: correctAnswerFlash 0.4s ease-in-out; /* Slightly faster animation */
+    }
+
+    .incorrect-answer-shake {
+      animation: incorrectAnswerShake 0.4s ease-in-out; /* Slightly faster animation */
+    }
+
+    .timer-pulse {
+        animation: timerPulse 1s infinite ease-in-out;
+    }
+
+    .score-text {
+        transition: color 0.3s ease, transform 0.3s ease; /* Simple transition for score */
+    }
+    /* --- End Animation Styles --- */
+
     .game-page {
         min-height: 100vh;
         display: flex;
@@ -280,6 +314,7 @@
     private bool Player1FeedbackVisible { get; set; } = false;
     private bool Player1LastAnswerCorrect { get; set; } = false;
     private List<int> Player1Selections { get; set; } = new List<int>();
+    private int? Player1JustSelectedAnswerIndex { get; set; } = null; // Added for animation tracking
     
     // Player 2 state
     private int Player2QuestionIndex { get; set; } = 0;
@@ -289,6 +324,7 @@
     private bool Player2FeedbackVisible { get; set; } = false;
     private bool Player2LastAnswerCorrect { get; set; } = false;
     private List<int> Player2Selections { get; set; } = new List<int>();
+    private int? Player2JustSelectedAnswerIndex { get; set; } = null; // Added for animation tracking
 
     private DotNetObjectReference<GameBoard>? objRef;
     private bool isMobileDevice = false;
@@ -516,18 +552,43 @@
         Console.WriteLine($"🔄 Reloading page at {DateTime.Now}");
         Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
     }
-    
-    private string GetOptionClass(int playerNumber, int optionIndex)
+
+    // Helper method to determine CSS classes for answer options, including animation states
+    private string GetAnswerItemClass(int playerNumber, int optionIndex)
     {
-        if (playerNumber == 1)
+        var classes = "answer-option";
+        int? justSelectedIndex = playerNumber == 1 ? Player1JustSelectedAnswerIndex : Player2JustSelectedAnswerIndex;
+        bool feedbackVisible = playerNumber == 1 ? Player1FeedbackVisible : Player2FeedbackVisible;
+        bool lastAnswerCorrect = playerNumber == 1 ? Player1LastAnswerCorrect : Player2LastAnswerCorrect;
+        List<int> selections = playerNumber == 1 ? Player1Selections : Player2Selections;
+
+        // Keep existing selection style if the option was ever selected in the current question
+        // Note: PlayerXSelections is cleared *after* feedback, so this works for the brief feedback duration
+        if (selections.Contains(optionIndex))
         {
-            return Player1Selections.Contains(optionIndex) ? "selected-option" : "";
+            classes += " selected-option"; 
         }
-        else
+
+        // Apply animation class only during the feedback interval and only to the *just* selected answer
+        if (feedbackVisible && justSelectedIndex == optionIndex)
         {
-            return Player2Selections.Contains(optionIndex) ? "selected-option" : "";
+            classes += lastAnswerCorrect ? " correct-answer-flash" : " incorrect-answer-shake";
         }
+        return classes;
     }
+    
+    // Original GetOptionClass - replaced by GetAnswerItemClass
+    // private string GetOptionClass(int playerNumber, int optionIndex)
+    // {
+    //     if (playerNumber == 1)
+    //     {
+    //         return Player1Selections.Contains(optionIndex) ? "selected-option" : "";
+    //     }
+    //     else
+    //     {
+    //         return Player2Selections.Contains(optionIndex) ? "selected-option" : "";
+    //     }
+    // }
     
     private void HandleKeyDown(KeyboardEventArgs e)
     {
@@ -588,6 +649,7 @@
                 Player1LastAnswerCorrect = isCorrect;
                 Player1FeedbackVisible = true;
                 Player1Selections.Add(selectedOptionIndex);
+                Player1JustSelectedAnswerIndex = selectedOptionIndex; // Track selected index for animation
                 
                 if (isCorrect)
                 {
@@ -614,6 +676,7 @@
                 Player2LastAnswerCorrect = isCorrect;
                 Player2FeedbackVisible = true;
                 Player2Selections.Add(selectedOptionIndex);
+                Player2JustSelectedAnswerIndex = selectedOptionIndex; // Track selected index for animation
                 
                 if (isCorrect)
                 {
@@ -663,6 +726,7 @@
                 {
                     Player1FeedbackVisible = false;
                     Player1Selections.Clear();
+                    // Player1JustSelectedAnswerIndex is cleared after StateHasChanged below
                     Player1QuestionIndex++;
                     
                     if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count)
@@ -675,6 +739,7 @@
                 {
                     Player2FeedbackVisible = false;
                     Player2Selections.Clear();
+                    // Player2JustSelectedAnswerIndex is cleared after StateHasChanged below
                     Player2QuestionIndex++;
                     
                     if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count)
@@ -693,6 +758,9 @@
                 else // Only call StateHasChanged if not navigating away
                 {
                     StateHasChanged();
+                    // Clear the animation tracking *after* the UI has potentially updated
+                    if (playerNumber == 1) Player1JustSelectedAnswerIndex = null;
+                    else Player2JustSelectedAnswerIndex = null;
                 }
             });
             

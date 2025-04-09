@@ -5,6 +5,8 @@ using PoFunQuiz.Core.Configuration;
 using PoFunQuiz.Infrastructure.Services;
 using PoFunQuiz.Web.Services;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Azure.Data.Tables; // Add using for TableServiceClient
+using Microsoft.Extensions.Configuration; // Add for GetValue
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +37,22 @@ builder.Services.AddMudServices();
 // Configure services
 builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
 builder.Services.Configure<TableStorageSettings>(builder.Configuration.GetSection("AzureTableStorage"));
+
+// Register TableServiceClient as a singleton
+builder.Services.AddSingleton(sp => 
+{
+    // Use IConfiguration directly, available via builder.Configuration
+    var connectionString = builder.Configuration.GetValue<string>("AzureTableStorage:ConnectionString"); 
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        // Log this error as well - requires ILogger registration or access if needed here
+        // For simplicity, just throwing exception now. Add logging if necessary.
+        // var logger = sp.GetRequiredService<ILogger<Program>>(); 
+        // logger.LogError("Azure Table Storage connection string ('AzureTableStorage:ConnectionString') not found or empty in configuration.");
+        throw new InvalidOperationException("Azure Table Storage connection string ('AzureTableStorage:ConnectionString') not found or empty in configuration.");
+    }
+    return new TableServiceClient(connectionString);
+});
 
 // Register services
 builder.Services.AddScoped<IQuestionGeneratorService, OpenAIQuestionGeneratorService>();

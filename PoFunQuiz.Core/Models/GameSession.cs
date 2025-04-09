@@ -11,6 +11,8 @@ namespace PoFunQuiz.Core.Models
         // Players
         public required Player Player1 { get; set; }
         public required Player Player2 { get; set; }
+        public string Player1Initials { get; set; } = string.Empty; // Added for storage/retrieval
+        public string Player2Initials { get; set; } = string.Empty; // Added for storage/retrieval
         
         // Questions
         public List<QuizQuestion> Player1Questions { get; set; } = new List<QuizQuestion>();
