@@ -1,0 +1,30 @@
+name: .NET Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x' # Use .NET 9 as specified
+
+    - name: Restore dependencies
+      run: dotnet restore PoFunQuiz.sln
+
+    - name: Build
+      run: dotnet build PoFunQuiz.sln --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test PoFunQuiz.Tests/PoFunQuiz.Tests.csproj --no-build --verbosity normal
