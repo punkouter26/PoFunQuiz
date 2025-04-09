@@ -43,7 +43,7 @@ else
                     <MudItem xs="6">
                         <MudCard Class="pa-2 d-flex flex-column align-center">
                             <MudText Typo="Typo.h5" Color="Color.Primary">Player 1</MudText>
-                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="ma-2">@GameState.CurrentGame.Player1.Initials</MudAvatar>
+                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="ma-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</MudAvatar> 
                             <MudText Typo="Typo.body2" Class="mb-2">Use keys 1-4</MudText>
                             @if (!Player1Ready)
                             {
@@ -64,7 +64,7 @@ else
                     <MudItem xs="6">
                         <MudCard Class="pa-2 d-flex flex-column align-center">
                             <MudText Typo="Typo.h5" Color="Color.Secondary">Player 2</MudText>
-                            <MudAvatar Color="Color.Secondary" Size="Size.Medium" Class="ma-2">@GameState.CurrentGame.Player2.Initials</MudAvatar>
+                            <MudAvatar Color="Color.Secondary" Size="Size.Medium" Class="ma-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</MudAvatar>
                             <MudText Typo="Typo.body2" Class="mb-2">Use keys 6-9</MudText>
                             @if (!Player2Ready)
                             {
@@ -119,8 +119,8 @@ else
     private bool IsLoading { get; set; } = false;
     private bool IsCountingDown { get; set; } = false;
     private int CountdownValue { get; set; } = 3;
-    private string ErrorMessage { get; set; }
-    private System.Threading.Timer _countdownTimer;
+    private string? ErrorMessage { get; set; } // Made nullable
+    private System.Threading.Timer? _countdownTimer; // Made nullable
     private ElementReference containerElement;
     
     protected override void OnInitialized()
@@ -184,8 +184,8 @@ else
                 
                 if (CountdownValue <= 0)
                 {
-                    _countdownTimer?.Dispose();
-                    _countdownTimer = null;
+                    _countdownTimer?.Dispose(); // Already safe
+                    _countdownTimer = null; // Safe now that _countdownTimer is nullable
                     IsCountingDown = false;
                     await GenerateQuestions();
                 }
@@ -213,10 +213,21 @@ else
             
             // Ensure we have exactly 10 questions
             var uniqueQuestions = questions.Take(10).ToList();
-            
-            // Assign the same set of questions to both players
-            GameState.CurrentGame.Player1Questions = uniqueQuestions;
-            GameState.CurrentGame.Player2Questions = uniqueQuestions;
+
+            // Add null check before assigning questions
+            if (GameState.CurrentGame != null)
+            {
+                GameState.CurrentGame.Player1Questions = uniqueQuestions;
+                GameState.CurrentGame.Player2Questions = uniqueQuestions;
+            }
+            else
+            {
+                // Handle the unlikely case where CurrentGame became null
+                ErrorMessage = "Game state lost. Please return to the main menu.";
+                IsLoading = false;
+                StateHasChanged();
+                return;
+            }
             
             // Navigate to game board
             Navigation.NavigateTo("/game-board");
@@ -231,7 +242,7 @@ else
     
     private void RetrySetup()
     {
-        ErrorMessage = null;
+        ErrorMessage = null; // Safe now that ErrorMessage is nullable
         Player1Ready = false;
         Player2Ready = false;
         StateHasChanged();

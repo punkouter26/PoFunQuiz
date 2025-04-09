@@ -46,18 +46,7 @@
                     </MudText>
                 </MudPaper>
                 
-                <!-- Global Controls - Results and Menu buttons -->
-                @if (Player1HasFinished && Player2HasFinished)
-                {
-                    <MudPaper Elevation="2" Class="d-flex justify-center align-center pa-2 mb-2" Style="border-radius: 8px;">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/results" Class="mx-1" Size="Size.Small">
-                            Results
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mx-1" Size="Size.Small">
-                            Menu
-                        </MudButton>
-                    </MudPaper>
-                }
+                @* Removed the Results/Menu button section that appeared after game end *@
                 
                 <MudGrid Class="pa-0 ma-0 game-grid" Style="height: auto;">
                     <!-- Player 1 Side -->
@@ -66,7 +55,7 @@
                             <div class="d-flex justify-space-between align-center mb-1">
                                 <div class="d-flex align-center">
                                     <MudAvatar Color="Color.Primary" Style="margin-right: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" Size="Size.Small">
-                                        @GameState.CurrentGame.Player1.Initials
+                                        @(GameState.CurrentGame?.Player1?.Initials ?? "P1")
                                     </MudAvatar>
                                     <MudText Typo="Typo.body2">P1</MudText>
                                 </div>
@@ -105,17 +94,20 @@
                                     }
                                 </div>
                             }
-                            else if (Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
+                            // Add null check for Player1Questions
+                            else if (GameState.CurrentGame?.Player1Questions != null && Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
                             {
+                                var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
                                 <!-- Optimized question container for Player 1 -->
                                 <MudPaper Elevation="0" Class="question-container compact-question pa-1 mb-1" Style="background-color: #f5f5f5; border-radius: 6px; overflow-y: auto;">
                                     <MudText Typo="Typo.body2" Class="question-text" Style="font-weight: 500; color: #333;">
-                                        @GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Text
+                                        @(currentQuestion?.Text ?? "Loading...") 
                                     </MudText>
                                 </MudPaper>
                                 
                                 <MudList T="string" Dense="true" disableGutters="true" Class="pa-0 answer-list">
-                                    @foreach (var (option, index) in GameState.CurrentGame.Player1Questions[Player1QuestionIndex].Options.Select((o, i) => (o, i)))
+                                    @* Add null check for Options *@
+                                    @foreach (var (option, index) in (currentQuestion?.Options ?? new List<string>()).Select((o, i) => (o, i)))
                                     {
                                         var optionIndex = index;
                                         var isSelected = Player1Selections.Contains(optionIndex);
@@ -144,7 +136,7 @@
                             <div class="d-flex justify-space-between align-center mb-1">
                                 <div class="d-flex align-center">
                                     <MudAvatar Color="Color.Secondary" Style="margin-right: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" Size="Size.Small">
-                                        @GameState.CurrentGame.Player2.Initials
+                                        @(GameState.CurrentGame?.Player2?.Initials ?? "P2")
                                     </MudAvatar>
                                     <MudText Typo="Typo.body2">P2</MudText>
                                 </div>
@@ -183,17 +175,20 @@
                                     }
                                 </div>
                             }
-                            else if (Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
+                            // Add null check for Player2Questions
+                            else if (GameState.CurrentGame?.Player2Questions != null && Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
                             {
+                                var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
                                 <!-- Optimized question container for Player 2 -->
                                 <MudPaper Elevation="0" Class="question-container compact-question pa-1 mb-1" Style="background-color: #f5f5f5; border-radius: 6px; overflow-y: auto;">
                                     <MudText Typo="Typo.body2" Class="question-text" Style="font-weight: 500; color: #333;">
-                                        @GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Text
+                                        @(currentQuestion?.Text ?? "Loading...")
                                     </MudText>
                                 </MudPaper>
                                 
                                 <MudList T="string" Dense="true" disableGutters="true" Class="pa-0 answer-list">
-                                    @foreach (var (option, index) in GameState.CurrentGame.Player2Questions[Player2QuestionIndex].Options.Select((o, i) => (o, i)))
+                                    @* Add null check for Options *@
+                                    @foreach (var (option, index) in (currentQuestion?.Options ?? new List<string>()).Select((o, i) => (o, i)))
                                     {
                                         var optionIndex = index;
                                         var isSelected = Player2Selections.Contains(optionIndex);
@@ -455,7 +450,7 @@
         }
     }
     
-    private void OnGameTimerElapsed(object sender, ElapsedEventArgs e)
+    private void OnGameTimerElapsed(object? sender, ElapsedEventArgs e) // Made sender nullable
     {
         try
         {
@@ -573,10 +568,21 @@
             Logger.LogInformation("🎮 HandlePlayerAnswer called for Player {PlayerNumber}, option {OptionIndex}", 
                 playerNumber, selectedOptionIndex);
             Console.WriteLine($"🎮 HandlePlayerAnswer called for Player {playerNumber}, option {selectedOptionIndex}");
+
+            // Add null checks for CurrentGame and question lists
+            if (GameState.CurrentGame?.Player1Questions == null || GameState.CurrentGame?.Player2Questions == null)
+            {
+                Logger.LogWarning("⚠️ HandlePlayerAnswer called but CurrentGame or Questions are null.");
+                Console.WriteLine("⚠️ HandlePlayerAnswer called but CurrentGame or Questions are null.");
+                return;
+            }
             
             if (playerNumber == 1 && !Player1HasFinished && Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
             {
                 var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
+                // Add null check for currentQuestion itself
+                if (currentQuestion == null) return; 
+                
                 bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
                 
                 Player1LastAnswerCorrect = isCorrect;
@@ -600,6 +606,9 @@
             else if (playerNumber == 2 && !Player2HasFinished && Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
             {
                 var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
+                // Add null check for currentQuestion itself
+                if (currentQuestion == null) return;
+
                 bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
                 
                 Player2LastAnswerCorrect = isCorrect;
@@ -636,11 +645,20 @@
     
     private void ShowFeedbackThenAdvance(int playerNumber)
     {
-        // Show feedback for 1 second, then advance to next question
-        feedbackTimer = new Timer(1000);
-        feedbackTimer.Elapsed += (sender, e) => 
+        // Show feedback for 0.1 seconds, then advance to next question
+        feedbackTimer = new Timer(100); // Changed delay from 1000ms to 100ms
+        feedbackTimer.Elapsed += (sender, e) =>
         {
             InvokeAsync(() => {
+                // Add null check for CurrentGame and question lists
+                if (GameState.CurrentGame?.Player1Questions == null || GameState.CurrentGame?.Player2Questions == null)
+                {
+                    Logger.LogWarning("⚠️ Feedback timer elapsed but CurrentGame or Questions are null.");
+                    Console.WriteLine("⚠️ Feedback timer elapsed but CurrentGame or Questions are null.");
+                    feedbackTimer?.Dispose();
+                    return;
+                }
+
                 if (playerNumber == 1)
                 {
                     Player1FeedbackVisible = false;
@@ -670,9 +688,12 @@
                 if (Player1HasFinished && Player2HasFinished)
                 {
                     EndGame();
+                    Navigation.NavigateTo("/results"); // Navigate immediately
                 }
-                
-                StateHasChanged();
+                else // Only call StateHasChanged if not navigating away
+                {
+                    StateHasChanged();
+                }
             });
             
             feedbackTimer.Dispose();
@@ -697,6 +718,14 @@
         // Stop timers
         gameTimer?.Stop();
         feedbackTimer?.Stop();
+
+        // Add null check for CurrentGame
+        if (GameState.CurrentGame == null)
+        {
+            Logger.LogWarning("⚠️ EndGame called but CurrentGame is null.");
+            Console.WriteLine("⚠️ EndGame called but CurrentGame is null.");
+            return;
+        }
         
         // Calculate final scores if players haven't finished
         if (!Player1HasFinished)
@@ -716,11 +745,10 @@
         GameState.CurrentGame.Player2Score = Player2Score + Player2TimeBonus;
         GameState.CurrentGame.EndTime = DateTime.UtcNow;
         
-        // Save game results
-        GameSessionService.SaveGameResultsAsync(GameState.CurrentGame);
+        // Save game results (fire and forget is okay here, but await was used in Results page)
+        _ = GameSessionService.SaveGameResultsAsync(GameState.CurrentGame);
         
-        // Update UI to show both players have finished
-        StateHasChanged();
+        // StateHasChanged() is removed as we navigate away immediately in ShowFeedbackThenAdvance
     }
     
     [JSInvokable]

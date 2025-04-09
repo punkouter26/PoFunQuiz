@@ -29,7 +29,7 @@ else
                         }
                         else
                         {
-                            <span>Winner: Player @WinnerNumber (@Winner.Initials) - Congratulations!</span>
+                            <span>Winner: Player @WinnerNumber (@(Winner?.Initials ?? "???")) - Congratulations!</span>
                         }
                     </MudText>
                 </MudAlert>
@@ -43,7 +43,7 @@ else
                             <CardHeaderContent>
                                 <div class="d-flex align-center">
                                     <MudAvatar Color="Color.Primary" Class="mr-2" Size="Size.Small">
-                                        @GameState.CurrentGame.Player1.Initials
+                                        @(GameState.CurrentGame?.Player1?.Initials ?? "P1")
                                     </MudAvatar>
                                     <MudText Typo="Typo.h6">Player 1</MudText>
                                 </div>
@@ -65,7 +65,7 @@ else
                                 </MudListItem>
                                 <MudDivider Class="my-2" />
                                 <MudListItem T="string">
-                                    <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player1Score points</MudText>
+                                    <MudText Typo="Typo.h6">Total Score: @(GameState.CurrentGame?.Player1Score ?? 0) points</MudText>
                                 </MudListItem>
                             </MudList>
                         </MudCardContent>
@@ -79,7 +79,7 @@ else
                             <CardHeaderContent>
                                 <div class="d-flex align-center">
                                     <MudAvatar Color="Color.Secondary" Class="mr-2" Size="Size.Small">
-                                        @GameState.CurrentGame.Player2.Initials
+                                        @(GameState.CurrentGame?.Player2?.Initials ?? "P2")
                                     </MudAvatar>
                                     <MudText Typo="Typo.h6">Player 2</MudText>
                                 </div>
@@ -101,7 +101,7 @@ else
                                 </MudListItem>
                                 <MudDivider Class="my-2" />
                                 <MudListItem T="string">
-                                    <MudText Typo="Typo.h6">Total Score: @GameState.CurrentGame.Player2Score points</MudText>
+                                    <MudText Typo="Typo.h6">Total Score: @(GameState.CurrentGame?.Player2Score ?? 0) points</MudText>
                                 </MudListItem>
                             </MudList>
                         </MudCardContent>
@@ -123,7 +123,7 @@ else
                                 <MudText Typo="Typo.caption">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</MudText>
                             </MudItem>
                             <MudItem xs="6" md="3">
-                                <MudText Typo="Typo.caption">Game ID: @GameState.CurrentGame.GameId.Substring(0, 8)</MudText>
+                                <MudText Typo="Typo.caption">Game ID: @(GameState.CurrentGame?.GameId?.Substring(0, 8) ?? "N/A")</MudText>
                             </MudItem>
                         </MudGrid>
                     </MudPaper>
@@ -158,12 +158,13 @@ else
 }
 
 @code {
+    // Added null checks for safety, although the top-level check should prevent null CurrentGame here
     private bool WinnerDeclared => GameState.CurrentGame?.Player1Score != null && GameState.CurrentGame?.Player2Score != null;
-    private bool IsTie => GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
-    private int WinnerNumber => GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2;
-    private Core.Models.Player Winner => WinnerNumber == 1 ? GameState.CurrentGame.Player1 : GameState.CurrentGame.Player2;
+    private bool IsTie => WinnerDeclared && GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
+    private int WinnerNumber => (!WinnerDeclared || IsTie) ? 0 : (GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2);
+    private Core.Models.Player? Winner => WinnerNumber == 1 ? GameState.CurrentGame?.Player1 : (WinnerNumber == 2 ? GameState.CurrentGame?.Player2 : null); // Made nullable
     
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync() // Changed to async Task
     {
         // Redirect to home if no game session exists
         if (GameState.CurrentGame == null)
@@ -173,43 +174,50 @@ else
         }
         
         // Update player statistics in the background
-        UpdatePlayerStatisticsAsync();
+        await UpdatePlayerStatisticsAsync(); // Added await
     }
     
     private int GetCorrectAnswers(int playerNumber)
     {
+        if (GameState.CurrentGame == null) return 0; // Null check
+
         // In a real implementation, this would come from the game session tracking
         // For now we'll use a simplified calculation
         var baseScore = playerNumber == 1 
-            ? GameState.CurrentGame.Player1Score - GetTimeBonus(1) 
-            : GameState.CurrentGame.Player2Score - GetTimeBonus(2);
+            ? GameState.CurrentGame.Player1Score - GetTimeBonus(1) // Removed ?? 0
+            : GameState.CurrentGame.Player2Score - GetTimeBonus(2); // Removed ?? 0
         
-        return Math.Max(0, baseScore);
+        return Math.Max(0, baseScore); 
     }
     
     private int GetTimeBonus(int playerNumber)
     {
+        if (GameState.CurrentGame == null) return 0; // Null check
+
         // In a real implementation, this would be stored explicitly in the game session
         // For simplicity, we'll assume a maximum of 3 points time bonus
         var totalScore = playerNumber == 1 
-            ? GameState.CurrentGame.Player1Score 
-            : GameState.CurrentGame.Player2Score;
+            ? GameState.CurrentGame.Player1Score // Removed ?? 0
+            : GameState.CurrentGame.Player2Score; // Removed ?? 0
         
-        var correctAnswers = GetQuestionsAnswered(playerNumber);
+        var correctAnswers = GetQuestionsAnswered(playerNumber); // This already returns 0 if CurrentGame is null
         
-        return Math.Min(3, Math.Max(0, totalScore - correctAnswers));
+        return Math.Min(3, Math.Max(0, totalScore - correctAnswers)); // totalScore is already int
     }
     
     private int GetQuestionsAnswered(int playerNumber)
     {
+        if (GameState.CurrentGame == null) return 0; // Null check
+
         // In a real implementation, this would come from the game session tracking
-        // For now we'll assume all 10 questions were answered
-        return 10;
+        // For now we'll assume all 10 questions were answered if game exists
+        return 10; 
     }
     
     private string GetGameDuration()
     {
-        if (GameState.CurrentGame.StartTime.HasValue && GameState.CurrentGame.EndTime.HasValue)
+        // Add null check for CurrentGame
+        if (GameState.CurrentGame?.StartTime.HasValue == true && GameState.CurrentGame?.EndTime.HasValue == true)
         {
             var duration = GameState.CurrentGame.EndTime.Value - GameState.CurrentGame.StartTime.Value;
             return $"{duration.Minutes:D2}:{duration.Seconds:D2}";
@@ -220,6 +228,14 @@ else
     
     private void PlayAgain()
     {
+        // Add null check
+        if (GameState.CurrentGame?.Player1 == null || GameState.CurrentGame?.Player2 == null)
+        {
+            // Should not happen if we are on the results page, but good practice
+            Navigation.NavigateTo("/"); 
+            return;
+        }
+
         // Reset game state but keep the same players
         var player1 = GameState.CurrentGame.Player1;
         var player2 = GameState.CurrentGame.Player2;
@@ -239,19 +255,34 @@ else
     
     private async Task UpdatePlayerStatisticsAsync()
     {
+        // Add null check
+        if (GameState.CurrentGame?.Player1 == null || GameState.CurrentGame?.Player2 == null)
+        {
+             Console.WriteLine($"Error updating player statistics: CurrentGame or Players are null.");
+             return; // Cannot update stats if game or players are missing
+        }
+
         try
         {
+            // Determine winner status safely
+            bool player1IsWinner = WinnerNumber == 1;
+            bool player2IsWinner = WinnerNumber == 2;
+
+            // Get scores safely (scores are int, not int?)
+            int player1Score = GameState.CurrentGame.Player1Score; // Removed ?? 0
+            int player2Score = GameState.CurrentGame.Player2Score; // Removed ?? 0
+
             // Update player 1 stats
             await UpdatePlayerStats(GameState.CurrentGame.Player1, 
-                                   WinnerNumber == 1, 
+                                   player1IsWinner, 
                                    GetCorrectAnswers(1),
-                                   GameState.CurrentGame.Player1Score);
+                                   player1Score);
             
             // Update player 2 stats
             await UpdatePlayerStats(GameState.CurrentGame.Player2, 
-                                   WinnerNumber == 2,
+                                   player2IsWinner,
                                    GetCorrectAnswers(2),
-                                   GameState.CurrentGame.Player2Score);
+                                   player2Score);
         }
         catch (Exception ex)
         {
@@ -260,8 +291,10 @@ else
         }
     }
     
-    private async Task UpdatePlayerStats(Core.Models.Player player, bool isWinner, int correctAnswers, int totalScore)
+    private async Task UpdatePlayerStats(Core.Models.Player? player, bool isWinner, int correctAnswers, int totalScore) // Made player nullable
     {
+        if (player == null) return; // Add null check for player
+
         // Update player stats
         player.GamesPlayed++;
         if (isWinner) player.GamesWon++;

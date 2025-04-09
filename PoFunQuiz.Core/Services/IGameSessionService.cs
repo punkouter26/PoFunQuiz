@@ -30,6 +30,6 @@ namespace PoFunQuiz.Core.Services
         /// <param name="playerInitials">Optional player initials to filter by</param>
         /// <param name="count">Number of sessions to retrieve</param>
         /// <returns>List of recent game sessions</returns>
-        Task<List<GameSession>> GetRecentGameSessionsAsync(string playerInitials = null, int count = 10);
+        Task<List<GameSession>> GetRecentGameSessionsAsync(string? playerInitials = null, int count = 10); // Made playerInitials nullable
     }
 }

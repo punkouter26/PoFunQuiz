@@ -417,8 +417,8 @@
                     player.Initials, player.GamesPlayed, player.LastPlayed);
             }
             
-            // Get recent game sessions
-            RecentGames = await GameSessionService.GetRecentGameSessionsAsync(null, 50);
+            // Get recent game sessions - explicitly pass default(string?) which is null
+            RecentGames = await GameSessionService.GetRecentGameSessionsAsync(default(string?), 50); 
             Logger.LogInformation("Retrieved {Count} recent game sessions", RecentGames.Count);
             
             // Calculate per-day statistics

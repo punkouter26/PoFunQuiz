@@ -20,7 +20,7 @@ namespace PoFunQuiz.Infrastructure.Storage
         public int TotalScore { get; set; }
         public int TotalCorrectAnswers { get; set; }
         
-        // Changed from DateTime to object to handle any format that Azure Table Storage might return
-        public object LastPlayed { get; set; }
+        // Represents the last time the player played. Nullable to handle new players.
+        public DateTimeOffset? LastPlayed { get; set; }
     }
 }

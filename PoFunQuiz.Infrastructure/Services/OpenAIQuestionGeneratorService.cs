@@ -46,7 +46,7 @@ namespace PoFunQuiz.Infrastructure.Services
                 
                 // IMPORTANT: Temporarily return fallback questions directly for all requests
                 // to avoid OpenAI issues during testing/development
-                return GenerateFallbackQuestions(count);
+                return GenerateFallbackQuestions(count); // Compiler handles Task wrapping
 
                 // The following code is commented out until OpenAI issues are resolved
                 /*
@@ -148,7 +148,8 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                 _logger.LogInformation("OpenAI JSON response: {Response}", jsonResponse);
 
                 // Handle the JSON parsing with multiple fallback mechanisms
-                return ParseOpenAIResponse(jsonResponse, category) ?? new List<QuizQuestion>();
+                // ParseOpenAIResponse now guarantees a non-null return
+                return ParseOpenAIResponse(jsonResponse, category);
             }
             catch (Exception ex)
             {
@@ -165,7 +166,7 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
             if (string.IsNullOrWhiteSpace(jsonResponse))
             {
                 _logger.LogError("OpenAI returned empty or null response");
-                return null;
+                return new List<QuizQuestion>(); // Return empty list instead of null
             }
 
             try
@@ -185,7 +186,13 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                 try
                 {
                     var questions = JsonSerializer.Deserialize<List<QuizQuestion>>(cleanedJson, options);
-                    if (questions != null && questions.Count > 0)
+                    // Add null check before filtering
+                    if (questions == null)
+                    {
+                         _logger.LogWarning("Deserialized list was null after direct parsing attempt.");
+                         return new List<QuizQuestion>();
+                    }
+                    if (questions.Count > 0)
                     {
                         _logger.LogInformation("Successfully parsed {Count} questions directly", questions.Count);
                         return FilterValidQuestions(questions);
@@ -207,9 +214,15 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                     {
                         var questions = JsonSerializer.Deserialize<List<QuizQuestion>>(
                             questionsElement.GetRawText(), options);
+
+                        // Add null check before filtering
+                        if (questions == null)
+                        {
+                            _logger.LogWarning("Deserialized list from 'questions' property was null.");
+                            return new List<QuizQuestion>();
+                        }
                         
-                        _logger.LogInformation("Parsed {Count} questions from 'questions' property", 
-                            questions?.Count ?? 0);
+                        _logger.LogInformation("Parsed {Count} questions from 'questions' property", questions.Count);
                             
                         return FilterValidQuestions(questions);
                     }
@@ -220,11 +233,15 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                     {
                         // We have a single question object, not in an array
                         var singleQuestion = JsonSerializer.Deserialize<QuizQuestion>(cleanedJson, options);
-                        if (singleQuestion != null)
+                        // Add null check
+                        if (singleQuestion == null)
                         {
-                            _logger.LogInformation("Parsed a single question object, converting to list");
-                            return FilterValidQuestions(new List<QuizQuestion> { singleQuestion });
+                            _logger.LogWarning("Deserialized single question object was null.");
+                            return new List<QuizQuestion>();
                         }
+
+                        _logger.LogInformation("Parsed a single question object, converting to list");
+                        return FilterValidQuestions(new List<QuizQuestion> { singleQuestion });
                     }
                 }
                 catch (JsonException ex)
@@ -241,6 +258,12 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                         _logger.LogInformation("Found JSON array using regex");
                         var extractedArray = arrayMatch.Value;
                         var questions = JsonSerializer.Deserialize<List<QuizQuestion>>(extractedArray, options);
+                        // Add null check
+                        if (questions == null)
+                        {
+                            _logger.LogWarning("Deserialized list from regex extraction was null.");
+                            return new List<QuizQuestion>();
+                        }
                         return FilterValidQuestions(questions);
                     }
                 }
@@ -254,7 +277,7 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                 _logger.LogError(ex, "All JSON parsing attempts failed");
             }
 
-            return null;
+            return new List<QuizQuestion>(); // Return empty list instead of null
         }
 
         /// <summary>

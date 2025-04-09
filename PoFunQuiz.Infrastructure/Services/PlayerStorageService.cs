@@ -126,16 +126,24 @@ namespace PoFunQuiz.Infrastructure.Services
             
             try
             {
+                // Validate Initials before proceeding
+                if (string.IsNullOrWhiteSpace(player.Initials))
+                {
+                    throw new ArgumentException("Player Initials cannot be null or empty when updating.", nameof(player.Initials));
+                }
+
                 // Convert player model to entity
                 var entity = new PlayerEntity
                 {
                     PartitionKey = "PLAYER",
-                    RowKey = player.Initials.ToUpperInvariant(),
+                    RowKey = player.Initials.ToUpperInvariant(), // Now safe due to check above
                     GamesPlayed = player.GamesPlayed,
                     GamesWon = player.GamesWon,
                     TotalScore = player.TotalScore,
                     TotalCorrectAnswers = player.TotalCorrectAnswers,
-                    LastPlayed = player.LastPlayed
+                    // Convert DateTime to DateTimeOffset?
+                    // Assuming player.LastPlayed is UTC. If it might be local, adjust accordingly.
+                    LastPlayed = new DateTimeOffset(player.LastPlayed, TimeSpan.Zero) 
                 };
                 
                 // Save to table storage (upsert)
@@ -145,7 +153,8 @@ namespace PoFunQuiz.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating player {Initials}", player.Initials);
+                // Use null-coalescing for logging
+                _logger.LogError(ex, "Error updating player {Initials}", player?.Initials ?? "[Unknown Initials]");
                 throw;
             }
         }
@@ -174,137 +183,32 @@ namespace PoFunQuiz.Infrastructure.Services
         private Player ConvertToPlayerModel(PlayerEntity entity)
         {
             DateTime lastPlayed;
-            
-            try
+
+            // Directly use the DateTimeOffset? value from the entity
+            if (entity.LastPlayed.HasValue)
             {
-                // Get the LastPlayed value
-                var lastPlayedValue = entity.LastPlayed;
-                
-                _logger.LogDebug("Processing LastPlayed value: {LastPlayed}, Type: {Type}", 
-                    lastPlayedValue, lastPlayedValue != null ? lastPlayedValue.GetType().FullName : "null");
-
-                if (lastPlayedValue is DateTime dateTime)
-                {
-                    lastPlayed = dateTime;
-                    _logger.LogDebug("LastPlayed is already a DateTime: {LastPlayed}", lastPlayed);
-                }
-                else if (lastPlayedValue is DateTimeOffset)
-                {
-                    lastPlayed = ((DateTimeOffset)lastPlayedValue).DateTime;
-                    _logger.LogDebug("LastPlayed is a DateTimeOffset: {LastPlayed}", lastPlayed);
-                }
-                else
-                {
-                    // Convert to string and try parsing
-                    var lastPlayedString = lastPlayedValue != null ? lastPlayedValue.ToString() : string.Empty;
-                    _logger.LogDebug("LastPlayed string value: {LastPlayedString}", lastPlayedString);
-
-                    // Handle the @ prefix that Azure Table Storage sometimes adds
-                    if (lastPlayedString.StartsWith('@'))
-                    {
-                        lastPlayedString = lastPlayedString.Substring(1);
-                        _logger.LogDebug("Removed @ prefix, new value: {LastPlayedString}", lastPlayedString);
-                    }
-                    
-                    // Try parsing with multiple formats and styles
-                    if (DateTime.TryParse(lastPlayedString, out DateTime parsedDate))
-                    {
-                        lastPlayed = parsedDate;
-                        _logger.LogDebug("Successfully parsed LastPlayed with TryParse: {ParsedDate}", lastPlayed);
-                    }
-                    else if (DateTimeOffset.TryParse(lastPlayedString, out DateTimeOffset parsedDateOffset))
-                    {
-                        lastPlayed = parsedDateOffset.DateTime;
-                        _logger.LogDebug("Successfully parsed LastPlayed as DateTimeOffset: {ParsedDate}", lastPlayed);
-                    }
-                    else
-                    {
-                        // Try with specific formats
-                        string[] formats = new string[] 
-                        { 
-                            "yyyy-MM-ddTHH:mm:ss.fffffffzzz",
-                            "yyyy-MM-ddTHH:mm:ss.fffffff",
-                            "yyyy-MM-ddTHH:mm:ss",
-                            "yyyy-MM-dd"
-                        };
-                        
-                        if (DateTime.TryParseExact(lastPlayedString, formats, 
-                            System.Globalization.CultureInfo.InvariantCulture,
-                            System.Globalization.DateTimeStyles.AdjustToUniversal | 
-                            System.Globalization.DateTimeStyles.AssumeLocal, 
-                            out DateTime parsedExactDate))
-                        {
-                            lastPlayed = parsedExactDate;
-                            _logger.LogDebug("Successfully parsed LastPlayed with TryParseExact: {ParsedDate}", lastPlayed);
-                        }
-                        else
-                        {
-                            // Last resort: try to manually parse the ISO 8601 format
-                            try
-                            {
-                                // For format like: 2025-03-03T18:06:46.0179030-05:00
-                                var parts = lastPlayedString.Split('T');
-                                if (parts.Length == 2)
-                                {
-                                    var datePart = parts[0];
-                                    var timePart = parts[1];
-                                    
-                                    // Split time and timezone
-                                    var timezoneSplit = timePart.LastIndexOfAny(new char[] { '+', '-' });
-                                    if (timezoneSplit > 0)
-                                    {
-                                        var timeWithoutTz = timePart.Substring(0, timezoneSplit);
-                                        var timezone = timePart.Substring(timezoneSplit);
-                                        
-                                        // Reconstruct in a format that .NET can parse
-                                        var reconstructed = $"{datePart}T{timeWithoutTz}{timezone}";
-                                        if (DateTimeOffset.TryParse(reconstructed, out DateTimeOffset dto))
-                                        {
-                                            lastPlayed = dto.DateTime;
-                                            _logger.LogDebug("Successfully parsed LastPlayed with manual reconstruction: {ParsedDate}", lastPlayed);
-                                        }
-                                        else
-                                        {
-                                            _logger.LogWarning("Failed to parse LastPlayed value after reconstruction: {LastPlayed}", reconstructed);
-                                            lastPlayed = DateTime.UtcNow;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning("Failed to find timezone in LastPlayed value: {LastPlayed}", lastPlayedString);
-                                        lastPlayed = DateTime.UtcNow;
-                                    }
-                                }
-                                else
-                                {
-                                    _logger.LogWarning("Failed to split LastPlayed into date and time parts: {LastPlayed}", lastPlayedString);
-                                    lastPlayed = DateTime.UtcNow;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Error during manual parsing of LastPlayed: {LastPlayed}", lastPlayedString);
-                                lastPlayed = DateTime.UtcNow;
-                            }
-                        }
-                    }
-                }
+                // Convert the DateTimeOffset to the local DateTime for the Player model
+                // Assuming the Player model expects local time. If it expects UTC, use .UtcDateTime
+                lastPlayed = entity.LastPlayed.Value.LocalDateTime; 
+                _logger.LogDebug("Converted LastPlayed from DateTimeOffset: {LastPlayed} (Local)", lastPlayed);
             }
-            catch (Exception ex)
+            else
             {
-                _logger.LogWarning(ex, "Error handling LastPlayed value: {LastPlayed}", entity.LastPlayed);
-                lastPlayed = DateTime.UtcNow;
+                // Handle cases where LastPlayed might be null (e.g., corrupted data or older schema)
+                _logger.LogWarning("LastPlayed value was null for player {RowKey}. Using UtcNow.", entity.RowKey ?? "[Unknown]");
+                lastPlayed = DateTime.UtcNow; // Use UTC as a sensible default
             }
 
             return new Player
             {
-                Id = entity.RowKey,
-                Initials = entity.PartitionKey == "PLAYER" ? entity.RowKey : entity.PartitionKey,
+                // Use null-coalescing for safety, although RowKey should be the initials
+                Id = entity.RowKey ?? "[Unknown]", 
+                Initials = entity.RowKey ?? "[Unknown]", // Assuming RowKey stores initials for PartitionKey "PLAYER"
                 GamesPlayed = entity.GamesPlayed,
                 GamesWon = entity.GamesWon,
                 TotalScore = entity.TotalScore,
                 TotalCorrectAnswers = entity.TotalCorrectAnswers,
-                LastPlayed = lastPlayed
+                LastPlayed = lastPlayed // Assign the determined DateTime value
             };
         }
     }
