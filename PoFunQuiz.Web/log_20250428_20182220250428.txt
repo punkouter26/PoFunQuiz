@@ -1,0 +1,9 @@
+2025-04-28 20:18:22.319 [INF] Starting PoFunQuiz web application
+2025-04-28 20:20:35.746 [WRN] Failed to determine the https port for redirect.
+2025-04-28 20:20:36.411 [INF] 🔌 ConnectionState service initialized at "2025-04-28T20:20:36.4112712-04:00"
+2025-04-28 20:20:36.416 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-28T20:20:36.4165206-04:00"
+2025-04-28 20:20:36.420 [INF] 🔌 Circuit opened with ID DJgb797tONbsxSjqUHC7t_C457bdroNIxCI0pqLLHYM at "2025-04-28T20:20:36.4199311-04:00"
+2025-04-28 20:20:36.421 [INF] ✅ Circuit connection UP detected at "2025-04-28T20:20:36.4218344-04:00" for circuit DJgb797tONbsxSjqUHC7t_C457bdroNIxCI0pqLLHYM
+2025-04-28 20:21:23.018 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-28T20:21:23.0181847-04:00" for circuit DJgb797tONbsxSjqUHC7t_C457bdroNIxCI0pqLLHYM
+2025-04-28 20:21:23.019 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-28T20:21:23.0192002-04:00"
+2025-04-28 20:21:23.020 [INF] 🔌 Circuit closed with ID DJgb797tONbsxSjqUHC7t_C457bdroNIxCI0pqLLHYM at "2025-04-28T20:21:23.0200194-04:00"

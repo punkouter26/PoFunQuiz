@@ -1,0 +1,46 @@
+2025-04-28 20:10:05.027 [INF] Starting PoFunQuiz web application
+2025-04-28 20:12:01.916 [WRN] Failed to determine the https port for redirect.
+2025-04-28 20:12:03.114 [INF] 🔌 ConnectionState service initialized at "2025-04-28T20:12:03.1138478-04:00"
+2025-04-28 20:12:03.120 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-28T20:12:03.1203220-04:00"
+2025-04-28 20:12:03.121 [INF] 🔌 Circuit opened with ID aJaJ7kExabt-cmSrDf__33Whevyf4ErKMQibxwNphW0 at "2025-04-28T20:12:03.1214224-04:00"
+2025-04-28 20:12:03.122 [INF] ✅ Circuit connection UP detected at "2025-04-28T20:12:03.1221400-04:00" for circuit aJaJ7kExabt-cmSrDf__33Whevyf4ErKMQibxwNphW0
+2025-04-28 20:12:09.567 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-28T20:12:09.5674001-04:00" for circuit aJaJ7kExabt-cmSrDf__33Whevyf4ErKMQibxwNphW0
+2025-04-28 20:12:09.573 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-28T20:12:09.5732311-04:00"
+2025-04-28 20:15:09.579 [INF] 🔌 Circuit closed with ID aJaJ7kExabt-cmSrDf__33Whevyf4ErKMQibxwNphW0 at "2025-04-28T20:15:09.5794245-04:00"
+2025-04-28 20:15:32.216 [INF] 🔌 Circuit opened with ID iQVX1YDuHGO1Hzs6ijEBkbJnLaVR6cUsKTBT9WQRjIk at "2025-04-28T20:15:32.2164672-04:00"
+2025-04-28 20:15:32.217 [INF] ✅ Circuit connection UP detected at "2025-04-28T20:15:32.2175599-04:00" for circuit iQVX1YDuHGO1Hzs6ijEBkbJnLaVR6cUsKTBT9WQRjIk
+2025-04-28 20:15:32.218 [INF] 🔌 Connection state changing from Disconnected to Connected at "2025-04-28T20:15:32.2180447-04:00"
+2025-04-28 20:15:37.286 [ERR] An unhandled exception has occurred while executing the request.
+System.InvalidOperationException: Missing <MudPopoverProvider />, please add it to your layout. See https://mudblazor.com/getting-started/installation#manual-install-add-components
+   at MudBlazor.PopoverService.CreatePopoverAsync(IPopover popover)
+   at MudBlazor.MudPopoverBase.OnInitializedAsync()
+   at Microsoft.AspNetCore.Components.ComponentBase.RunInitAndSetParametersAsync()
+   at MudBlazor.State.ParameterContainer.SetParametersAsync(Func`2 baseSetParametersAsync, ParameterView parameters)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.SupplyCombinedParameters(ParameterView directAndCascadingParameters)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.SetDirectParameters(ParameterView parameters)
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.InitializeNewSubtree(DiffContext& diffContext, Int32 frameIndex)
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.InsertNewFrame(DiffContext& diffContext, Int32 newFrameIndex)
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.AppendDiffEntriesForRange(DiffContext& diffContext, Int32 oldStartIndex, Int32 oldEndIndexExcl, Int32 newStartIndex, Int32 newEndIndexExcl)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
+   at Microsoft.AspNetCore.Components.RenderTree.Renderer.ProcessRenderQueue()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Components.RenderTree.Renderer.ProcessRenderQueue()
+   at Microsoft.AspNetCore.Components.ComponentBase.StateHasChanged()
+   at Microsoft.AspNetCore.Components.ComponentBase.CallOnParametersSetAsync()
+   at Microsoft.AspNetCore.Components.ComponentBase.RunInitAndSetParametersAsync()
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.SupplyCombinedParameters(ParameterView directAndCascadingParameters)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.SetDirectParameters(ParameterView parameters)
+   at Microsoft.AspNetCore.Components.RenderTree.Renderer.RenderRootComponentAsync(Int32 componentId, ParameterView initialParameters)
+   at Microsoft.AspNetCore.Components.HtmlRendering.Infrastructure.StaticHtmlRenderer.BeginRenderingComponent(IComponent component, ParameterView initialParameters)
+   at Microsoft.AspNetCore.Components.Endpoints.EndpointHtmlRenderer.RenderEndpointComponent(HttpContext httpContext, Type rootComponentType, ParameterView parameters, Boolean waitForQuiescence)
+   at Microsoft.AspNetCore.Components.Endpoints.RazorComponentEndpointInvoker.RenderComponentCore(HttpContext context)
+   at Microsoft.AspNetCore.Components.Endpoints.RazorComponentEndpointInvoker.RenderComponentCore(HttpContext context)
+   at Microsoft.AspNetCore.Components.Rendering.RendererSynchronizationContext.<>c.<<InvokeAsync>b__10_0>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Builder.ServerRazorComponentsEndpointConventionBuilderExtensions.<>c__DisplayClass1_1.<<AddInteractiveServerRenderMode>b__1>d.MoveNext()
+--- End of stack trace from previous location ---
+   at Microsoft.AspNetCore.Authorization.AuthorizationMiddleware.Invoke(HttpContext context)
+   at Microsoft.AspNetCore.Diagnostics.DeveloperExceptionPageMiddlewareImpl.Invoke(HttpContext context)
+2025-04-28 20:15:39.460 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-28T20:15:39.4608351-04:00" for circuit iQVX1YDuHGO1Hzs6ijEBkbJnLaVR6cUsKTBT9WQRjIk
+2025-04-28 20:15:39.468 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-28T20:15:39.4682148-04:00"
+2025-04-28 20:15:39.480 [INF] 🔌 Circuit closed with ID iQVX1YDuHGO1Hzs6ijEBkbJnLaVR6cUsKTBT9WQRjIk at "2025-04-28T20:15:39.4803811-04:00"

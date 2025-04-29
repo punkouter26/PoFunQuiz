@@ -11,6 +11,7 @@ using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
 using PoFunQuiz.Core.Configuration;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 
 namespace PoFunQuiz.Infrastructure.Services
 {
@@ -19,22 +20,23 @@ namespace PoFunQuiz.Infrastructure.Services
     /// </summary>
     public class OpenAIQuestionGeneratorService : IQuestionGeneratorService
     {
+        private readonly ILogger<OpenAIQuestionGeneratorService> _logger;
+        private readonly List<QuizQuestion> _sampleQuestions;
         private readonly OpenAIClient _client;
         private readonly string _deploymentName;
-        private readonly ILogger<OpenAIQuestionGeneratorService> _logger;
 
         public OpenAIQuestionGeneratorService(
-            IOptions<OpenAISettings> settings,
-            ILogger<OpenAIQuestionGeneratorService> logger)
+            ILogger<OpenAIQuestionGeneratorService> logger,
+            IOptions<OpenAISettings> settings)
         {
-            var openAISettings = settings.Value;
-            
-            _client = new OpenAIClient(
-                new Uri(openAISettings.Endpoint),
-                new AzureKeyCredential(openAISettings.Key));
-            
-            _deploymentName = openAISettings.DeploymentName;
             _logger = logger;
+            _sampleQuestions = GenerateSampleQuestions();
+            
+            // Initialize OpenAI client
+            _client = new OpenAIClient(
+                new Uri(settings.Value.Endpoint),
+                new AzureKeyCredential(settings.Value.Key));
+            _deploymentName = settings.Value.DeploymentName;
         }
 
         /// <inheritdoc />
@@ -42,59 +44,34 @@ namespace PoFunQuiz.Infrastructure.Services
         {
             try
             {
-                _logger.LogInformation("Starting to generate {Count} questions", count);
-                
-                // IMPORTANT: Temporarily return fallback questions directly for all requests
-                // to avoid OpenAI issues during testing/development
-                return GenerateFallbackQuestions(count); // Compiler handles Task wrapping
+                _logger.LogInformation("Generating {Count} questions using OpenAI", count);
 
-                // The following code is commented out until OpenAI issues are resolved
-                /*
-                // Generate random categories for more variety
-                var categories = new List<string> { "Science", "History", "Geography", "Literature", "Movies", "Technology" };
-                var random = new Random();
-
-                var questions = new List<QuizQuestion>();
-                
-                // Generate questions in batches for better performance
-                const int batchSize = 5;
-                for (int i = 0; i < count; i += batchSize)
+                var messages = new List<ChatRequestMessage>
                 {
-                    int currentBatchSize = Math.Min(batchSize, count - i);
-                    var batchCategory = categories[random.Next(categories.Count)];
-                    
-                    var batchQuestions = await GenerateQuestionsInCategoryAsync(currentBatchSize, batchCategory);
-                    if (batchQuestions != null && batchQuestions.Count > 0)
-                    {
-                        questions.AddRange(batchQuestions);
-                    }
-                    else
-                    {
-                        // If we get no questions, try with a different category
-                        batchCategory = categories[random.Next(categories.Count)];
-                        batchQuestions = await GenerateQuestionsInCategoryAsync(currentBatchSize, batchCategory);
-                        if (batchQuestions != null && batchQuestions.Count > 0)
-                        {
-                            questions.AddRange(batchQuestions);
-                        }
-                    }
-                }
+                    new ChatRequestSystemMessage("You are a helpful quiz question generator. Generate fun and engaging questions about programming fundamentals."),
+                    new ChatRequestUserMessage($"Generate {count} programming quiz questions in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
+                };
 
-                // If we couldn't generate enough questions, create some fallback questions
-                if (questions.Count < count)
+                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
                 {
-                    _logger.LogWarning("Could not generate enough questions using OpenAI. Using fallback questions.");
-                    questions.AddRange(GenerateFallbackQuestions(count - questions.Count));
-                }
+                    Temperature = 0.7f,
+                    MaxTokens = 2000
+                };
 
-                return questions;
-                */
+                var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions);
+                var jsonResponse = response.Value.Choices[0].Message.Content;
+
+                // Parse the JSON response into QuizQuestion objects
+                var questions = JsonSerializer.Deserialize<List<QuizQuestion>>(jsonResponse);
+
+                _logger.LogInformation("Successfully generated {Count} questions", questions?.Count ?? 0);
+                return questions ?? _sampleQuestions.Take(count).ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating quiz questions");
-                // Return fallback questions instead of throwing
-                return GenerateFallbackQuestions(count);
+                _logger.LogError(ex, "Error generating questions with OpenAI");
+                // Fallback to sample questions if OpenAI fails
+                return _sampleQuestions.Take(count).ToList();
             }
         }
 
@@ -103,58 +80,38 @@ namespace PoFunQuiz.Infrastructure.Services
         {
             try
             {
-                var systemMessage = "You are a quiz generator assistant that creates challenging but fair multiple-choice questions.";
-                var userMessage = $@"Generate {count} challenging quiz questions about {category}. Each question should have exactly 4 multiple-choice options with only one correct answer.
+                _logger.LogInformation("Generating {Count} questions in category {Category} using OpenAI", count, category);
 
-Return the results in valid JSON format as an array of objects with this structure:
-[{{
-  ""text"": ""Question text goes here?"",
-  ""options"": [
-    ""Option A"",
-    ""Option B"",
-    ""Option C"",
-    ""Option D""
-  ],
-  ""correctOptionIndex"": 0,
-  ""category"": ""{category}"",
-  ""difficulty"": ""Medium""
-}}]
-
-Note: correctOptionIndex is zero-based (0 means the first option is correct).
-Make the questions challenging but answerable without specialized knowledge.
-Create plausible but clearly incorrect options.
-IMPORTANT: Return ONLY a valid JSON array with no additional text.";
-
-                var chatCompletions = new ChatCompletionsOptions()
+                var messages = new List<ChatRequestMessage>
                 {
-                    DeploymentName = _deploymentName,
-                    Messages =
-                    {
-                        new ChatRequestSystemMessage(systemMessage),
-                        new ChatRequestUserMessage(userMessage)
-                    },
-                    MaxTokens = 2500,
-                    Temperature = 0.7f,
-                    NucleusSamplingFactor = 0.95f,
-                    FrequencyPenalty = 0.8f,
-                    PresencePenalty = 0.8f,
-                    ResponseFormat = ChatCompletionsResponseFormat.JsonObject
+                    new ChatRequestSystemMessage("You are a helpful quiz question generator. Generate fun and engaging questions about programming fundamentals."),
+                    new ChatRequestUserMessage($"Generate {count} programming quiz questions about {category} in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
                 };
 
-                var response = await _client.GetChatCompletionsAsync(chatCompletions);
-                var jsonResponse = response.Value.Choices[0].Message.Content;
-                
-                // Log the actual JSON response for debugging
-                _logger.LogInformation("OpenAI JSON response: {Response}", jsonResponse);
+                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
+                {
+                    Temperature = 0.7f,
+                    MaxTokens = 2000
+                };
 
-                // Handle the JSON parsing with multiple fallback mechanisms
-                // ParseOpenAIResponse now guarantees a non-null return
-                return ParseOpenAIResponse(jsonResponse, category);
+                var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions);
+                var jsonResponse = response.Value.Choices[0].Message.Content;
+
+                // Parse the JSON response into QuizQuestion objects
+                var questions = JsonSerializer.Deserialize<List<QuizQuestion>>(jsonResponse);
+
+                _logger.LogInformation("Successfully generated {Count} questions in category {Category}", questions?.Count ?? 0, category);
+                return questions ?? _sampleQuestions.Where(q => q.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
+                                     .Take(count)
+                                     .ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating quiz questions in category {Category}", category);
-                return new List<QuizQuestion>();
+                _logger.LogError(ex, "Error generating questions with OpenAI for category {Category}", category);
+                // Fallback to sample questions in the requested category if OpenAI fails
+                return _sampleQuestions.Where(q => q.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
+                                     .Take(count)
+                                     .ToList();
             }
         }
 
@@ -328,7 +285,7 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
             }
 
             return questions.FindAll(q => 
-                !string.IsNullOrWhiteSpace(q.Text) && 
+                !string.IsNullOrWhiteSpace(q.Question) && 
                 q.Options?.Count == 4 &&
                 q.CorrectOptionIndex >= 0 && 
                 q.CorrectOptionIndex < 4);
@@ -515,16 +472,52 @@ IMPORTANT: Return ONLY a valid JSON array with no additional text.";
                 
                 fallbackQuestions.Add(new QuizQuestion 
                 { 
-                    Text = question.Text,
+                    Question = question.Text,
                     Options = randomizedOptions,
                     CorrectOptionIndex = newCorrectIndex,
                     Category = question.Category,
-                    Difficulty = "Medium"
+                    Difficulty = QuestionDifficulty.Medium
                 });
             }
             
             _logger.LogInformation("Generated {Count} unique fallback questions", fallbackQuestions.Count);
             return fallbackQuestions;
+        }
+
+        private List<QuizQuestion> GenerateSampleQuestions(int count = 5)
+        {
+            var sampleQuestions = new List<QuizQuestion>
+            {
+                new QuizQuestion
+                {
+                    Question = "What is the capital of France?",
+                    Options = new List<string> { "Paris", "London", "Berlin", "Madrid" },
+                    CorrectOptionIndex = 0,
+                    Category = "Geography",
+                    Difficulty = QuestionDifficulty.Easy
+                },
+                new QuizQuestion
+                {
+                    Question = "Which programming language was created by Microsoft?",
+                    Options = new List<string> { "Java", "Python", "C#", "Ruby" },
+                    CorrectOptionIndex = 2,
+                    Category = "Technology",
+                    Difficulty = QuestionDifficulty.Medium
+                },
+                new QuizQuestion
+                {
+                    Question = "What is the chemical symbol for gold?",
+                    Options = new List<string> { "Ag", "Fe", "Cu", "Au" },
+                    CorrectOptionIndex = 3,
+                    Category = "Science",
+                    Difficulty = QuestionDifficulty.Easy
+                }
+            };
+
+            // Return the requested number of questions, cycling through the samples if needed
+            return Enumerable.Range(0, count)
+                .Select(i => sampleQuestions[i % sampleQuestions.Count])
+                .ToList();
         }
     }
 }

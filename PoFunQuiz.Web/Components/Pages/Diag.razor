@@ -1,0 +1,252 @@
+@page "/diag"
+@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Infrastructure.Storage
+@using Azure.Data.Tables
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@inject ILogger<Diag> Logger
+@inject IQuestionGeneratorService QuestionGenerator
+@inject NavigationManager NavigationManager
+
+<PageTitle>PoFunQuiz - Diagnostics</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <MudText Typo="Typo.h3" Class="mb-4">System Diagnostics</MudText>
+
+    <MudGrid>
+        @foreach (var check in _diagnosticChecks)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard>
+                    <MudCardContent>
+                        <div class="d-flex align-center">
+                            @if (!check.IsChecked)
+                            {
+                                <MudProgressCircular Color="Color.Default" Indeterminate="true" Size="Size.Small" Class="me-2"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@(check.IsSuccess ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)"
+                                        Color="@(check.IsSuccess ? Color.Success : Color.Error)"
+                                        Class="me-2"/>
+                            }
+                            <MudText>@check.Name</MudText>
+                        </div>
+                        @if (check.IsChecked && !string.IsNullOrEmpty(check.Message))
+                        {
+                            <MudText Typo="Typo.body2" Color="@(check.IsSuccess ? Color.Success : Color.Error)" Class="mt-2">
+                                @check.Message
+                            </MudText>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+
+    <MudDivider Class="my-4"/>
+
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               OnClick="RunDiagnostics" 
+               Disabled="@_isRunning">
+        Run Diagnostics Again
+    </MudButton>
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Secondary"
+               OnClick="@(() => NavigationManager.NavigateTo("/"))">
+        Back to Home
+    </MudButton>
+</MudContainer>
+
+@code {
+    private bool _isRunning;
+    private List<DiagnosticCheck> _diagnosticChecks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeDiagnosticChecks();
+        await RunDiagnostics();
+    }
+
+    private void InitializeDiagnosticChecks()
+    {
+        _diagnosticChecks = new List<DiagnosticCheck>
+        {
+            new() { Name = "Azure Table Storage Connection" },
+            new() { Name = "OpenAI Service Connection" },
+            new() { Name = "Application Configuration" },
+            new() { Name = "Question Generation Service" }
+        };
+    }
+
+    private async Task RunDiagnostics()
+    {
+        try
+        {
+            _isRunning = true;
+            Logger.LogInformation("Starting diagnostics check");
+
+            foreach (var check in _diagnosticChecks)
+            {
+                check.Reset();
+                StateHasChanged();
+            }
+
+            // Check Azure Table Storage
+            await CheckTableStorage();
+
+            // Check OpenAI Service
+            await CheckOpenAIService();
+
+            // Check Application Configuration
+            CheckConfiguration();
+
+            // Check Question Generation
+            await CheckQuestionGeneration();
+
+            Logger.LogInformation("Diagnostics check completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during diagnostics check");
+        }
+        finally
+        {
+            _isRunning = false;
+        }
+    }
+
+    private async Task CheckTableStorage()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Azure Table Storage Connection");
+        try
+        {
+            var connectionString = Configuration.GetConnectionString("TableStorage");
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new Exception("Table Storage connection string is not configured");
+            }
+
+            var tableClient = new TableClient(connectionString, "GameSessions");
+            await tableClient.CreateIfNotExistsAsync();
+
+            check.SetSuccess("Successfully connected to Azure Table Storage");
+            Logger.LogInformation("Table Storage check passed");
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Failed to connect: {ex.Message}");
+            Logger.LogError(ex, "Table Storage check failed");
+        }
+    }
+
+    private async Task CheckOpenAIService()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "OpenAI Service Connection");
+        try
+        {
+            // Try to generate a single test question
+            var questions = await QuestionGenerator.GenerateQuestionsAsync(1);
+            if (questions != null && questions.Any())
+            {
+                check.SetSuccess("Successfully connected to OpenAI service");
+                Logger.LogInformation("OpenAI service check passed");
+            }
+            else
+            {
+                throw new Exception("No questions were generated");
+            }
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Failed to connect: {ex.Message}");
+            Logger.LogError(ex, "OpenAI service check failed");
+        }
+    }
+
+    private void CheckConfiguration()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Application Configuration");
+        try
+        {
+            var requiredSettings = new[]
+            {
+                "ConnectionStrings:TableStorage",
+                "OpenAI:Endpoint",
+                "OpenAI:Key",
+                "OpenAI:DeploymentName"
+            };
+
+            var missingSettings = requiredSettings
+                .Where(setting => string.IsNullOrEmpty(Configuration[setting]))
+                .ToList();
+
+            if (missingSettings.Any())
+            {
+                throw new Exception($"Missing required settings: {string.Join(", ", missingSettings)}");
+            }
+
+            check.SetSuccess("All required configuration settings are present");
+            Logger.LogInformation("Configuration check passed");
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Configuration check failed: {ex.Message}");
+            Logger.LogError(ex, "Configuration check failed");
+        }
+    }
+
+    private async Task CheckQuestionGeneration()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Question Generation Service");
+        try
+        {
+            var questions = await QuestionGenerator.GenerateQuestionsAsync(1);
+            if (questions != null && questions.Any())
+            {
+                check.SetSuccess($"Successfully generated {questions.Count} question(s)");
+                Logger.LogInformation("Question generation check passed");
+            }
+            else
+            {
+                throw new Exception("No questions were generated");
+            }
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Failed to generate questions: {ex.Message}");
+            Logger.LogError(ex, "Question generation check failed");
+        }
+    }
+
+    private class DiagnosticCheck
+    {
+        public string Name { get; set; } = "";
+        public bool IsChecked { get; private set; }
+        public bool IsSuccess { get; private set; }
+        public string Message { get; private set; } = "";
+
+        public void Reset()
+        {
+            IsChecked = false;
+            IsSuccess = false;
+            Message = "";
+        }
+
+        public void SetSuccess(string message)
+        {
+            IsChecked = true;
+            IsSuccess = true;
+            Message = message;
+        }
+
+        public void SetFailure(string message)
+        {
+            IsChecked = true;
+            IsSuccess = false;
+            Message = message;
+        }
+    }
+} 

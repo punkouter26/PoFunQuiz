@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Azure;
 using Azure.Data.Tables;
 using PoFunQuiz.Core.Models;
@@ -12,24 +14,28 @@ namespace PoFunQuiz.Infrastructure.Storage
     /// </summary>
     public class GameSessionEntity : ITableEntity
     {
-        // PartitionKey and RowKey are required by ITableEntity
-        public string PartitionKey { get; set; } = "GameSession"; // Default PartitionKey
-        public string RowKey { get; set; } = default!; // GameId
-
-        // Timestamp and ETag are required by ITableEntity
+        public string PartitionKey { get; set; } = "GameSession";
+        public string RowKey { get; set; } = string.Empty;
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
 
-        // Game Session Data
-        public string Player1Initials { get; set; } = default!;
-        public string Player2Initials { get; set; } = default!;
-        public int Player1Score { get; set; }
-        public int Player2Score { get; set; }
-        public DateTimeOffset? StartTime { get; set; }
-        public DateTimeOffset? EndTime { get; set; }
-        // Note: Storing complex objects like Player or List<QuizQuestion> directly is not recommended.
-        // Store identifiers (like Initials) or serialize if absolutely necessary (e.g., JSON string),
-        // but be mindful of query limitations and storage costs.
+        public string GameId { get; set; } = string.Empty;
+        public string Player1Id { get; set; } = string.Empty;
+        public string Player2Id { get; set; } = string.Empty;
+        public string Player1Initials { get; set; } = string.Empty;
+        public string Player2Initials { get; set; } = string.Empty;
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public int Player1BaseScore { get; set; }
+        public int Player2BaseScore { get; set; }
+        public int Player1StreakBonus { get; set; }
+        public int Player2StreakBonus { get; set; }
+        public int Player1SpeedBonus { get; set; }
+        public int Player2SpeedBonus { get; set; }
+        public int Player1TimeBonus { get; set; }
+        public int Player2TimeBonus { get; set; }
+        public string SelectedCategories { get; set; } = string.Empty;
+        public string GameDifficulty { get; set; } = "Medium";
 
         /// <summary>
         /// Parameterless constructor required for table storage deserialization.
@@ -39,38 +45,64 @@ namespace PoFunQuiz.Infrastructure.Storage
         /// <summary>
         /// Creates a GameSessionEntity from a GameSession model.
         /// </summary>
-        public static GameSessionEntity FromModel(GameSession model)
+        public static GameSessionEntity FromModel(GameSession gameSession)
         {
+            if (gameSession == null)
+                throw new ArgumentNullException(nameof(gameSession));
+
             return new GameSessionEntity
             {
-                RowKey = model.GameId,
-                Player1Initials = model.Player1?.Initials ?? string.Empty,
-                Player2Initials = model.Player2?.Initials ?? string.Empty,
-                Player1Score = model.Player1Score,
-                Player2Score = model.Player2Score,
-                StartTime = model.StartTime,
-                EndTime = model.EndTime
-                // PartitionKey defaults to "GameSession"
+                PartitionKey = "GameSession",
+                RowKey = gameSession.GameId,
+                GameId = gameSession.GameId,
+                Player1Id = gameSession.Player1?.Id ?? string.Empty,
+                Player2Id = gameSession.Player2?.Id ?? string.Empty,
+                Player1Initials = gameSession.Player1Initials,
+                Player2Initials = gameSession.Player2Initials,
+                StartTime = gameSession.StartTime,
+                EndTime = gameSession.EndTime,
+                Player1BaseScore = gameSession.Player1BaseScore,
+                Player2BaseScore = gameSession.Player2BaseScore,
+                Player1StreakBonus = gameSession.Player1StreakBonus,
+                Player2StreakBonus = gameSession.Player2StreakBonus,
+                Player1SpeedBonus = gameSession.Player1SpeedBonus,
+                Player2SpeedBonus = gameSession.Player2SpeedBonus,
+                Player1TimeBonus = gameSession.Player1TimeBonus,
+                Player2TimeBonus = gameSession.Player2TimeBonus,
+                SelectedCategories = string.Join(",", gameSession.SelectedCategories ?? new List<string>()),
+                GameDifficulty = gameSession.GameDifficulty.ToString()
             };
         }
 
         /// <summary>
-        /// Converts this entity back to a GameSession model.
-        /// Note: This requires fetching Player objects separately if needed.
+        /// Converts this entity to a GameSession model.
+        /// Note: Player objects need to be fetched separately.
         /// </summary>
-        public GameSession ToModel(Player? player1 = null, Player? player2 = null)
+        public GameSession ToModel()
         {
+            // Create placeholder Player objects with minimal information
+            var player1 = new Player { Id = Player1Id, Initials = Player1Initials };
+            var player2 = new Player { Id = Player2Id, Initials = Player2Initials };
+
             return new GameSession
             {
-                GameId = this.RowKey,
-                Player1Initials = this.Player1Initials, // Store initials in model
-                Player2Initials = this.Player2Initials, // Store initials in model
-                Player1 = player1, // Assign if provided
-                Player2 = player2, // Assign if provided
-                Player1Score = this.Player1Score,
-                Player2Score = this.Player2Score,
-                StartTime = this.StartTime?.UtcDateTime,
-                EndTime = this.EndTime?.UtcDateTime
+                GameId = GameId,
+                Player1 = player1,
+                Player2 = player2,
+                Player1Initials = Player1Initials,
+                Player2Initials = Player2Initials,
+                StartTime = StartTime,
+                EndTime = EndTime,
+                Player1BaseScore = Player1BaseScore,
+                Player2BaseScore = Player2BaseScore,
+                Player1StreakBonus = Player1StreakBonus,
+                Player2StreakBonus = Player2StreakBonus,
+                Player1SpeedBonus = Player1SpeedBonus,
+                Player2SpeedBonus = Player2SpeedBonus,
+                Player1TimeBonus = Player1TimeBonus,
+                Player2TimeBonus = Player2TimeBonus,
+                SelectedCategories = SelectedCategories.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                GameDifficulty = Enum.Parse<QuestionDifficulty>(GameDifficulty)
             };
         }
     }
