@@ -5,7 +5,10 @@ namespace PoFunQuiz.Core.Configuration
     /// </summary>
     public class TableStorageSettings
     {
-        public required string ConnectionString { get; set; }
-        public string TableName { get; set; } = "PlayerStats";
+        public string ConnectionString { get; set; } = string.Empty;
+        public string TablePrefix { get; set; } = "quiz";
+        public string GameSessionTableName => $"{TablePrefix}gamesessions";
+        public string PlayerTableName => $"{TablePrefix}players";
+        public string QuestionTableName => $"{TablePrefix}questions";
     }
 }

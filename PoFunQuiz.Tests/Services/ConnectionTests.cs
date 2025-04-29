@@ -42,32 +42,38 @@ namespace PoFunQuiz.Tests.Services
         }
 
         [Fact]
-        public async Task OpenAI_Connection_Should_Work()
+        public async Task OpenAI_Service_Should_Return_Questions()
         {
             // Arrange
             var openAISettings = new OpenAISettings
             {
-                Endpoint = _configuration["OpenAI:Endpoint"],
-                Key = _configuration["OpenAI:Key"],
-                DeploymentName = _configuration["OpenAI:DeploymentName"]
+                Endpoint = _configuration["OpenAI:Endpoint"] ?? "https://api.openai.com/v1",
+                ApiKey = _configuration["OpenAI:ApiKey"] ?? "test-key",
+                ModelName = _configuration["OpenAI:ModelName"] ?? "gpt-4",
+                Temperature = 0.7f,
+                MaxTokens = 2000
             };
 
             var options = Options.Create(openAISettings);
             var questionGenerator = new OpenAIQuestionGeneratorService(_logger, options);
 
-            // Act & Assert
-            try
-            {
-                var questions = await questionGenerator.GenerateQuestionsAsync(1);
-                Assert.NotNull(questions);
-                Assert.NotEmpty(questions);
-                _output.WriteLine($"Successfully generated {questions.Count} question(s)");
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Error connecting to OpenAI: {ex}");
-                throw;
-            }
+            // Act
+            var questions = await questionGenerator.GenerateQuestionsAsync(1);
+
+            // Assert
+            Assert.NotNull(questions);
+            Assert.NotEmpty(questions);
+            _output.WriteLine($"Successfully generated {questions.Count} question(s)");
+            
+            // Verify question structure
+            var question = questions[0];
+            Assert.NotNull(question.Question);
+            Assert.NotEmpty(question.Question);
+            Assert.NotNull(question.Options);
+            Assert.Equal(4, question.Options.Count);
+            Assert.InRange(question.CorrectOptionIndex, 0, 3);
+            Assert.NotNull(question.Category);
+            Assert.NotEmpty(question.Category);
         }
 
         [Fact]

@@ -1,0 +1,4 @@
+2025-04-29 15:55:17.429 [INF] 🔌 ConnectionState service initialized at "2025-04-29T15:55:17.4273949-04:00"
+2025-04-29 15:55:17.449 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-29T15:55:17.4496120-04:00"
+2025-04-29 15:55:17.450 [INF] 🔌 Circuit opened with ID 4Vs4EQIH1_-R-5kWTrCiY1mrxsbPUqvxvpK9KmZeTgw at "2025-04-29T15:55:17.4505357-04:00"
+2025-04-29 15:55:17.452 [INF] ✅ Circuit connection UP detected at "2025-04-29T15:55:17.4521381-04:00" for circuit 4Vs4EQIH1_-R-5kWTrCiY1mrxsbPUqvxvpK9KmZeTgw

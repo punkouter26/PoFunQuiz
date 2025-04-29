@@ -1,0 +1,8 @@
+2025-04-29 17:04:12.826 [INF] 🔌 ConnectionState service initialized at "2025-04-29T17:04:12.8249475-04:00"
+2025-04-29 17:04:12.848 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-29T17:04:12.8481842-04:00"
+2025-04-29 17:04:12.850 [INF] 🔌 Circuit opened with ID DB_Ybl9x5O1LdoZ96A3ddxnuwppCe1cj1_Jdn5rOQmU at "2025-04-29T17:04:12.8504690-04:00"
+2025-04-29 17:04:12.852 [INF] ✅ Circuit connection UP detected at "2025-04-29T17:04:12.8521473-04:00" for circuit DB_Ybl9x5O1LdoZ96A3ddxnuwppCe1cj1_Jdn5rOQmU
+2025-04-29 19:42:15.537 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-29T19:42:15.5373903-04:00" for circuit DB_Ybl9x5O1LdoZ96A3ddxnuwppCe1cj1_Jdn5rOQmU
+2025-04-29 19:42:15.541 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-29T19:42:15.5414068-04:00"
+2025-04-29 19:42:15.836 [INF] ✅ Circuit connection UP detected at "2025-04-29T19:42:15.8366417-04:00" for circuit DB_Ybl9x5O1LdoZ96A3ddxnuwppCe1cj1_Jdn5rOQmU
+2025-04-29 19:42:15.838 [INF] 🔌 Connection state changing from Disconnected to Connected at "2025-04-29T19:42:15.8381347-04:00"

@@ -29,7 +29,7 @@ namespace PoFunQuiz.Infrastructure.Services
             
             _tableClient = new TableClient(
                 storageSettings.ConnectionString,
-                storageSettings.TableName);
+                storageSettings.PlayerTableName);
             
             // Ensure table exists
             _tableClient.CreateIfNotExists();

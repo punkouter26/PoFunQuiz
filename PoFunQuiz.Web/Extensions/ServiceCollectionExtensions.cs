@@ -5,6 +5,9 @@ using PoFunQuiz.Core.Services;
 using PoFunQuiz.Infrastructure.Services;
 using PoFunQuiz.Web.Services;
 using Azure.Data.Tables;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using PoFunQuiz.Web.Middleware;
 
 namespace PoFunQuiz.Web.Extensions
 {
@@ -115,6 +118,25 @@ namespace PoFunQuiz.Web.Extensions
             // Add MudBlazor services
             services.AddMudServices();
             
+            return services;
+        }
+
+        public static IServiceCollection AddAppConfiguration(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // Bind configuration to strongly-typed settings
+            services.Configure<AppSettings>(configuration);
+            
+            // Register configuration service
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddGlobalErrorHandling(this IServiceCollection services)
+        {
+            services.AddTransient<GlobalExceptionMiddleware>();
             return services;
         }
     }

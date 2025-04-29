@@ -23,7 +23,9 @@ namespace PoFunQuiz.Infrastructure.Services
         private readonly ILogger<OpenAIQuestionGeneratorService> _logger;
         private readonly List<QuizQuestion> _sampleQuestions;
         private readonly OpenAIClient _client;
-        private readonly string _deploymentName;
+        private readonly string _modelName;
+        private readonly float _temperature;
+        private readonly int _maxTokens;
 
         public OpenAIQuestionGeneratorService(
             ILogger<OpenAIQuestionGeneratorService> logger,
@@ -32,11 +34,16 @@ namespace PoFunQuiz.Infrastructure.Services
             _logger = logger;
             _sampleQuestions = GenerateSampleQuestions();
             
+            var openAISettings = settings.Value;
+            
             // Initialize OpenAI client
             _client = new OpenAIClient(
-                new Uri(settings.Value.Endpoint),
-                new AzureKeyCredential(settings.Value.Key));
-            _deploymentName = settings.Value.DeploymentName;
+                new Uri(openAISettings.Endpoint),
+                new AzureKeyCredential(openAISettings.ApiKey));
+            
+            _modelName = openAISettings.ModelName;
+            _temperature = openAISettings.Temperature;
+            _maxTokens = openAISettings.MaxTokens;
         }
 
         /// <inheritdoc />
@@ -52,10 +59,10 @@ namespace PoFunQuiz.Infrastructure.Services
                     new ChatRequestUserMessage($"Generate {count} programming quiz questions in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
                 };
 
-                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
+                var chatCompletionsOptions = new ChatCompletionsOptions(_modelName, messages)
                 {
-                    Temperature = 0.7f,
-                    MaxTokens = 2000
+                    Temperature = _temperature,
+                    MaxTokens = _maxTokens
                 };
 
                 var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions);
@@ -88,10 +95,10 @@ namespace PoFunQuiz.Infrastructure.Services
                     new ChatRequestUserMessage($"Generate {count} programming quiz questions about {category} in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
                 };
 
-                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
+                var chatCompletionsOptions = new ChatCompletionsOptions(_modelName, messages)
                 {
-                    Temperature = 0.7f,
-                    MaxTokens = 2000
+                    Temperature = _temperature,
+                    MaxTokens = _maxTokens
                 };
 
                 var response = await _client.GetChatCompletionsAsync(chatCompletionsOptions);
