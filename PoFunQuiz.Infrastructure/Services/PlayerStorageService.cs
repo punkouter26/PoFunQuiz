@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
 using PoFunQuiz.Infrastructure.Storage;
+using PoFunQuiz.Core.Configuration;
 
 namespace PoFunQuiz.Infrastructure.Services
 {
@@ -211,14 +212,5 @@ namespace PoFunQuiz.Infrastructure.Services
                 LastPlayed = lastPlayed // Assign the determined DateTime value
             };
         }
-    }
-
-    /// <summary>
-    /// Configuration settings for Azure Table Storage
-    /// </summary>
-    public class TableStorageSettings
-    {
-        public required string ConnectionString { get; set; }
-        public string TableName { get; set; } = "PlayerStats";
     }
 }
