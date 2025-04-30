@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.Extensions.Options;
 using MudBlazor.Services;
 using PoFunQuiz.Core.Configuration;
 using PoFunQuiz.Core.Services;
@@ -57,14 +58,14 @@ namespace PoFunQuiz.Web.Extensions
         public static IServiceCollection AddStorageServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Register TableServiceClient as a singleton
-            services.AddSingleton(sp => 
+            services.AddSingleton(sp =>
             {
-                var connectionString = configuration.GetValue<string>("AzureTableStorage:ConnectionString"); 
-                if (string.IsNullOrEmpty(connectionString))
+                var tableStorageSettings = sp.GetRequiredService<IOptions<TableStorageSettings>>().Value;
+                if (string.IsNullOrEmpty(tableStorageSettings.ConnectionString))
                 {
-                    throw new InvalidOperationException("Azure Table Storage connection string ('AzureTableStorage:ConnectionString') not found or empty in configuration.");
+                    throw new InvalidOperationException("Azure Table Storage connection string is not configured.");
                 }
-                return new TableServiceClient(connectionString);
+                return new TableServiceClient(tableStorageSettings.ConnectionString);
             });
             
             // Register storage services

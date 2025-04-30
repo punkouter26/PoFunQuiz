@@ -1,0 +1,43 @@
+2025-04-29 19:59:02.156 [INF] 🔌 ConnectionState service initialized at "2025-04-29T19:59:02.1544110-04:00"
+2025-04-29 19:59:02.181 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-29T19:59:02.1815378-04:00"
+2025-04-29 19:59:02.184 [INF] 🔌 Circuit opened with ID ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U at "2025-04-29T19:59:02.1849314-04:00"
+2025-04-29 19:59:02.186 [INF] ✅ Circuit connection UP detected at "2025-04-29T19:59:02.1861259-04:00" for circuit ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U
+2025-04-29 19:59:12.136 [INF] Ensured Azure Table 'GameSessions' exists.
+2025-04-29 19:59:12.138 [INF] Leaderboard page initialized
+2025-04-29 19:59:12.142 [INF] Starting to load leaderboard data
+2025-04-29 19:59:12.142 [INF] Calling PlayerService.GetAllPlayersAsync()
+2025-04-29 19:59:12.219 [INF] Successfully loaded 0 players from storage
+2025-04-29 19:59:12.220 [INF] Retrieved 0 players from storage
+2025-04-29 19:59:12.223 [INF] No player filter applied, fetching general recent games.
+2025-04-29 19:59:12.225 [INF] Querying Azure Table 'GameSessions'...
+2025-04-29 19:59:12.286 [INF] Initial query returned 5 entities.
+2025-04-29 19:59:12.291 [INF] Retrieved 5 recent game sessions from table storage after sorting and taking count.
+2025-04-29 19:59:12.292 [INF] Retrieved 5 recent game sessions
+2025-04-29 19:59:12.304 [INF] Leaderboard loaded successfully with 0 players
+2025-04-29 19:59:22.085 [WRN] Unhandled exception rendering component: Missing <MudPopoverProvider />, please add it to your layout. See https://mudblazor.com/getting-started/installation#manual-install-add-components
+System.InvalidOperationException: Missing <MudPopoverProvider />, please add it to your layout. See https://mudblazor.com/getting-started/installation#manual-install-add-components
+   at MudBlazor.PopoverService.CreatePopoverAsync(IPopover popover)
+   at MudBlazor.MudPopoverBase.OnInitializedAsync()
+   at Microsoft.AspNetCore.Components.ComponentBase.RunInitAndSetParametersAsync()
+   at MudBlazor.State.ParameterContainer.SetParametersAsync(Func`2 baseSetParametersAsync, ParameterView parameters)
+2025-04-29 19:59:22.121 [ERR] Unhandled exception in circuit 'ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U'.
+System.InvalidOperationException: Missing <MudPopoverProvider />, please add it to your layout. See https://mudblazor.com/getting-started/installation#manual-install-add-components
+   at MudBlazor.PopoverService.CreatePopoverAsync(IPopover popover)
+   at MudBlazor.MudPopoverBase.OnInitializedAsync()
+   at Microsoft.AspNetCore.Components.ComponentBase.RunInitAndSetParametersAsync()
+   at MudBlazor.State.ParameterContainer.SetParametersAsync(Func`2 baseSetParametersAsync, ParameterView parameters)
+2025-04-29 19:59:22.133 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-29T19:59:22.1329907-04:00" for circuit ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U
+2025-04-29 19:59:22.134 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-29T19:59:22.1343338-04:00"
+2025-04-29 19:59:22.134 [INF] 🔌 Circuit closed with ID ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U at "2025-04-29T19:59:22.1344983-04:00"
+2025-04-29 19:59:22.137 [WRN] Unhandled exception rendering component: Cannot access a disposed object.
+System.ObjectDisposedException: Cannot access a disposed object.
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.InsertNewFrame(DiffContext& diffContext, Int32 newFrameIndex)
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.AppendDiffEntriesForRange(DiffContext& diffContext, Int32 oldStartIndex, Int32 oldEndIndexExcl, Int32 newStartIndex, Int32 newEndIndexExcl)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
+   at Microsoft.AspNetCore.Components.RenderTree.Renderer.ProcessRenderQueue()
+2025-04-29 19:59:22.138 [ERR] Unhandled exception in circuit 'ihizZZcvCNIYNllM3wEpH9I3b5oRilBvFdELCSFGj2U'.
+System.ObjectDisposedException: Cannot access a disposed object.
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.InsertNewFrame(DiffContext& diffContext, Int32 newFrameIndex)
+   at Microsoft.AspNetCore.Components.RenderTree.RenderTreeDiffBuilder.AppendDiffEntriesForRange(DiffContext& diffContext, Int32 oldStartIndex, Int32 oldEndIndexExcl, Int32 newStartIndex, Int32 newEndIndexExcl)
+   at Microsoft.AspNetCore.Components.Rendering.ComponentState.RenderIntoBatch(RenderBatchBuilder batchBuilder, RenderFragment renderFragment, Exception& renderFragmentException)
+   at Microsoft.AspNetCore.Components.RenderTree.Renderer.ProcessRenderQueue()

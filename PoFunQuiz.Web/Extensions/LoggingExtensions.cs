@@ -13,17 +13,13 @@ namespace PoFunQuiz.Web.Extensions
         /// </summary>
         public static IHostBuilder AddApplicationLogging(this IHostBuilder builder)
         {
-            // Create a new log file for each run
-            var logFileName = $"log_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-            
             // Configure Serilog
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
-                .WriteTo.File(logFileName, 
-                    rollingInterval: RollingInterval.Day,
+                .WriteTo.File("log.txt",
                     outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
                 .CreateLogger();
             

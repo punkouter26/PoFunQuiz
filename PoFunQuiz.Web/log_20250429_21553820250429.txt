@@ -1,0 +1,27 @@
+2025-04-29 21:56:01.819 [WRN] Failed to determine the https port for redirect.
+2025-04-29 21:56:02.482 [INF] 🔌 ConnectionState service initialized at "2025-04-29T21:56:02.4812579-04:00"
+2025-04-29 21:56:02.486 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-29T21:56:02.4862309-04:00"
+2025-04-29 21:56:02.487 [INF] 🔌 Circuit opened with ID krXMkc7UfUTlDzvSPPFB4NMMha4MCXsyFPE9xl_EN04 at "2025-04-29T21:56:02.4875187-04:00"
+2025-04-29 21:56:02.488 [INF] ✅ Circuit connection UP detected at "2025-04-29T21:56:02.4882037-04:00" for circuit krXMkc7UfUTlDzvSPPFB4NMMha4MCXsyFPE9xl_EN04
+2025-04-29 21:56:09.115 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-29T21:56:09.1150930-04:00" for circuit krXMkc7UfUTlDzvSPPFB4NMMha4MCXsyFPE9xl_EN04
+2025-04-29 21:56:09.116 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-29T21:56:09.1164131-04:00"
+2025-04-29 21:56:31.816 [INF] 🔌 Circuit opened with ID oAlOf34lhG1L1Tjy790QyuKpP9-sffNLfciiH1rMecM at "2025-04-29T21:56:31.8162484-04:00"
+2025-04-29 21:56:31.817 [INF] ✅ Circuit connection UP detected at "2025-04-29T21:56:31.8172904-04:00" for circuit oAlOf34lhG1L1Tjy790QyuKpP9-sffNLfciiH1rMecM
+2025-04-29 21:56:31.818 [INF] 🔌 Connection state changing from Disconnected to Connected at "2025-04-29T21:56:31.8180893-04:00"
+2025-04-29 21:56:39.544 [WRN] OpenAI API key is empty. Using sample questions instead.
+2025-04-29 21:56:39.547 [INF] Starting diagnostics check
+2025-04-29 21:56:39.549 [ERR] Table Storage check failed
+System.Exception: Table Storage connection string is not configured
+   at PoFunQuiz.Web.Components.Pages.Diag.CheckTableStorage() in C:\Users\punko\Downloads\PoFunQuiz\PoFunQuiz.Web\Components\Pages\Diag.razor:line 129
+2025-04-29 21:56:39.574 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-29 21:56:39.575 [INF] OpenAI service check passed
+2025-04-29 21:56:39.577 [ERR] Configuration check failed
+System.Exception: Missing required settings: ConnectionStrings:TableStorage, OpenAI:Key, OpenAI:DeploymentName
+   at PoFunQuiz.Web.Components.Pages.Diag.CheckConfiguration() in C:\Users\punko\Downloads\PoFunQuiz\PoFunQuiz.Web\Components\Pages\Diag.razor:line 188
+2025-04-29 21:56:39.579 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-29 21:56:39.580 [INF] Question generation check passed
+2025-04-29 21:56:39.580 [INF] Diagnostics check completed successfully
+2025-04-29 21:56:39.595 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-29T21:56:39.5951424-04:00" for circuit oAlOf34lhG1L1Tjy790QyuKpP9-sffNLfciiH1rMecM
+2025-04-29 21:56:39.600 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-29T21:56:39.6001824-04:00"
+2025-04-29 21:56:39.604 [INF] 🔌 Circuit closed with ID oAlOf34lhG1L1Tjy790QyuKpP9-sffNLfciiH1rMecM at "2025-04-29T21:56:39.6041965-04:00"
+2025-04-29 21:59:09.117 [INF] 🔌 Circuit closed with ID krXMkc7UfUTlDzvSPPFB4NMMha4MCXsyFPE9xl_EN04 at "2025-04-29T21:59:09.1177565-04:00"

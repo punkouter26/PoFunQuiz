@@ -1,0 +1,30 @@
+2025-04-30 09:58:31.313 [WRN] Failed to determine the https port for redirect.
+2025-04-30 09:58:31.400 [WRN] OpenAI API key is empty. Using sample questions instead.
+2025-04-30 09:58:31.403 [INF] Starting diagnostics check
+2025-04-30 09:58:31.496 [INF] Table Storage check passed
+2025-04-30 09:58:31.499 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 09:58:31.500 [INF] OpenAI service check passed
+2025-04-30 09:58:31.500 [ERR] Configuration check failed
+System.Exception: Missing required settings: OpenAI:Key, OpenAI:DeploymentName
+   at PoFunQuiz.Web.Components.Pages.Diag.CheckConfiguration() in C:\Users\punko\Downloads\PoFunQuiz\PoFunQuiz.Web\Components\Pages\Diag.razor:line 188
+2025-04-30 09:58:31.509 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 09:58:31.509 [INF] Question generation check passed
+2025-04-30 09:58:31.510 [INF] Diagnostics check completed successfully
+2025-04-30 09:59:17.890 [INF] 🔌 ConnectionState service initialized at "2025-04-30T09:59:17.8904697-04:00"
+2025-04-30 09:59:17.894 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-30T09:59:17.8942321-04:00"
+2025-04-30 09:59:17.895 [INF] 🔌 Circuit opened with ID FwqghZOMzlj63O9J6u9ju3Ghkw0zfmt0Q0C4q5cgn2A at "2025-04-30T09:59:17.8950387-04:00"
+2025-04-30 09:59:17.896 [INF] ✅ Circuit connection UP detected at "2025-04-30T09:59:17.8959908-04:00" for circuit FwqghZOMzlj63O9J6u9ju3Ghkw0zfmt0Q0C4q5cgn2A
+2025-04-30 09:59:22.686 [WRN] OpenAI API key is empty. Using sample questions instead.
+2025-04-30 09:59:22.687 [INF] Starting diagnostics check
+2025-04-30 09:59:22.692 [INF] Table Storage check passed
+2025-04-30 09:59:22.693 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 09:59:22.694 [INF] OpenAI service check passed
+2025-04-30 09:59:22.695 [ERR] Configuration check failed
+System.Exception: Missing required settings: OpenAI:Key, OpenAI:DeploymentName
+   at PoFunQuiz.Web.Components.Pages.Diag.CheckConfiguration() in C:\Users\punko\Downloads\PoFunQuiz\PoFunQuiz.Web\Components\Pages\Diag.razor:line 188
+2025-04-30 09:59:22.696 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 09:59:22.696 [INF] Question generation check passed
+2025-04-30 09:59:22.697 [INF] Diagnostics check completed successfully
+2025-04-30 09:59:22.712 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-30T09:59:22.7124769-04:00" for circuit FwqghZOMzlj63O9J6u9ju3Ghkw0zfmt0Q0C4q5cgn2A
+2025-04-30 09:59:22.713 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-30T09:59:22.7136656-04:00"
+2025-04-30 09:59:22.714 [INF] 🔌 Circuit closed with ID FwqghZOMzlj63O9J6u9ju3Ghkw0zfmt0Q0C4q5cgn2A at "2025-04-30T09:59:22.7148720-04:00"

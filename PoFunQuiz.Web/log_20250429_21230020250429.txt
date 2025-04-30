@@ -1,0 +1,8 @@
+2025-04-29 21:51:21.963 [WRN] Failed to determine the https port for redirect.
+2025-04-29 21:51:22.649 [INF] 🔌 ConnectionState service initialized at "2025-04-29T21:51:22.6491191-04:00"
+2025-04-29 21:51:22.656 [INF] 🔌 ConnectionStateHandler initialized at "2025-04-29T21:51:22.6564930-04:00"
+2025-04-29 21:51:22.658 [INF] 🔌 Circuit opened with ID TTIVyw9pLFcphd3BEtwl7i8G4hJP_A4_pyT5f5F0Lmw at "2025-04-29T21:51:22.6582744-04:00"
+2025-04-29 21:51:22.661 [INF] ✅ Circuit connection UP detected at "2025-04-29T21:51:22.6610753-04:00" for circuit TTIVyw9pLFcphd3BEtwl7i8G4hJP_A4_pyT5f5F0Lmw
+2025-04-29 21:51:30.261 [WRN] ⚠️ Circuit connection DOWN detected at "2025-04-29T21:51:30.2609895-04:00" for circuit TTIVyw9pLFcphd3BEtwl7i8G4hJP_A4_pyT5f5F0Lmw
+2025-04-29 21:51:30.264 [INF] 🔌 Connection state changing from Connected to Disconnected at "2025-04-29T21:51:30.2645021-04:00"
+2025-04-29 21:54:30.298 [INF] 🔌 Circuit closed with ID TTIVyw9pLFcphd3BEtwl7i8G4hJP_A4_pyT5f5F0Lmw at "2025-04-29T21:54:30.2982081-04:00"

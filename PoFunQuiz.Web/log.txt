@@ -1,0 +1,12 @@
+2025-04-30 10:04:33.837 [WRN] Failed to determine the https port for redirect.
+2025-04-30 10:04:33.943 [WRN] OpenAI API key is empty. Using sample questions instead.
+2025-04-30 10:04:33.945 [INF] Starting diagnostics check
+2025-04-30 10:04:34.041 [INF] Table Storage check passed
+2025-04-30 10:04:34.044 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 10:04:34.045 [INF] OpenAI service check passed
+2025-04-30 10:04:34.045 [ERR] Configuration check failed
+System.Exception: Missing required settings: OpenAI:Key, OpenAI:DeploymentName
+   at PoFunQuiz.Web.Components.Pages.Diag.CheckConfiguration() in C:\Users\punko\Downloads\PoFunQuiz\PoFunQuiz.Web\Components\Pages\Diag.razor:line 188
+2025-04-30 10:04:34.051 [INF] OpenAI client not initialized. Using sample questions.
+2025-04-30 10:04:34.052 [INF] Question generation check passed
+2025-04-30 10:04:34.052 [INF] Diagnostics check completed successfully

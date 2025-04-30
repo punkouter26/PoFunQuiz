@@ -36,10 +36,29 @@ namespace PoFunQuiz.Infrastructure.Services
             
             var openAISettings = settings.Value;
             
-            // Initialize OpenAI client
-            _client = new OpenAIClient(
-                new Uri(openAISettings.Endpoint),
-                new AzureKeyCredential(openAISettings.ApiKey));
+            // Check if API key is provided
+            if (!string.IsNullOrEmpty(openAISettings.ApiKey))
+            {
+                try
+                {
+                    // Initialize OpenAI client
+                    _client = new OpenAIClient(
+                        new Uri(openAISettings.Endpoint),
+                        new AzureKeyCredential(openAISettings.ApiKey));
+                    
+                    _logger.LogInformation("OpenAI client initialized successfully");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to initialize OpenAI client. Using sample questions instead.");
+                    _client = null;
+                }
+            }
+            else
+            {
+                _logger.LogWarning("OpenAI API key is empty. Using sample questions instead.");
+                _client = null;
+            }
             
             _modelName = openAISettings.ModelName;
             _temperature = openAISettings.Temperature;
@@ -49,6 +68,13 @@ namespace PoFunQuiz.Infrastructure.Services
         /// <inheritdoc />
         public async Task<List<QuizQuestion>> GenerateQuestionsAsync(int count)
         {
+            // If OpenAI client is not initialized, return sample questions
+            if (_client == null)
+            {
+                _logger.LogInformation("OpenAI client not initialized. Using sample questions.");
+                return _sampleQuestions.Take(count).ToList();
+            }
+            
             try
             {
                 _logger.LogInformation("Generating {Count} questions using OpenAI", count);
@@ -85,6 +111,16 @@ namespace PoFunQuiz.Infrastructure.Services
         /// <inheritdoc />
         public async Task<List<QuizQuestion>> GenerateQuestionsInCategoryAsync(int count, string category)
         {
+            // If OpenAI client is not initialized, return sample questions
+            if (_client == null)
+            {
+                _logger.LogInformation("OpenAI client not initialized. Using sample questions for category {Category}.", category);
+                return _sampleQuestions
+                    .Where(q => q.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
+                    .Take(count)
+                    .ToList();
+            }
+            
             try
             {
                 _logger.LogInformation("Generating {Count} questions in category {Category} using OpenAI", count, category);

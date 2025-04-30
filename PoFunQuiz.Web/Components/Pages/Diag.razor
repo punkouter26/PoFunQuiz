@@ -2,8 +2,10 @@
 @using PoFunQuiz.Core.Services
 @using PoFunQuiz.Infrastructure.Storage
 @using Azure.Data.Tables
+@using PoFunQuiz.Core.Configuration
 @using Microsoft.Extensions.Configuration
-@inject IConfiguration Configuration
+@inject IConfiguration Configuration // Keep for Table Storage check for now
+@inject IConfigurationService ConfigurationService
 @inject ILogger<Diag> Logger
 @inject IQuestionGeneratorService QuestionGenerator
 @inject NavigationManager NavigationManager
@@ -171,17 +173,30 @@
         var check = _diagnosticChecks.First(c => c.Name == "Application Configuration");
         try
         {
-            var requiredSettings = new[]
-            {
-                "ConnectionStrings:TableStorage",
-                "OpenAI:Endpoint",
-                "OpenAI:Key",
-                "OpenAI:DeploymentName"
-            };
+            var missingSettings = new List<string>();
 
-            var missingSettings = requiredSettings
-                .Where(setting => string.IsNullOrEmpty(Configuration[setting]))
-                .ToList();
+            // Check Table Storage Connection String (using IConfiguration for consistency with CheckTableStorage)
+            if (string.IsNullOrEmpty(Configuration.GetConnectionString("TableStorage")))
+            {
+                missingSettings.Add("ConnectionStrings:TableStorage");
+            }
+
+            // Check OpenAI Settings using IConfigurationService
+            var openAISettings = ConfigurationService.OpenAI;
+            if (string.IsNullOrEmpty(openAISettings.Endpoint))
+            {
+                missingSettings.Add("OpenAI:Endpoint");
+            }
+            if (string.IsNullOrEmpty(openAISettings.ApiKey))
+            {
+                // Note: This will still fail if the key is empty in secrets.json,
+                // but it correctly reflects the configured value now.
+                missingSettings.Add("OpenAI:Key");
+            }
+            if (string.IsNullOrEmpty(openAISettings.DeploymentName))
+            {
+                missingSettings.Add("OpenAI:DeploymentName");
+            }
 
             if (missingSettings.Any())
             {
@@ -189,21 +204,6 @@
             }
 
             check.SetSuccess("All required configuration settings are present");
-            Logger.LogInformation("Configuration check passed");
-        }
-        catch (Exception ex)
-        {
-            check.SetFailure($"Configuration check failed: {ex.Message}");
-            Logger.LogError(ex, "Configuration check failed");
-        }
-    }
-
-    private async Task CheckQuestionGeneration()
-    {
-        var check = _diagnosticChecks.First(c => c.Name == "Question Generation Service");
-        try
-        {
-            var questions = await QuestionGenerator.GenerateQuestionsAsync(1);
             if (questions != null && questions.Any())
             {
                 check.SetSuccess($"Successfully generated {questions.Count} question(s)");
