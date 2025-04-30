@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
 @using MudBlazor
 @using Microsoft.Extensions.Hosting
 @inject NavigationManager Navigation
@@ -201,8 +202,31 @@
                 GameId = Guid.NewGuid().ToString()
             };
             
-            // Navigate to category selection
-            Navigation.NavigateTo("/category-select");
+            // Randomly select categories and difficulty
+            var random = new Random();
+            
+            // Select a random difficulty with 60% chance of Medium, 20% Easy, 20% Hard
+            var difficultyRoll = random.Next(1, 101);
+            GameState.CurrentGame.GameDifficulty = difficultyRoll switch
+            {
+                <= 20 => QuestionDifficulty.Easy,
+                <= 80 => QuestionDifficulty.Medium,
+                _ => QuestionDifficulty.Hard
+            };
+            
+            // Select 2-3 random categories
+            var allCategories = QuestionCategories.All.ToList();
+            var numCategories = random.Next(2, 4); // 2 to 3 categories
+            var selectedCategories = new List<string>();
+            
+            // Shuffle the categories and take the first few
+            var shuffledCategories = allCategories.OrderBy(_ => random.Next()).ToList();
+            selectedCategories = shuffledCategories.Take(numCategories).ToList();
+            
+            GameState.CurrentGame.SelectedCategories = selectedCategories;
+            
+            // Navigate directly to game setup (skipping category selection)
+            Navigation.NavigateTo("/game-setup");
         }
         catch (Exception ex)
         {

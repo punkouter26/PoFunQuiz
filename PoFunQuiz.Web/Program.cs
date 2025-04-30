@@ -4,12 +4,25 @@ using PoFunQuiz.Web.Components;
 using PoFunQuiz.Web.Extensions;
 using PoFunQuiz.Web.Middleware;
 using Serilog;
+using System.IO;
 
 try
 {
     Log.Information("Starting PoFunQuiz web application");
 
     var builder = WebApplication.CreateBuilder(args);
+
+    // Load secrets.json for local development
+    var secretsPath = Path.Combine(Directory.GetCurrentDirectory(), "secrets.json");
+    if (File.Exists(secretsPath))
+    {
+        builder.Configuration.AddJsonFile(secretsPath, optional: true, reloadOnChange: true);
+        Log.Information("Loaded secrets.json configuration file");
+    }
+    else
+    {
+        Log.Warning("secrets.json file not found");
+    }
 
     // Configure logging
     builder.Host.AddApplicationLogging();

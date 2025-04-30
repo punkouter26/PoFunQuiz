@@ -1,1 +1,0 @@
-2025-04-28 20:51:46.495 [INF] Starting PoFunQuiz web application

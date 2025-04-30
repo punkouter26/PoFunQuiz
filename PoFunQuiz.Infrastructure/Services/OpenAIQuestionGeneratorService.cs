@@ -23,9 +23,10 @@ namespace PoFunQuiz.Infrastructure.Services
         private readonly ILogger<OpenAIQuestionGeneratorService> _logger;
         private readonly List<QuizQuestion> _sampleQuestions;
         private readonly OpenAIClient _client;
-        private readonly string _modelName;
+        private readonly string _deploymentName;
         private readonly float _temperature;
         private readonly int _maxTokens;
+        private readonly bool _isAzureOpenAI;
 
         public OpenAIQuestionGeneratorService(
             ILogger<OpenAIQuestionGeneratorService> logger,
@@ -41,12 +42,40 @@ namespace PoFunQuiz.Infrastructure.Services
             {
                 try
                 {
-                    // Initialize OpenAI client
-                    _client = new OpenAIClient(
-                        new Uri(openAISettings.Endpoint),
-                        new AzureKeyCredential(openAISettings.ApiKey));
+                    // Determine if this is Azure OpenAI or standard OpenAI
+                    _isAzureOpenAI = !string.IsNullOrEmpty(openAISettings.DeploymentName) && 
+                                   !string.IsNullOrEmpty(openAISettings.Endpoint) && 
+                                   openAISettings.Endpoint.Contains(".openai.azure.com");
                     
-                    _logger.LogInformation("OpenAI client initialized successfully");
+                    if (_isAzureOpenAI)
+                    {
+                        _logger.LogInformation("Initializing Azure OpenAI client with endpoint: {Endpoint}, deployment: {Deployment}", 
+                            openAISettings.Endpoint, openAISettings.DeploymentName);
+
+                        // Initialize Azure OpenAI client
+                        _client = new OpenAIClient(
+                            new Uri(openAISettings.Endpoint),
+                            new AzureKeyCredential(openAISettings.ApiKey));
+                        
+                        _deploymentName = openAISettings.DeploymentName;
+                        _logger.LogInformation("Azure OpenAI client initialized successfully for deployment: {Deployment}", _deploymentName);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Initializing standard OpenAI client with model: {Model}", openAISettings.ModelName);
+                        
+                        // Initialize standard OpenAI client
+                        var endpoint = !string.IsNullOrEmpty(openAISettings.Endpoint) 
+                            ? openAISettings.Endpoint 
+                            : "https://api.openai.com/v1";
+                            
+                        _client = new OpenAIClient(
+                            new Uri(endpoint),
+                            new AzureKeyCredential(openAISettings.ApiKey));
+                        
+                        _deploymentName = openAISettings.ModelName;
+                        _logger.LogInformation("Standard OpenAI client initialized successfully");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -60,7 +89,6 @@ namespace PoFunQuiz.Infrastructure.Services
                 _client = null;
             }
             
-            _modelName = openAISettings.ModelName;
             _temperature = openAISettings.Temperature;
             _maxTokens = openAISettings.MaxTokens;
         }
@@ -77,7 +105,8 @@ namespace PoFunQuiz.Infrastructure.Services
             
             try
             {
-                _logger.LogInformation("Generating {Count} questions using OpenAI", count);
+                _logger.LogInformation("Generating {Count} questions using {Provider} with deployment/model: {DeploymentName}", 
+                    count, _isAzureOpenAI ? "Azure OpenAI" : "OpenAI", _deploymentName);
 
                 var messages = new List<ChatRequestMessage>
                 {
@@ -85,7 +114,7 @@ namespace PoFunQuiz.Infrastructure.Services
                     new ChatRequestUserMessage($"Generate {count} programming quiz questions in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
                 };
 
-                var chatCompletionsOptions = new ChatCompletionsOptions(_modelName, messages)
+                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
                 {
                     Temperature = _temperature,
                     MaxTokens = _maxTokens
@@ -123,7 +152,8 @@ namespace PoFunQuiz.Infrastructure.Services
             
             try
             {
-                _logger.LogInformation("Generating {Count} questions in category {Category} using OpenAI", count, category);
+                _logger.LogInformation("Generating {Count} questions in category {Category} using {Provider} with deployment/model: {DeploymentName}", 
+                    count, category, _isAzureOpenAI ? "Azure OpenAI" : "OpenAI", _deploymentName);
 
                 var messages = new List<ChatRequestMessage>
                 {
@@ -131,7 +161,7 @@ namespace PoFunQuiz.Infrastructure.Services
                     new ChatRequestUserMessage($"Generate {count} programming quiz questions about {category} in JSON format. Each question should have: question text as 'Question', array of 4 options as 'Options', correct option index (0-3) as 'CorrectOptionIndex', and category as 'Category'. Make questions engaging and fun.")
                 };
 
-                var chatCompletionsOptions = new ChatCompletionsOptions(_modelName, messages)
+                var chatCompletionsOptions = new ChatCompletionsOptions(_deploymentName, messages)
                 {
                     Temperature = _temperature,
                     MaxTokens = _maxTokens

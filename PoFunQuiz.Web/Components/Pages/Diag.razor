@@ -4,7 +4,7 @@
 @using Azure.Data.Tables
 @using PoFunQuiz.Core.Configuration
 @using Microsoft.Extensions.Configuration
-@inject IConfiguration Configuration // Keep for Table Storage check for now
+@inject IConfiguration Configuration
 @inject IConfigurationService ConfigurationService
 @inject ILogger<Diag> Logger
 @inject IQuestionGeneratorService QuestionGenerator
@@ -12,55 +12,59 @@
 
 <PageTitle>PoFunQuiz - Diagnostics</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
-    <MudText Typo="Typo.h3" Class="mb-4">System Diagnostics</MudText>
+<div class="container mt-4">
+    <h1 class="mb-4">System Diagnostics</h1>
 
-    <MudGrid>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
         @foreach (var check in _diagnosticChecks)
         {
-            <MudItem xs="12" sm="6" md="4">
-                <MudCard>
-                    <MudCardContent>
-                        <div class="d-flex align-center">
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
                             @if (!check.IsChecked)
                             {
-                                <MudProgressCircular Color="Color.Default" Indeterminate="true" Size="Size.Small" Class="me-2"/>
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
                             }
                             else
                             {
-                                <MudIcon Icon="@(check.IsSuccess ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Error)"
-                                        Color="@(check.IsSuccess ? Color.Success : Color.Error)"
-                                        Class="me-2"/>
+                                @if (check.IsSuccess)
+                                {
+                                    <span class="text-success me-2">✅</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger me-2">❌</span>
+                                }
                             }
-                            <MudText>@check.Name</MudText>
+                            <h5 class="card-title mb-0">@check.Name</h5>
                         </div>
                         @if (check.IsChecked && !string.IsNullOrEmpty(check.Message))
                         {
-                            <MudText Typo="Typo.body2" Color="@(check.IsSuccess ? Color.Success : Color.Error)" Class="mt-2">
+                            <p class="card-text mt-2 @(check.IsSuccess ? "text-success" : "text-danger")">
                                 @check.Message
-                            </MudText>
+                            </p>
                         }
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
+                    </div>
+                </div>
+            </div>
         }
-    </MudGrid>
+    </div>
 
-    <MudDivider Class="my-4"/>
+    <hr class="my-4" />
 
-    <MudButton Variant="Variant.Filled" 
-               Color="Color.Primary" 
-               OnClick="RunDiagnostics" 
-               Disabled="@_isRunning">
-        Run Diagnostics Again
-    </MudButton>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick="RunDiagnostics" disabled="@_isRunning">
+            Run Diagnostics Again
+        </button>
 
-    <MudButton Variant="Variant.Text"
-               Color="Color.Secondary"
-               OnClick="@(() => NavigationManager.NavigateTo("/"))">
-        Back to Home
-    </MudButton>
-</MudContainer>
+        <button class="btn btn-outline-secondary" @onclick="@(() => NavigationManager.NavigateTo("/"))">
+            Back to Home
+        </button>
+    </div>
+</div>
 
 @code {
     private bool _isRunning;
@@ -189,9 +193,8 @@
             }
             if (string.IsNullOrEmpty(openAISettings.ApiKey))
             {
-                // Note: This will still fail if the key is empty in secrets.json,
-                // but it correctly reflects the configured value now.
-                missingSettings.Add("OpenAI:Key");
+                // Use the correct name for the missing setting to match what's in secrets.json
+                missingSettings.Add("OpenAI:ApiKey");
             }
             if (string.IsNullOrEmpty(openAISettings.DeploymentName))
             {
@@ -204,6 +207,21 @@
             }
 
             check.SetSuccess("All required configuration settings are present");
+            Logger.LogInformation("Configuration check passed");
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Configuration check failed: {ex.Message}");
+            Logger.LogError(ex, "Configuration check failed");
+        }
+    }
+
+    private async Task CheckQuestionGeneration()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Question Generation Service");
+        try
+        {
+            var questions = await QuestionGenerator.GenerateQuestionsAsync(1);
             if (questions != null && questions.Any())
             {
                 check.SetSuccess($"Successfully generated {questions.Count} question(s)");
@@ -249,4 +267,4 @@
             Message = message;
         }
     }
-} 
+}
