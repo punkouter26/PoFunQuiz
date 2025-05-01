@@ -23,5 +23,11 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore PoFunQuiz.sln
 
-    - name: Build
-      run: dotnet build PoFunQuiz.sln --configuration Release --no-restore
+    - name: Build Core
+      run: dotnet build PoFunQuiz.Core/PoFunQuiz.Core.csproj --configuration Release --no-restore
+
+    - name: Build Infrastructure
+      run: dotnet build PoFunQuiz.Infrastructure/PoFunQuiz.Infrastructure.csproj --configuration Release --no-restore
+
+    - name: Build Web
+      run: dotnet build PoFunQuiz.Web/PoFunQuiz.Web.csproj --configuration Release --no-restore
