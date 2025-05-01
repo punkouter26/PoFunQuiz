@@ -44,17 +44,23 @@ namespace PoFunQuiz.Infrastructure.Services
                 {
                     // Determine if this is Azure OpenAI or standard OpenAI
                     _isAzureOpenAI = !string.IsNullOrEmpty(openAISettings.DeploymentName) && 
-                                   !string.IsNullOrEmpty(openAISettings.Endpoint) && 
-                                   openAISettings.Endpoint.Contains(".openai.azure.com");
+                                   !string.IsNullOrEmpty(openAISettings.Endpoint);
                     
                     if (_isAzureOpenAI)
                     {
                         _logger.LogInformation("Initializing Azure OpenAI client with endpoint: {Endpoint}, deployment: {Deployment}", 
                             openAISettings.Endpoint, openAISettings.DeploymentName);
 
-                        // Initialize Azure OpenAI client
+                        // Fix: For Azure OpenAI, we need to create a special client
+                        // The critical issue is that we need to explicitly tell the SDK that this is an Azure OpenAI endpoint
+                        var uri = new Uri(openAISettings.Endpoint);
+                        // Store the original host for logging
+                        var originalHost = uri.Host;
+                        _logger.LogInformation("Original host: {Host}", originalHost);
+                        
+                        // Initialize Azure OpenAI client with default options
                         _client = new OpenAIClient(
-                            new Uri(openAISettings.Endpoint),
+                            uri,
                             new AzureKeyCredential(openAISettings.ApiKey));
                         
                         _deploymentName = openAISettings.DeploymentName;

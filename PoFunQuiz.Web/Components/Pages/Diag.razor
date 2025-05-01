@@ -9,6 +9,7 @@
 @inject ILogger<Diag> Logger
 @inject IQuestionGeneratorService QuestionGenerator
 @inject NavigationManager NavigationManager
+@inject OpenAIEndpointTester EndpointTester
 
 <PageTitle>PoFunQuiz - Diagnostics</PageTitle>
 
@@ -82,8 +83,10 @@
         {
             new() { Name = "Azure Table Storage Connection" },
             new() { Name = "OpenAI Service Connection" },
+            new() { Name = "OpenAI Endpoint Validation" },
             new() { Name = "Application Configuration" },
-            new() { Name = "Question Generation Service" }
+            new() { Name = "Question Generation Service" },
+            new() { Name = "OpenAI Config Details Test" }
         };
     }
 
@@ -106,11 +109,17 @@
             // Check OpenAI Service
             await CheckOpenAIService();
 
+            // Check OpenAI Endpoint
+            await CheckOpenAIEndpoint();
+
             // Check Application Configuration
             CheckConfiguration();
 
             // Check Question Generation
             await CheckQuestionGeneration();
+
+            // Check OpenAI Config Details
+            CheckOpenAIConfigDetails();
 
             Logger.LogInformation("Diagnostics check completed successfully");
         }
@@ -169,6 +178,58 @@
         {
             check.SetFailure($"Failed to connect: {ex.Message}");
             Logger.LogError(ex, "OpenAI service check failed");
+        }
+    }
+
+    private async Task CheckOpenAIEndpoint()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "OpenAI Endpoint Validation");
+        try
+        {
+            var configEndpoint = ConfigurationService.OpenAI.Endpoint;
+            var configApiKey = ConfigurationService.OpenAI.ApiKey;
+            var configDeployment = ConfigurationService.OpenAI.DeploymentName;
+            
+            Logger.LogInformation("Validating OpenAI endpoint configuration: {Endpoint}, Deployment: {Deployment}", 
+                configEndpoint, configDeployment);
+            
+            // Check if the configuration contains the old problematic endpoint
+            if (configEndpoint.Contains("povicoai.openai.azure.com"))
+            {
+                throw new Exception("Using problematic endpoint: povicoai.openai.azure.com. This host does not exist. " +
+                                    "Update to regional endpoint: https://eastus.api.cognitive.microsoft.com/");
+            }
+            
+            // Get the actual endpoint from secrets.json
+            var rawEndpoint = Configuration["OpenAI:Endpoint"];
+            if (rawEndpoint != configEndpoint)
+            {
+                throw new Exception($"Configuration mismatch. Raw endpoint from Configuration: {rawEndpoint}, " +
+                                    $"but ConfigurationService reports: {configEndpoint}");
+            }
+            
+            // Try basic domain resolution to validate endpoint
+            try
+            {
+                var uri = new Uri(configEndpoint);
+                var hostEntry = System.Net.Dns.GetHostEntry(uri.Host);
+                Logger.LogInformation("Validated host DNS resolution for {Host}", uri.Host);
+            }
+            catch (System.Net.Sockets.SocketException ex)
+            {
+                throw new Exception($"DNS resolution failed for {configEndpoint}. Error: {ex.Message}");
+            }
+            
+            // Use our endpoint tester to verify how the SDK processes the endpoint
+            string testResult = await EndpointTester.TestEndpointHandling(configEndpoint, configApiKey, configDeployment);
+            
+            check.SetSuccess($"Endpoint validation passed. SDK Test Results:\n\n{testResult}");
+            Logger.LogInformation("OpenAI endpoint validation passed");
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Endpoint validation failed: {ex.Message}");
+            Logger.LogError(ex, "OpenAI endpoint validation failed");
         }
     }
 
@@ -236,6 +297,87 @@
         {
             check.SetFailure($"Failed to generate questions: {ex.Message}");
             Logger.LogError(ex, "Question generation check failed");
+        }
+    }
+
+    private void CheckOpenAIConfigDetails()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "OpenAI Config Details Test");
+        try
+        {
+            var rawEndpoint = Configuration["OpenAI:Endpoint"];
+            var rawApiKey = Configuration["OpenAI:ApiKey"];
+            var rawDeploymentName = Configuration["OpenAI:DeploymentName"];
+            
+            var openAISettings = ConfigurationService.OpenAI;
+            
+            var message = new System.Text.StringBuilder();
+            message.AppendLine("Raw Configuration:");
+            message.AppendLine($"- Endpoint: {rawEndpoint}");
+            message.AppendLine($"- ApiKey: {(string.IsNullOrEmpty(rawApiKey) ? "Not Set" : "Set (Hidden)")}");
+            message.AppendLine($"- DeploymentName: {rawDeploymentName}");
+            message.AppendLine();
+            message.AppendLine("ConfigurationService Values:");
+            message.AppendLine($"- Endpoint: {openAISettings.Endpoint}");
+            message.AppendLine($"- ApiKey: {(string.IsNullOrEmpty(openAISettings.ApiKey) ? "Not Set" : "Set (Hidden)")}");
+            message.AppendLine($"- DeploymentName: {openAISettings.DeploymentName}");
+            message.AppendLine($"- ModelName: {openAISettings.ModelName}");
+            
+            // Check if basic configuration is missing
+            if (string.IsNullOrEmpty(openAISettings.Endpoint) || 
+                string.IsNullOrEmpty(openAISettings.ApiKey) || 
+                string.IsNullOrEmpty(openAISettings.DeploymentName))
+            {
+                throw new Exception("OpenAI configuration details are incomplete. See details below.\n\n" + message.ToString());
+            }
+            
+            // Hardcoded check for problematic endpoint (just for testing)
+            // If this endpoint is in the configuration, fail the test regardless of DNS
+            if (openAISettings.Endpoint.Contains("povicoai.openai.azure.com"))
+            {
+                throw new Exception("OpenAI endpoint contains problematic domain 'povicoai.openai.azure.com' which is known to cause issues.");
+            }
+            
+            // DNS resolution check - without complex logic
+            // Just try to resolve the hostname for the configured endpoint
+            try {
+                var uri = new Uri(openAISettings.Endpoint);
+                message.AppendLine();
+                message.AppendLine($"DNS Resolution for {uri.Host}:");
+                try {
+                    var hostEntry = System.Net.Dns.GetHostEntry(uri.Host);
+                    message.AppendLine($"- Success: {string.Join(", ", hostEntry.AddressList.Select(a => a.ToString()))}");
+                } catch (Exception dnsEx) {
+                    message.AppendLine($"- Failed: {dnsEx.Message}");
+                    // IMPORTANT: Explicitly fail the test if DNS resolution fails
+                    throw new Exception($"DNS resolution failed for endpoint host '{uri.Host}'. The host cannot be resolved: {dnsEx.Message}");
+                }
+                
+                // Also check the problematic domain
+                var problematicHost = "povicoai.openai.azure.com";
+                message.AppendLine();
+                message.AppendLine($"DNS Resolution for {problematicHost}:");
+                try {
+                    var hostEntry = System.Net.Dns.GetHostEntry(problematicHost);
+                    message.AppendLine($"- Success: {string.Join(", ", hostEntry.AddressList.Select(a => a.ToString()))}");
+                    // If by some chance this succeeds, add a warning but don't fail
+                    message.AppendLine("⚠️ Warning: The problematic endpoint 'povicoai.openai.azure.com' resolves to a valid IP address!");
+                } catch (Exception dnsEx) {
+                    message.AppendLine($"- Failed: {dnsEx.Message}");
+                    // This is expected - the problematic endpoint shouldn't resolve
+                }
+            } catch (Exception ex) {
+                message.AppendLine($"URI parsing failed: {ex.Message}");
+                throw new Exception($"Failed to parse endpoint URI: {ex.Message}");
+            }
+
+            check.SetSuccess(message.ToString());
+            Logger.LogInformation("OpenAI configuration details test passed");
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure(ex.Message);
+            Logger.LogError(ex, "OpenAI configuration details test failed");
         }
     }
 

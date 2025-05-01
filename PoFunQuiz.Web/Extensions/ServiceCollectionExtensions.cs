@@ -34,6 +34,9 @@ namespace PoFunQuiz.Web.Extensions
             // Add UI services
             services.AddUIServices();
             
+            // Add diagnostics services
+            services.AddScoped<OpenAIEndpointTester>();
+            
             return services;
         }
         
@@ -93,12 +96,7 @@ namespace PoFunQuiz.Web.Extensions
         {
             // Add Blazor services with improved configuration
             services.AddRazorComponents()
-                .AddInteractiveServerComponents(options => {
-                    // Add more resilient SignalR configuration
-                    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(3);
-                    options.DisconnectedCircuitMaxRetained = 100;
-                    options.DetailedErrors = true;
-                });
+                .AddInteractiveServerComponents(); // Add this line to register interactive server components
 
             // Configure SignalR for more robust connections
             services.AddServerSideBlazor()
