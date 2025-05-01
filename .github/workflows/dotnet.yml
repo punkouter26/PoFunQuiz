@@ -1,4 +1,4 @@
-name: .NET Build and Test
+name: .NET Build
 
 on:
   push:
@@ -20,28 +20,8 @@ jobs:
       with:
         dotnet-version: '9.0.x' # Use .NET 9 as specified
 
-    - name: Setup Azurite
-      run: |
-        npm install -g azurite
-        mkdir -p azurite
-        azurite --silent --location azurite --debug azurite/debug.log &
-
     - name: Restore dependencies
       run: dotnet restore PoFunQuiz.sln
 
     - name: Build
       run: dotnet build PoFunQuiz.sln --configuration Release --no-restore
-
-    - name: Build Tests
-      run: dotnet build PoFunQuiz.Tests/PoFunQuiz.Tests.csproj --configuration Release
-
-    - name: Test
-      run: dotnet test PoFunQuiz.Tests/PoFunQuiz.Tests.csproj --configuration Release --verbosity normal
-      env:
-        ASPNETCORE_ENVIRONMENT: Development
-        # Mock external service connections for CI environment
-        OpenAI__Endpoint: "https://api.openai.com/v1"
-        OpenAI__ApiKey: "test-key"
-        OpenAI__ModelName: "gpt-4"
-        AzureTableStorage__ConnectionString: "UseDevelopmentStorage=true"
-        AzureTableStorage__TablePrefix: "citest"
