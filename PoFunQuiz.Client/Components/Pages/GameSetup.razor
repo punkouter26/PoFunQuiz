@@ -1,0 +1,261 @@
+@page "/game-setup"
+@using PoFunQuiz.Client;
+@using PoFunQuiz.Core.Services
+@using Microsoft.AspNetCore.Components.Web
+@inject NavigationManager Navigation
+@inject PoFunQuiz.Client.GameState GameState
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+@rendermode InteractiveWebAssembly
+
+<PageTitle>PoFunQuiz</PageTitle>
+
+@if (GameState.CurrentGame == null)
+{
+    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+        <MudText Typo="Typo.h4" Class="mb-4">Game session not found.</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
+    </MudContainer>
+}
+else
+{
+    <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
+        <div @onkeydown="HandleKeyDown" tabindex="0" @ref="containerElement" style="width: 100%; height: 100%; outline: none;">
+            @if (IsLoading)
+            {
+                <MudText Typo="Typo.h5" Class="mb-3">Generating Questions...</MudText>
+                <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+            }
+            else if (IsCountingDown)
+            {
+                <MudText Typo="Typo.h5" Color="Color.Primary">Get Ready!</MudText>
+                <MudText Typo="Typo.h1" Style="font-size: 6rem;" Color="Color.Secondary">@CountdownValue</MudText>
+            }
+            else if (ErrorMessage != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-3">@ErrorMessage</MudAlert>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RetrySetup" Size="Size.Small">Retry</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/" Class="mt-2" Size="Size.Small">Back to Main Menu</MudButton>
+            }
+            else
+            {
+                <MudGrid>
+                    <MudItem xs="12" Class="mb-4 text-center">
+                        <MudPaper Elevation="0" Class="pa-2">
+                            <MudText Typo="Typo.h6" Class="mb-1">Topic: @(string.Join(", ", GameState.CurrentGame?.SelectedCategories ?? new()))</MudText>
+                            <MudText Typo="Typo.body2" Class="mb-0">Difficulty: @(GameState.CurrentGame?.GameDifficulty.ToString() ?? "Medium")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="6">
+                        <MudCard Class="pa-2 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h5" Color="Color.Primary">Player 1</MudText>
+                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="ma-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</MudAvatar> 
+                            <MudText Typo="Typo.body2" Class="mb-2">Use keys 1-4</MudText>
+                            @if (!Player1Ready)
+                            {
+                                <MudButton Variant="Variant.Filled" 
+                                        Color="Color.Primary" 
+                                        OnClick="@(() => SetPlayerReady(1))"
+                                        Size="Size.Small">
+                                    I'm Ready
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.Check" Size="Size.Small">Ready!</MudChip>
+                            }
+                        </MudCard>
+                    </MudItem>
+                    
+                    <MudItem xs="6">
+                        <MudCard Class="pa-2 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h5" Color="Color.Secondary">Player 2</MudText>
+                            <MudAvatar Color="Color.Secondary" Size="Size.Medium" Class="ma-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</MudAvatar>
+                            <MudText Typo="Typo.body2" Class="mb-2">Use keys 6-9</MudText>
+                            @if (!Player2Ready)
+                            {
+                                <MudButton Variant="Variant.Filled" 
+                                        Color="Color.Secondary" 
+                                        OnClick="@(() => SetPlayerReady(2))"
+                                        Size="Size.Small">
+                                    I'm Ready
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Success" Icon="@Icons.Material.Filled.Check" Size="Size.Small">Ready!</MudChip>
+                            }
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            }
+        </div>
+    </MudContainer>
+}
+
+<style>
+    @@media (max-width: 600px) {
+        .mud-container {
+            padding: 0.5rem !important;
+        }
+        
+        .mud-card {
+            padding: 8px !important;
+        }
+        
+        .mud-typography-h5 {
+            font-size: 1.1rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+        
+        .mud-typography-h1 {
+            font-size: 5rem !important;
+        }
+        
+        .mud-typography-body2 {
+            font-size: 0.8rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+    }
+</style>
+
+@code {
+    private bool Player1Ready { get; set; } = false;
+    private bool Player2Ready { get; set; } = false;
+    private bool IsLoading { get; set; } = false;
+    private bool IsCountingDown { get; set; } = false;
+    private int CountdownValue { get; set; } = 3;
+    private string? ErrorMessage { get; set; } // Made nullable
+    private System.Threading.Timer? _countdownTimer; // Made nullable
+    private ElementReference containerElement;
+    
+    protected override void OnInitialized()
+    {
+        // Redirect to home if no game session exists
+        if (GameState.CurrentGame == null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Set focus to the container to enable keyboard events
+            await JSRuntime.InvokeVoidAsync("focusElement", containerElement);
+        }
+    }
+    
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        // Handle Player 1 ready (any of keys 1-4)
+        if (!Player1Ready && (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4"))
+        {
+            SetPlayerReady(1);
+        }
+        
+        // Handle Player 2 ready (any of keys 6-9)
+        if (!Player2Ready && (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9"))
+        {
+            SetPlayerReady(2);
+        }
+    }
+    
+    private void SetPlayerReady(int playerNumber)
+    {
+        if (playerNumber == 1)
+            Player1Ready = true;
+        else
+            Player2Ready = true;
+            
+        // Check if both players are ready
+        if (Player1Ready && Player2Ready)
+        {
+            StartCountdown();
+        }
+        
+        StateHasChanged();
+    }
+    
+    private void StartCountdown()
+    {
+        IsCountingDown = true;
+        _countdownTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                CountdownValue--;
+                StateHasChanged();
+                
+                if (CountdownValue <= 0)
+                {
+                    _countdownTimer?.Dispose(); // Already safe
+                    _countdownTimer = null; // Safe now that _countdownTimer is nullable
+                    IsCountingDown = false;
+                    await GenerateQuestions();
+                }
+            });
+        }, null, 0, 1000);
+    }
+    
+    private async Task GenerateQuestions()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+            
+            // Generate dummy questions for now
+            var uniqueQuestions = new List<QuizQuestion>();
+            for (int i = 0; i < 10; i++)
+            {
+                uniqueQuestions.Add(new QuizQuestion
+                {
+                    Question = $"Dummy Question {i + 1}",
+                    Options = new List<string> { "Option A", "Option B", "Option C", "Option D" },
+                    CorrectOptionIndex = 0,
+                    Category = "General"
+                });
+            }
+
+            // Add null check before assigning questions
+            if (GameState.CurrentGame != null)
+            {
+                GameState.CurrentGame.Player1Questions = uniqueQuestions;
+                GameState.CurrentGame.Player2Questions = uniqueQuestions;
+            }
+            else
+            {
+                // Handle the unlikely case where CurrentGame became null
+                ErrorMessage = "Game state lost. Please return to the main menu.";
+                IsLoading = false;
+                StateHasChanged();
+                return;
+            }
+            
+            // Navigate to game board
+            Navigation.NavigateTo("/game-board");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"An error occurred: {ex.Message}";
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private void RetrySetup()
+    {
+        ErrorMessage = null; // Safe now that ErrorMessage is nullable
+        Player1Ready = false;
+        Player2Ready = false;
+        StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        _countdownTimer?.Dispose();
+    }
+}

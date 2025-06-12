@@ -1,0 +1,156 @@
+@page "/diag"
+@inject NavigationManager NavigationManager
+@inject ILogger<Diag> Logger
+
+<PageTitle>PoFunQuiz - Diagnostics</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="mb-4">System Diagnostics</h1>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+        @foreach (var check in _diagnosticChecks)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            @if (!check.IsChecked)
+                            {
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            }
+                            else
+                            {
+                                @if (check.IsSuccess)
+                                {
+                                    <span class="text-success me-2">✅</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger me-2">❌</span>
+                                }
+                            }
+                            <h5 class="card-title mb-0">@check.Name</h5>
+                        </div>
+                        @if (check.IsChecked && !string.IsNullOrEmpty(check.Message))
+                        {
+                            <p class="card-text mt-2 @(check.IsSuccess ? "text-success" : "text-danger")">
+                                @check.Message
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <hr class="my-4" />
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick="RunDiagnostics" disabled="@_isRunning">
+            Run Diagnostics Again
+        </button>
+
+        <button class="btn btn-outline-secondary" @onclick="@(() => NavigationManager.NavigateTo("/"))">
+            Back to Home
+        </button>
+    </div>
+</div>
+
+@code {
+    private bool _isRunning;
+    private List<DiagnosticCheck> _diagnosticChecks = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeDiagnosticChecks();
+        await RunDiagnostics();
+    }
+
+    private void InitializeDiagnosticChecks()
+    {
+        _diagnosticChecks = new List<DiagnosticCheck>
+        {
+            new() { Name = "Internet Connection" }
+        };
+    }
+
+    private async Task RunDiagnostics()
+    {
+        try
+        {
+            _isRunning = true;
+            Logger.LogInformation("Starting diagnostics check");
+
+            foreach (var check in _diagnosticChecks)
+            {
+                check.Reset();
+                StateHasChanged();
+            }
+
+            await CheckInternetConnection();
+
+            Logger.LogInformation("Diagnostics check completed successfully");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error during diagnostics check");
+        }
+        finally
+        {
+            _isRunning = false;
+        }
+    }
+
+    private async Task CheckInternetConnection()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Internet Connection");
+        try
+        {
+            using var client = new HttpClient();
+            var response = await client.GetAsync("http://www.google.com");
+            if (response.IsSuccessStatusCode)
+            {
+                check.SetSuccess("Internet connection is active.");
+            }
+            else
+            {
+                check.SetFailure($"Failed to connect to Google: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Error checking internet connection: {ex.Message}");
+        }
+    }
+
+    private class DiagnosticCheck
+    {
+        public string Name { get; set; } = "";
+        public bool IsChecked { get; private set; }
+        public bool IsSuccess { get; private set; }
+        public string Message { get; private set; } = "";
+
+        public void Reset()
+        {
+            IsChecked = false;
+            IsSuccess = false;
+            Message = "";
+        }
+
+        public void SetSuccess(string message)
+        {
+            IsChecked = true;
+            IsSuccess = true;
+            Message = message;
+        }
+
+        public void SetFailure(string message)
+        {
+            IsChecked = true;
+            IsSuccess = false;
+            Message = message;
+        }
+    }
+}

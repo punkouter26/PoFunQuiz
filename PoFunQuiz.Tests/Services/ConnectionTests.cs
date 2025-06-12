@@ -83,14 +83,14 @@ namespace PoFunQuiz.Tests.Services
                 Assert.NotEmpty(mockQuestions);
                 _output.WriteLine($"Successfully mocked {mockQuestions.Count} question(s)");
                 
-                var question = mockQuestions[0];
-                Assert.NotNull(question.Question);
-                Assert.NotEmpty(question.Question);
-                Assert.NotNull(question.Options);
-                Assert.Equal(4, question.Options.Count);
-                Assert.InRange(question.CorrectOptionIndex, 0, 3);
-                Assert.NotNull(question.Category);
-                Assert.NotEmpty(question.Category);
+                var mockQuestion = mockQuestions[0];
+                Assert.NotNull(mockQuestion.Question);
+                Assert.NotEmpty(mockQuestion.Question);
+                Assert.NotNull(mockQuestion.Options);
+                Assert.Equal(4, mockQuestion.Options.Count);
+                Assert.InRange(mockQuestion.CorrectOptionIndex, 0, 3);
+                Assert.NotNull(mockQuestion.Category);
+                Assert.NotEmpty(mockQuestion.Category);
                 
                 return;
             }
@@ -107,14 +107,14 @@ namespace PoFunQuiz.Tests.Services
             _output.WriteLine($"Successfully generated {questions.Count} question(s)");
             
             // Verify question structure
-            var question = questions[0];
-            Assert.NotNull(question.Question);
-            Assert.NotEmpty(question.Question);
-            Assert.NotNull(question.Options);
-            Assert.Equal(4, question.Options.Count);
-            Assert.InRange(question.CorrectOptionIndex, 0, 3);
-            Assert.NotNull(question.Category);
-            Assert.NotEmpty(question.Category);
+            var generatedQuestion = questions[0];
+            Assert.NotNull(generatedQuestion.Question);
+            Assert.NotEmpty(generatedQuestion.Question);
+            Assert.NotNull(generatedQuestion.Options);
+            Assert.Equal(4, generatedQuestion.Options.Count);
+            Assert.InRange(generatedQuestion.CorrectOptionIndex, 0, 3);
+            Assert.NotNull(generatedQuestion.Category);
+            Assert.NotEmpty(generatedQuestion.Category);
         }
 
         [Fact]

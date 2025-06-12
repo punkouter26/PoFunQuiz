@@ -1,209 +1,112 @@
-This document outlines rules for an AI coding assistant to build .NET applications with Blazor WebAssembly frontend and ASP.NET Core Web API backend. The development follows a 10-step process tracked in steps.md. The AI assistant must:
-Follow steps in order from steps.md (put check mark next to items using format - [x] Step 1: Description when complete)
-Stop and request confirmation after completing each step
-Reference prd.md for product requirements (never modify this file)
-Focus on simplicity while designing for future expandability
-Project Setup
-Repository Initialization
-Create appropriate .gitignore for .NET projects as the first action
-Set up GitHub workflow files for CI/CD in .github/workflows directory
-Initialize Git repository with main branch for primary development
-Solution Structure
-basic
-Copy
-YourSolutionName/                    # Root directory
-├── YourSolutionName.sln             # Solution file at root level
-├── steps.md                         # Tracks high-level development steps (provided)
-├── prd.md                           # Product requirements (provided)
-├── log.txt                          # Debug log file (created new each run)
-├── Client/                          # BlazorWebAssembly 
-├── Server/                          # ASP.NET Core Web API project / Function project / Blazor Server
-├── Shared/                          # Shared project for models
-├── Tests/                           # XUnit test projects
-└── [Other projects]/                # Each in their own directory
+General AI Assistant Rules:
+Strictly adhere to the 10 steps in steps.md.
+Mark completed steps: - [x] Step X: Description.
+Pause and request user confirmation after each step.
+Reference prd.md for product requirements (in the root directory, never modify).
+Prioritize simplicity and future expandability in design.
+Regularly check steps.md for progress tracking.
+Focus on functional correctness before premature optimization.
+Use SOLID principles and C# Design Patterns / Make comments in class files that explain the SOLID or GoF design pattern used when one is used
+Project Setup:
+Repository Initialization:
+Create a .gitignore file for .NET projects
+Set up simple CI/CD GitHub workflow files in .github/workflows to build and deploy the Azure app Service (The .net core web api) (same name as the solution).
+Solution Structure:
+Root directory: PoYourSolutionName/.
+Solution file: PoYourSolutionName.sln in the root.
+Tracking file: steps.md in the root.
+Requirements file: prd.md in the root (contains solution name).
+Debug log: Single log.txt file in the root (overwritten on each run).
+GitHub workflows: .github/workflows/.
+Each project's .csproj file will be directly in the root.
+Project Creation & Configuration:
+Create required projects using dotnet new in their respective root folders.
+Use best practices for .csproj naming (e.g., PoYourSolutionName.Client.csproj).
+Target .NET 9.x 
+Create a Blazor WebAssembly csproj and a .NET core Web API csproj / Host the Blazor client app inside the server app (hosted)
+Create .vscode directory with configured launch.json, tasks.json, for local F5 deployment.
+Set the application name as the page title for all pages (Name when page is bookmarked)
 
-Create all required projects using dotnet new commands
-Projects should be created in their designated folders
-Use .NET 9.x framework for all projects
-Use the Blazor WebAssembly hosted template so client and server run together
-Create a .vscode directory with all necessary files (launch.json, tasks.json, settings.json, extensions.json) to ensure F5 launches the application correctly from VSCode
-Use the name of the application as the page title for all pages to ensure consistent bookmarks (e.g., if project is "PoSomeGame", all page titles should be "PoSomeGame")
-Azure Resource Setup
-Initial development should be local, with Azure deployment as final step
-Use Azurite for table storage during local development
-Switch to Azure Table Storage after deployment to Azure
-Create a resource group named after the application when ready for deployment
-Use Azure Table Storage as the primary database solution (with SAS connection strings)
-Use the cheapest Azure resource tiers that will accomplish the requirements
-Set up individual Azure CLI commands (not scripts) to create all needed resources
-Configure Application Insights for monitoring and diagnostics
-Store sensitive configuration in Azure App Service configuration
-When possible, use Azure CLI instead of Azure UI for configuration
-Use azure resource group 'PoShared' when possible for azure resources that are meant to be shared (ex. Azure OpenAI, App service plan, Azure AI services multi-service account, Computer Vision etc.)
-Use Azure CLI and gh CLI when need to figure out information in Azure or GitHub instead of asking the user to do it manually
-Mandatory Diagnostics Page
-The AI must automatically create a diagnostics page in the Client project without being asked:
-Create Diag.razor page accessible at /diag endpoint
-This page should communicate with the Server to verify connections to data and APIs
-Display connection statuses in grid format with green (good) and red (bad) indicators
+
+Azure Resource Setup & Configuration:
+Development and Deployment Phasing: Local development and functionality first; Azure deployment is a final step.
+Use Azurite for local table storage emulation.
+Transition to Azure Table Storage on deployment.
+Azure Deployment Strategy:
+Use azd up for initial deployment, which will create a resource group named after the application.
+Utilize Azure Table Storage (if used) as the primary database with SAS connection strings.
+Select the minimum Azure resource tier.
+After initial azd up, use GitHub CI/CD for subsequent deployments.
+Configure the shared Application Insights resource located in the PoShared resource group.
+Store sensitive configuration:
+Locally: appsettings.Development.json.
+Azure: App Service configuration settings (environment variables) and appsettings.json.
+Prefer Azure CLI over the portal/UI for configuration.
+Use the existing PoShared resource group for shared Azure resources (App Service Plan, Azure OpenAI, etc.).
+Use Azure CLI (az) and GitHub CLI (gh) to retrieve configuration information.
+Use the existing Log Analytics resource in the PoShared resource group.
+Create a YML file in the root folder for the App Service (Web API) and potentially Azure Table Storage (if used) / Use azd up with this YML file to create new resource group and resources.
+Mandatory Diagnostics Page (Diag.razor - Client Project):
+Automatically create a Diag.razor page accessible via /diag.
+Communicate with the Server project to verify connections.
+Display connection statuses in a clear grid (green/red).
 Verify and display status of:
-Data connections (Azure Table Storage connectivity)
-API health checks
-Internet connection status
-Authentication services status (if applicable)
-Any other critical dependencies
-Include link to main page at the bottom after diagnostics complete
-Log all diagnostic results to:
-Application Insights
-Console
-Serilog
-log.txt (create new file with each run, not append)
-The AI should check log.txt after each run for errors and diagnostics information
-Development Approach
-Architecture Selection
-Choose appropriate architecture based on project requirements:
-Vertical slice architecture with feature folders and CQRS pattern
-reasonml
-Copy
-Features/
-├── ProductManagement/
-│   ├── Commands/
-│   │   ├── CreateProduct/
-│   │   │   ├── CreateProductCommand.cs
-│   │   │   ├── CreateProductCommandHandler.cs
-│   │   │   └── CreateProductCommandValidator.cs
-│   ├── Queries/
-│   │   ├── GetProducts/
-│   │   │   ├── GetProductsQuery.cs
-│   │   │   ├── GetProductsQueryHandler.cs
-│   │   │   └── ProductDto.cs
-│   ├── Controllers/
-│   └── Pages/
+Data connections (Azure Table Storage/Azurite).
+API health checks.
+Internet connection.
+Authentication services (if used per prd.md).
+Any other critical dependencies in the code
+Log all diagnostic results to Application Insights, console, Serilog, and log.txt.
 
-OR
-Onion Architecture with Core/Infrastructure/Application/WebApi layers
-Select whichever architecture best suits the specific application requirements and complexity.
-Implementation Guidelines
-Limit classes to under 250 lines
-Add comprehensive XML documentation comments
-Note design patterns in comments: // Using Observer Pattern for notification system
-Create realistic dummy data that mimics expected production data
-Use Home.razor as the landing page
-Design with simplicity as priority while allowing for future feature expansion
-Step Workflow
-For each of the 10 high-level steps in steps.md (which will be provided before development begins):
-Plan the feature based on current step requirements
-Design components using SOLID principles and appropriate patterns
-Create empty test files for functionality to be implemented
-Implement business logic with proper documentation
-Create UI components following Blazor guidelines
-Implement detailed logging for all connections and key operations
-Update the AI's tracking of steps.md progress using format - [x] Step 1: Description
-Request explicit confirmation before proceeding:
-vbnet
-Copy
-I've completed Step X: [Step Description]. 
-The code compiles and all tests pass.
+
+Development Approach:
+Architecture Selection: Decide between Vertical Slice Architecture (feature folders/CQRS) or Onion Architecture based on prd.md and best practices. If the app is simple and there these patterns are overkill then do something more simple
+Implementation Guidelines:
+Keep classes under 500 lines if possible.
+Note significant design patterns in comments (e.g., // Using Observer Pattern).
+Create realistic dummy data for development/testing.
+Designate Home.razor as the primary landing page.
+Create the 10 high-level steps in steps.md such that each step results in runnable code with a visually demonstrable UI.
+Step Workflow & User Interaction 
+Test Stubs (XUnit).
+Implement Logic & UI.
+Track Progress in steps.md.
+Request Confirmation:
+I've completed Step X: [Step Description].
+The code compiles and all relevant tests pass.
 Would you like me to:
-1. Explain any part of the implementation in more detail
-2. Make adjustments to the current step
-3. Proceed to Step Y: [Next Step Description]
-
-Wait for user confirmation before moving to next step
-Logging & Diagnostics
-Comprehensive Logging Strategy
-All applications must implement logging across three destinations:
-Console output (for development debugging)
-Serilog (structured logging for production)
-log.txt file (created new for each run, readable by the LLM after execution)
-Log Content Requirements
-Include timestamps with all log entries
-Log component names and operation context
-Implement extra detailed logging around:
-Database connections
-API calls
-Authentication events
-Error conditions
-Focus on logging key decision points and state changes
-Avoid repetitive logging of the same information
-Application Insights Integration
-Track page views, feature usage, and user flows
-Monitor performance metrics (load times, API response times)
-Log exceptions with full context
-Create custom events for business-relevant operations
-Set up availability tests for critical endpoints
-UI Development
-Blazor Guidelines
-Use built-in Blazor state management (no third-party state libraries)
-Implement responsive design for all components
-Use Radzen Blazor UI library for enhanced controls when needed
-UX Design Principles
-Create intuitive, consistent interfaces across the application
-Ensure all screens are mobile-ready and responsive
-Provide clear feedback for user actions
-Implement progressive loading for data-intensive views
-Error Handling & Reliability
-Error Management Approach
-Implement global exception handler middleware for API
-Use try/catch blocks at service boundaries
-Return appropriate HTTP status codes from API endpoints
-Log exceptions with context information
-Present user-friendly error messages in UI
-Use circuit breaker pattern for external service calls
-Dependency Injection
-Follow standard DI practices based on service lifetime requirements:
-Transient: For lightweight, stateless services
-Scoped: For services that maintain state within a request
-Singleton: For services that maintain state across requests
-Register services in appropriate Program.cs or Startup.cs
-Authentication & Security
-Implement Google authentication with Azure Entra ID when authentication is required
-Follow security best practices for token handling and storage
-Use proper authorization policies for API endpoints
-Testing Approach
-Write XUnit tests before implementing UI components
-Add descriptive debug statements with meaningful context information
-Focus on testing business logic and core functionality
-Create focused XUnit tests for business logic
-Verify all API connections with appropriate test data
-For external APIs requiring keys, create dedicated connection tests
-Data Storage & Management
-Data Storage Timeline
-Development: Use Azurite for local table storage during development
-Production: Switch to Azure Table Storage after deployment to Azure
-Azure Table Storage Implementation
-Use Azure Table Storage as primary data store
-Implement appropriate repository patterns for data access
-Create optimized partition and row key strategies for expected query patterns
-Ensure proper error handling for storage operations
-Use SAS connection strings for all Azure Table Storage connections
-Deployment Process
-Development to Production
-Focus on getting code working locally first
-Use Azure CLI commands to deploy to cloud resources as final step
-Configure environment-specific settings appropriately
-Verify all connections between components in cloud environment
-CI/CD Setup
-Configure GitHub Actions for build, test, and deployment
-Set up appropriate environment variables and secrets
-Feature Toggles
-Use configuration-based feature flags for simplicity
-Implement through appsettings.json or Azure App Configuration
-Use conditional rendering in UI based on feature state
-Document which features are behind flags
-NuGet Package Management
-Add packages using dotnet add package commands
-Document purpose of each package in comments
-Prefer well-maintained, actively developed packages
-Localization
-Use English for all user interface elements and messages
-No need for multi-language support
-Azure Best Practices
-When generating code for Azure, running terminal commands for Azure, or performing operations related to Azure, follow Azure best practices:
-Prefer managed services over IaaS solutions
-Implement proper retry policies for all Azure service calls
-Use appropriate connection pooling
-Follow least privilege principle for all service identities
-Implement proper Azure resource tagging
-Remember to check steps.md regularly to track progress through the 10 high-level steps. Focus on getting functionality working correctly before optimization. Log meaningful information to help diagnose issues between runs. Always create a new log.txt file with each run and check it after each run for errors and diagnostics information.
-
+1. Make adjustments to the current step
+2. Proceed to Step Y: [Next Step Description]
+Wait for user confirmation.
+Logging & Diagnostics Strategy:
+Comprehensive Logging: Console, Serilog, and log.txt.
+ File:
+Created/overwritten in the root on each run.
+Contains the most recent server and client (if feasible) information for debugging.
+The AI assistant must analyze log.txt after each run for errors/clues when there are runtime errors
+Log Content Requirements: Timestamps, component names, operation context, detailed logging for key events, log key decisions/state changes (avoid repetition).
+Application Insights Integration: Track telemetry, create custom events, set up availability tests (use the shared resource in PoShared).
+UI Development (Blazor WebAssembly):
+Implement responsive design.
+Use Radzen Blazor UI library if enhanced controls are needed and the application complexity warrants it.
+Error Handling & Reliability:
+Global exception handler middleware (API).
+try/catch at service boundaries.
+Appropriate HTTP status codes.
+DEtailed UI error messages to help debugging
+Log exceptions with context.
+Consider Circuit Breaker for external services.
+Dependency Injection (DI): Follow standard practices (Transient, Scoped, Singleton), register in Program.cs.
+Authentication & Security: Implement Google or Microsoft authentication via Azure Entra ID if required by prd.md. 
+Testing Approach: Write XUnit tests for all new functionality (focus on business logic and core functionality), include descriptive debug statements, verify API connections with test data, and create dedicated connection tests for external APIs requiring keys / Calling the API should be one of the first steps before doing anything else
+Data Storage & Management:
+Timeline & Location: Development (Azurite in AzuriteData/, add to .gitignore), Production (Azure Table Storage).
+Azure Table Storage Implementation: Primary data store, repository patterns, optimized keys, error handling, SAS connection strings (local in appsettings.Development.json, Azure in App Service env vars and appsettings.json).
+Deployment Process:
+Local functionality first.
+Use azd for initial Azure resource deployment.
+Configure environment-specific settings (only development/running locally and production/Azure)
+Use GitHub Actions for CI/CD after initial azd to the application's resource group.
+NuGet Package Management: Use dotnet add package for stable packages (no preview/beta), document package purpose.
+UPDATE:
+For deployment and CI CD do only what is needed to build and deploy the app specific resources that go into Azure

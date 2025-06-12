@@ -1,0 +1,233 @@
+﻿@page "/"
+@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.WebAssembly.Hosting
+@inject NavigationManager Navigation
+@inject PoFunQuiz.Client.GameState GameState
+@inject IWebAssemblyHostEnvironment HostEnvironment
+@rendermode InteractiveWebAssembly
+
+<PageTitle>PoFunQuiz</PageTitle>
+
+<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height: 85vh; padding: 1rem;">
+    <MudText Typo="Typo.h3" Class="mb-4 text-center" Color="Color.Primary">Welcome to PoFunQuiz</MudText>
+    
+    <MudCard Class="pa-3" Style="width: 100%; max-width: 450px;">
+        <MudCardContent>
+            <MudText Typo="Typo.h5" Class="mb-3">Enter Player Initials</MudText>
+            
+            <div class="d-flex align-center gap-3 mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                <MudTextField @bind-Value="@Player1Initials" 
+                              Label="Player 1 Initials" 
+                              MaxLength="3"
+                              Required="true"
+                              Immediate="true"
+                              Validation="@(new Func<string, IEnumerable<string>>(ValidateInitials))"
+                              InputMode="InputMode.text"
+                              Style="text-transform: uppercase;"
+                              TextChanged="(s) => OnTextChanged(s, 1)" />
+            </div>
+            
+            <div class="d-flex align-center gap-3 mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Secondary" />
+                <MudTextField @bind-Value="@Player2Initials" 
+                              Label="Player 2 Initials" 
+                              MaxLength="3"
+                              Required="true"
+                              Immediate="true"
+                              Validation="@(new Func<string, IEnumerable<string>>(ValidateInitials))"
+                              InputMode="InputMode.text"
+                              Style="text-transform: uppercase;"
+                              TextChanged="(s) => OnTextChanged(s, 2)" />
+            </div>
+            
+            <MudText Typo="Typo.body2" Class="mb-3 d-none d-sm-block">
+                Enter 3-letter initials for each player to begin. Players will share the same screen during the quiz.
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mb-2 d-block d-sm-none">
+                Enter 3-letter initials for each player.
+            </MudText>
+
+            @if (!IsFormValid)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mt-2 mb-2" Dense="true">
+                    @if (string.IsNullOrWhiteSpace(Player1Initials))
+                    {
+                        <div>Player 1 initials required.</div>
+                    }
+                    @if (string.IsNullOrWhiteSpace(Player2Initials))
+                    {
+                        <div>Player 2 initials required.</div>
+                    }
+                    @if (Player1Initials.Length != 3 && !string.IsNullOrWhiteSpace(Player1Initials))
+                    {
+                        <div>Player 1 initials must be 3 characters.</div>
+                    }
+                    @if (Player2Initials.Length != 3 && !string.IsNullOrWhiteSpace(Player2Initials))
+                    {
+                        <div>Player 2 initials must be 3 characters.</div>
+                    }
+                    @if (Player1Initials == Player2Initials && !string.IsNullOrWhiteSpace(Player1Initials) && Player1Initials.Length == 3)
+                    {
+                        <div>Players cannot have the same initials.</div>
+                    }
+                </MudAlert>
+            }
+            
+            <MudText Typo="Typo.caption" Class="mt-2" Color="@(IsFormValid ? Color.Success : Color.Default)">
+                P1: "@Player1Initials" (Length: @(Player1Initials?.Length ?? 0)), P2: "@Player2Initials" (Length: @(Player2Initials?.Length ?? 0))
+            </MudText>
+        </MudCardContent>
+        
+        <MudCardActions Class="d-flex flex-column gap-2">
+            <MudButton Variant="Variant.Filled" 
+                       Color="Color.Primary" 
+                       FullWidth="true"
+                       Disabled="@(!IsFormValid)"
+                       OnClick="StartGame">START GAME</MudButton>
+            
+            <MudButton Variant="Variant.Outlined" 
+                       Color="Color.Primary" 
+                       FullWidth="true"
+                       Href="/leaderboard">LEADERBOARD</MudButton>
+        </MudCardActions>
+    </MudCard>
+    
+    <MudPaper Elevation="0" Class="mt-4 pa-3 d-none d-sm-block" Style="width: 100%; max-width: 450px;">
+        <MudText Typo="Typo.h6" Class="mb-2">Player Controls:</MudText>
+        <div class="d-flex flex-column flex-sm-row gap-2 align-center">
+            <div>
+                <MudText Typo="Typo.body2"><b>Player 1:</b> Use keys 1-4 to select answers</MudText>
+            </div>
+            <div>
+                <MudText Typo="Typo.body2"><b>Player 2:</b> Use keys 6-9 to select answers</MudText>
+            </div>
+        </div>
+    </MudPaper>
+    
+    <MudPaper Elevation="0" Class="mt-2 pa-2 d-block d-sm-none" Style="width: 100%; max-width: 450px;">
+        <div class="d-flex flex-column gap-1">
+            <MudText Typo="Typo.caption"><b>P1:</b> Keys 1-4</MudText>
+            <MudText Typo="Typo.caption"><b>P2:</b> Keys 6-9</MudText>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+<style>
+    @@media (max-width: 600px) {
+        .mud-typography-h3 {
+            font-size: 1.5rem;
+        }
+        
+        .mud-typography-h5 {
+            font-size: 1.1rem;
+        }
+        
+        .mud-container {
+            padding: 0.5rem !important;
+            min-height: 100vh !important;
+        }
+        
+        .mud-card {
+            margin-top: 0 !important;
+        }
+    }
+</style>
+
+@code {
+    private string Player1Initials { get; set; } = "";
+    private string Player2Initials { get; set; } = "";
+    
+    private bool IsFormValid => 
+        !string.IsNullOrWhiteSpace(Player1Initials) && 
+        !string.IsNullOrWhiteSpace(Player2Initials) && 
+        Player1Initials.Length == 3 && 
+        Player2Initials.Length == 3 &&
+        Player1Initials.ToUpperInvariant() != Player2Initials.ToUpperInvariant();
+    
+    private IEnumerable<string> ValidateInitials(string initials)
+    {
+        if (string.IsNullOrWhiteSpace(initials))
+            yield return "Initials are required";
+        else if (initials.Length != 3)
+            yield return "Initials must be exactly 3 characters";
+        
+        if (!string.IsNullOrEmpty(Player1Initials) && 
+            !string.IsNullOrEmpty(Player2Initials) && 
+            Player1Initials.ToUpperInvariant() == Player2Initials.ToUpperInvariant() && 
+            Player1Initials.Length == 3 &&
+            Player2Initials.Length == 3)
+            yield return "Players must have different initials";
+    }
+    
+    // Modified text change handler with player number parameter
+    private void OnTextChanged(string value, int playerNumber)
+    {
+        if (value == null)
+            return;
+        
+        // Convert to uppercase immediately
+        string upperValue = value.ToUpperInvariant();
+        
+        // Set the appropriate player's initials
+        if (playerNumber == 1)
+            Player1Initials = upperValue;
+        else
+            Player2Initials = upperValue;
+        
+        // Force state update
+        StateHasChanged();
+    }
+    
+    private async Task StartGame()
+    {
+        try 
+        {
+            if (!IsFormValid)
+                return;
+                
+            // For now, just navigate to game setup. Player creation and game session will be handled by API calls later.
+            // Create a new game session (simplified for client-side)
+            GameState.CurrentGame = new GameSession
+            {
+                Player1 = new Player { Initials = Player1Initials.ToUpperInvariant() },
+                Player2 = new Player { Initials = Player2Initials.ToUpperInvariant() },
+                StartTime = DateTime.UtcNow,
+                GameId = Guid.NewGuid().ToString()
+            };
+            
+            // Randomly select categories and difficulty
+            var random = new Random();
+            
+            // Select a random difficulty with 60% chance of Medium, 20% Easy, 20% Hard
+            var difficultyRoll = random.Next(1, 101);
+            GameState.CurrentGame.GameDifficulty = difficultyRoll switch
+            {
+                <= 20 => QuestionDifficulty.Easy,
+                <= 80 => QuestionDifficulty.Medium,
+                _ => QuestionDifficulty.Hard
+            };
+            
+            // Select 2-3 random categories
+            var allCategories = QuestionCategories.All.ToList();
+            var numCategories = random.Next(2, 4); // 2 to 3 categories
+            var selectedCategories = new List<string>();
+            
+            // Shuffle the categories and take the first few
+            var shuffledCategories = allCategories.OrderBy(_ => random.Next()).ToList();
+            selectedCategories = shuffledCategories.Take(numCategories).ToList();
+            
+            GameState.CurrentGame.SelectedCategories = selectedCategories;
+            
+            // Navigate directly to game setup (skipping category selection)
+            Navigation.NavigateTo("/game-setup");
+        }
+        catch (Exception ex)
+        {
+            // In a real app, we would log this error
+            Console.WriteLine($"Error starting game: {ex.Message}");
+        }
+    }
+}

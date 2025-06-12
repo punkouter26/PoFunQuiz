@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.22.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PoFunQuiz.Client\PoFunQuiz.Client.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Infrastructure\PoFunQuiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
+  </ItemGroup>
+  <Target Name="PublishBlazorClient" AfterTargets="Publish">
+    <Exec Command="dotnet publish &quot;$(ProjectDir)..\PoFunQuiz.Client\PoFunQuiz.Client.csproj&quot; -c $(Configuration) -o &quot;$(ProjectDir)wwwroot&quot; --no-build" />
+  </Target>
+
+</Project>

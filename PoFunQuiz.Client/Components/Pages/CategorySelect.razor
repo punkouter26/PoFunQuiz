@@ -1,0 +1,97 @@
+@page "/category-select"
+@using PoFunQuiz.Client;
+@using PoFunQuiz.Core.Models
+@inject NavigationManager Navigation
+@inject PoFunQuiz.Client.GameState GameState
+@rendermode InteractiveWebAssembly
+
+<PageTitle>PoFunQuiz</PageTitle>
+
+<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height: 85vh;">
+    <MudPaper Elevation="3" Class="pa-6" Style="width: 100%; max-width: 600px;">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Choose Categories</MudText>
+        
+        <MudText Typo="Typo.body1" Class="mb-4">
+            Select at least one category and difficulty level for your game.
+        </MudText>
+
+        <!-- Difficulty Selection -->
+        <MudSelect T="QuestionDifficulty" 
+                  Label="Difficulty" 
+                  @bind-Value="selectedDifficulty"
+                  Class="mb-4">
+            @foreach (var difficulty in Enum.GetValues<QuestionDifficulty>())
+            {
+                <MudSelectItem Value="@difficulty">@difficulty.ToString()</MudSelectItem>
+            }
+        </MudSelect>
+
+        <!-- Category Selection -->
+        <div class="d-flex flex-wrap gap-2 mb-6">
+            @foreach (var category in QuestionCategories.All)
+            {
+                <MudChip T="string" 
+                         Color="@(selectedCategories.Contains(category) ? Color.Primary : Color.Default)"
+                         OnClick="@(() => ToggleCategory(category))"
+                         Size="Size.Large"
+                         Style="cursor: pointer;">
+                    @category
+                </MudChip>
+            }
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex flex-column gap-2">
+            <MudButton Variant="Variant.Filled"
+                      Color="Color.Primary"
+                      FullWidth="true"
+                      Disabled="@(!IsValid)"
+                      OnClick="StartGame">
+                Start Game
+            </MudButton>
+            
+            <MudButton Variant="Variant.Outlined"
+                      Color="Color.Secondary"
+                      FullWidth="true"
+                      Href="/">
+                Back
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+
+@code {
+    private HashSet<string> selectedCategories = new();
+    private QuestionDifficulty selectedDifficulty = QuestionDifficulty.Medium;
+    
+    private bool IsValid => selectedCategories.Count > 0;
+    
+    protected override void OnInitialized()
+    {
+        if (GameState.CurrentGame == null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+    }
+    
+    private void ToggleCategory(string category)
+    {
+        if (selectedCategories.Contains(category))
+            selectedCategories.Remove(category);
+        else
+            selectedCategories.Add(category);
+    }
+    
+    private void StartGame()
+    {
+        if (GameState.CurrentGame == null || !IsValid)
+            return;
+            
+        GameState.CurrentGame.SelectedCategories = selectedCategories.ToList();
+        GameState.CurrentGame.GameDifficulty = selectedDifficulty;
+        
+        Navigation.NavigateTo("/game-setup");
+    }
+}

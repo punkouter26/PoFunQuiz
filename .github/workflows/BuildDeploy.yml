@@ -1,0 +1,45 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  AZURE_WEBAPP_NAME: PoFunQuiz
+  AZURE_WEBAPP_PACKAGE_PATH: './publish'
+  DOTNET_VERSION: '9.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET ${{ env.DOTNET_VERSION }}
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore PoFunQuiz.sln
+
+    - name: Build solution
+      run: dotnet build PoFunQuiz.sln --configuration Release --no-restore
+
+    - name: Test solution
+      run: dotnet test PoFunQuiz.sln --configuration Release --no-build --verbosity normal
+
+    - name: Publish application
+      run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+    - name: Deploy to Azure Web App
+      if: github.ref == 'refs/heads/main'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
