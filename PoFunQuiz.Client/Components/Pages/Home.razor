@@ -110,8 +110,8 @@
 </style>
 
 @code {
-    private string Player1Initials { get; set; } = "";
-    private string Player2Initials { get; set; } = "";
+    private string Player1Initials { get; set; } = "ABC";
+    private string Player2Initials { get; set; } = "XYZ";
     private string ValidationSummary { get; set; } = "";
 
     private bool IsFormValid =>
@@ -203,6 +203,16 @@
         {
             Console.WriteLine($"Error starting game: {ex.Message}");
             ValidationSummary = $"Error starting game: {ex.Message}"; // Show error to user
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        // Only auto-start if no game is currently active
+        if (GameState.CurrentGame == null)
+        {
+            StartGame();
             StateHasChanged();
         }
     }
