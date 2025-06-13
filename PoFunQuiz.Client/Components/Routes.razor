@@ -1,4 +1,6 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿@using Radzen
+@using Radzen.Blazor
+<Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
@@ -6,11 +8,11 @@
     <NotFound>
         <PageTitle>Not Found</PageTitle>
         <LayoutView Layout="typeof(Layout.MainLayout)">
-            <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 80vh;">
-                <MudText Typo="Typo.h3" Class="mb-4">Page Not Found</MudText>
-                <MudText Typo="Typo.body1" Class="mb-4">Sorry, there's nothing at this address.</MudText>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return Home</MudButton>
-            </MudContainer>
+            <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 80vh;">
+                <RadzenText TextStyle="TextStyle.H3" class="rz-mb-4">Page Not Found</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-4">Sorry, there's nothing at this address.</RadzenText>
+                <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/" Text="Return Home" />
+            </div>
         </LayoutView>
     </NotFound>
 </Router>

@@ -2,203 +2,185 @@
 @using PoFunQuiz.Core.Models
 @using PoFunQuiz.Core.Services
 @using Microsoft.Extensions.Logging
+@using Radzen
+@using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject ILogger<Leaderboard> Logger
 @inject IJSRuntime JSRuntime
+@rendermode InteractiveWebAssembly
 
-<PageTitle>PoFunQuiz</PageTitle>
+<PageTitle>PoFunQuiz - Leaderboard</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="py-2 px-1 px-sm-4">
-    <MudPaper Elevation="3" Class="pa-2 pa-sm-4">
-        <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-2">Leaderboard</MudText>
-        
+<div class="rz-p-1 rz-p-sm-4">
+    <RadzenCard class="rz-p-2 rz-p-sm-4">
+        <RadzenText TextStyle="TextStyle.H5" TextAlign="TextAlign.Center" class="rz-mb-2">Leaderboard</RadzenText>
+
         @if (Loading)
         {
-            <div class="d-flex justify-center my-2">
-                <MudProgressCircular Color="Color.Primary" Size="Size.Medium" Indeterminate="true" />
+            <div class="rz-display-flex rz-justify-content-center rz-my-2">
+                <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 100px; height: 20px;" />
             </div>
         }
         else if (ErrorMessage != null)
         {
-            <MudAlert Severity="Severity.Error" Class="my-2" Dense="true">@ErrorMessage</MudAlert>
-            <div class="d-flex flex-column align-center">
-                <MudButton Variant="Variant.Filled" 
-                         Color="Color.Primary"
-                         OnClick="LoadLeaderboard"
-                         Size="Size.Small"
-                         Class="my-2">
-                    RETRY
-                </MudButton>
+            <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="rz-my-2">@ErrorMessage</RadzenAlert>
+            <div class="rz-display-flex rz-flex-column rz-align-items-center">
+                <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                              Click="LoadLeaderboard"
+                              Size="ButtonSize.Small"
+                              class="rz-my-2"
+                              Text="RETRY" />
             </div>
         }
         else if (Players.Count == 0)
         {
-            <MudAlert Severity="Severity.Info" Class="my-2" Dense="true">
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="rz-my-2">
                 No player data available yet. Play some games to populate the leaderboard!
-            </MudAlert>
+            </RadzenAlert>
         }
         else
         {
-            
             <!-- Individual Player Statistics -->
-            <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-3">Player Leaderboard & Statistics</MudText>
-            <MudTable Items="@Players" 
-                     Dense="true" 
-                     Hover="true" 
-                     Bordered="false" 
-                     Striped="true"
-                     Breakpoint="Breakpoint.None"
-                     Class="leaderboard-table">
-                <HeaderContent>
-                    <MudTh>Rank</MudTh>
-                    <MudTh>Player</MudTh>
-                    <MudTh>Games</MudTh>
-                    <MudTh>Wins</MudTh>
-                    <MudTh>Score</MudTh>
-                    <MudTh>Win %</MudTh>
-                    <MudTh>Avg Score</MudTh>
-                    <MudTh>Correct</MudTh>
-                    <MudTh>Accuracy</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>
-                        @if (context.Rank <= 3)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" 
-                                     Color="@(context.Rank == 1 ? Color.Warning : context.Rank == 2 ? Color.Tertiary : Color.Tertiary)" 
-                                     Size="Size.Small" />
-                        }
-                        @context.Rank
-                    </MudTd>
-                    <MudTd>
-                        <MudChip T="string" Color="@GetPlayerColor(context.Rank)" Size="Size.Small">@context.Initials</MudChip>
-                    </MudTd>
-                    <MudTd>@context.GamesPlayed</MudTd>
-                    <MudTd>@context.GamesWon</MudTd>
-                    <MudTd>@context.TotalScore</MudTd>
-                    <MudTd>@($"{(double)context.GamesWon / Math.Max(1, context.GamesPlayed):P0}")</MudTd>
-                    <MudTd>@($"{(double)context.TotalScore / Math.Max(1, context.GamesPlayed):F1}")</MudTd>
-                    <MudTd>@context.TotalCorrectAnswers</MudTd>
-                    <MudTd>@($"{(double)context.TotalCorrectAnswers / (Math.Max(1, context.GamesPlayed) * 10):P0}")</MudTd>
-                </RowTemplate>
-            </MudTable>
-            
-            <!-- Global Statistics -->
-            <MudDivider Class="my-4" />
-            <MudText Typo="Typo.subtitle1" Class="mb-2">Global Statistics</MudText>
-            
-            <MudGrid>
-                <!-- Total Questions Answered -->
-                <MudItem xs="12" md="6">
-                    <MudPaper Elevation="0" Class="pa-3" Outlined>
-                        <MudText Typo="Typo.subtitle2">Questions Summary</MudText>
-                        <MudList T="string" Dense="true">
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.QuestionAnswer" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Total Questions Asked: @TotalQuestionsAsked</MudText>
-                                </div>
-                            </MudListItem>
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Total Correct Answers: @TotalCorrectAnswers</MudText>
-                                </div>
-                            </MudListItem>
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Percent" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Overall Accuracy: @($"{OverallAccuracy:P1}")</MudText>
-                                </div>
-                            </MudListItem>
-                        </MudList>
-                    </MudPaper>
-                </MudItem>
+            <RadzenText TextStyle="TextStyle.H6" TextAlign="TextAlign.Center" class="rz-mb-3">Player Leaderboard & Statistics</RadzenText>
+            <RadzenDataGrid AllowFiltering="false" AllowPaging="false" AllowSorting="true" Data="@Players" TItem="Player" class="leaderboard-table" Responsive="true">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Player" Property="Rank" Title="Rank" Width="70px" TextAlign="TextAlign.Center">
+                        <Template Context="player">
+                            @if (player.Rank <= 3)
+                            {
+                                <RadzenIcon Icon="emoji_events" Style="@($"color: {GetRankColorString(player.Rank)}; font-size: 1.2em;")" />
+                            }
+                            @player.Rank
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Player" Property="Initials" Title="Player" Width="100px">
+                        <Template Context="player">
+                            <RadzenBadge Text="@player.Initials" BadgeStyle="@GetPlayerBadgeStyle(player.Rank)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Player" Property="GamesPlayed" Title="Games" Width="80px" TextAlign="TextAlign.Right" />
+                    <RadzenDataGridColumn TItem="Player" Property="GamesWon" Title="Wins" Width="80px" TextAlign="TextAlign.Right" />
+                    <RadzenDataGridColumn TItem="Player" Property="TotalScore" Title="Score" Width="100px" TextAlign="TextAlign.Right" />
+                    <RadzenDataGridColumn TItem="Player" Title="Win %" Width="80px" TextAlign="TextAlign.Right" FormatString="{0:P0}">
+                        <Template Context="player">
+                            @((double)player.GamesWon / Math.Max(1, player.GamesPlayed))
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Player" Title="Avg Score" Width="100px" TextAlign="TextAlign.Right" FormatString="{0:F1}">
+                         <Template Context="player">
+                            @((double)player.TotalScore / Math.Max(1, player.GamesPlayed))
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Player" Property="TotalCorrectAnswers" Title="Correct" Width="80px" TextAlign="TextAlign.Right" />
+                    <RadzenDataGridColumn TItem="Player" Title="Accuracy" Width="100px" TextAlign="TextAlign.Right" FormatString="{0:P0}">
+                        <Template Context="player">
+                           @((double)player.TotalCorrectAnswers / (Math.Max(1, player.GamesPlayed) * 10))
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
 
-                <!-- Game Statistics -->
-                <MudItem xs="12" md="6">
-                    <MudPaper Elevation="0" Class="pa-3" Outlined>
-                        <MudText Typo="Typo.subtitle2">Game Summary</MudText>
-                        <MudList T="string" Dense="true">
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.SportsEsports" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Total Games Played: @TotalGamesPlayed</MudText>
-                                </div>
-                            </MudListItem>
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Average Game Duration: @AverageGameDuration</MudText>
-                                </div>
-                            </MudListItem>
-                            <MudListItem T="string">
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.EmojiPeople" Class="mr-2" />
-                                    <MudText Typo="Typo.body2">Total Players: @Players.Count</MudText>
-                                </div>
-                            </MudListItem>
-                        </MudList>
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-            
+            <!-- Global Statistics -->
+            <RadzenDivider class="rz-my-4" />
+            <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-2">Global Statistics</RadzenText>
+
+            <RadzenRow Gutters="true">
+                <RadzenColumn Size="12" SizeMD="6" class="rz-mb-3 rz-mb-md-0">
+            <RadzenCard Variant="Variant.Outlined" class="rz-p-3">
+                        <RadzenText TextStyle="TextStyle.Subtitle2">Questions Summary</RadzenText>
+                        <RadzenStack Gap="0">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="question_answer" />
+                                <RadzenText TextStyle="TextStyle.Body2">Total Questions Asked: @TotalQuestionsAsked</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="check" />
+                                <RadzenText TextStyle="TextStyle.Body2">Total Correct Answers: @TotalCorrectAnswers</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="percent" />
+                                <RadzenText TextStyle="TextStyle.Body2">Overall Accuracy: @($"{OverallAccuracy:P1}")</RadzenText>
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                <RadzenCard Variant="Variant.Outlined" class="rz-p-3">
+                        <RadzenText TextStyle="TextStyle.Subtitle2">Game Summary</RadzenText>
+                        <RadzenStack Gap="0">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="sports_esports" />
+                                <RadzenText TextStyle="TextStyle.Body2">Total Games Played: @TotalGamesPlayed</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="access_time" />
+                                <RadzenText TextStyle="TextStyle.Body2">Average Game Duration: @AverageGameDuration</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="emoji_people" />
+                                <RadzenText TextStyle="TextStyle.Body2">Total Players: @Players.Count</RadzenText>
+                            </RadzenStack>
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+            </RadzenRow>
+
             <!-- Daily Activity Charts -->
-            <MudDivider Class="my-4" />
-            <MudText Typo="Typo.subtitle1" Class="mb-2">Daily Activity</MudText>
+            <RadzenDivider class="rz-my-4" />
+            <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-2">Daily Activity</RadzenText>
             
-            <!-- Games Per Day -->
-            <MudPaper Elevation="0" Class="pa-3 mb-3" Outlined>
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Games Played Per Day</MudText>
+            <RadzenCard Variant="Variant.Outlined" class="rz-p-3 rz-mb-3">
+                <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">Games Played Per Day</RadzenText>
                 <div class="chart-container">
                     @foreach (var dayData in GamesPlayedPerDay.OrderBy(d => d.Key))
                     {
-                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 10));
+                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 10)); // Scale factor
                         <div class="chart-item">
-                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--mud-palette-primary);">
+                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--rz-primary-dark);">
                                 <span class="chart-value">@dayData.Value</span>
                             </div>
                             <div class="chart-label">@FormatDayLabel(dayData.Key)</div>
                         </div>
                     }
                 </div>
-            </MudPaper>
+            </RadzenCard>
             
-            <!-- Questions Per Day -->
-            <MudPaper Elevation="0" Class="pa-3 mb-3" Outlined>
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Questions Asked Per Day</MudText>
+            <RadzenCard Variant="Variant.Outlined" class="rz-p-3 rz-mb-3">
+                <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">Questions Asked Per Day</RadzenText>
                 <div class="chart-container">
                     @foreach (var dayData in QuestionsAskedPerDay.OrderBy(d => d.Key))
                     {
-                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 5));
+                        var barHeight = Math.Max(20, Math.Min(100, dayData.Value * 2)); // Adjusted scale factor
                         <div class="chart-item">
-                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--mud-palette-secondary);">
+                            <div class="chart-bar" style="height: @(barHeight)px; background-color: var(--rz-secondary-dark);">
                                 <span class="chart-value">@dayData.Value</span>
                             </div>
                             <div class="chart-label">@FormatDayLabel(dayData.Key)</div>
                         </div>
                     }
                 </div>
-            </MudPaper>
-            
+            </RadzenCard>
         }
         
-        <div class="d-flex justify-center mt-3">
-            <MudButton Variant="Variant.Filled" 
-                     Color="Color.Primary" 
-                     Href="/"
-                     Size="Size.Small"
-                     Class="my-2">
-                BACK TO MAIN MENU
-            </MudButton>
+        <div class="rz-display-flex rz-justify-content-center rz-mt-3">
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" 
+                          Path="/"
+                          Size="ButtonSize.Small"
+                          class="rz-my-2"
+                          Text="BACK TO MAIN MENU" />
         </div>
-    </MudPaper>
-</MudContainer>
+    </RadzenCard>
+</div>
 
 <style>
-    .table-responsive {
-        overflow-x: auto;
-        width: 100%;
+    .leaderboard-table .rz-grid-table { /* More specific selector for RadzenDataGrid */
+        font-size: 0.85rem; /* Adjust base font size for the table */
+    }
+
+    .leaderboard-table .rz-column-title,
+    .leaderboard-table .rz-cell-data {
+        padding: 6px 8px; /* Adjust cell padding */
     }
     
     .chart-container {
@@ -207,108 +189,63 @@
         justify-content: space-around;
         height: 140px;
         gap: 8px;
+        background-color: var(--rz-base-200); /* Light background for chart area */
+        padding: 10px;
+        border-radius: var(--rz-border-radius);
     }
     
     .chart-item {
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 40px;
+        width: 40px; /* Fixed width for each bar item */
+        text-align: center;
     }
     
     .chart-bar {
-        width: 30px;
-        border-radius: 4px 4px 0 0;
+        width: 30px; /* Width of the actual bar */
+        border-radius: var(--rz-border-radius) var(--rz-border-radius) 0 0; /* Rounded top corners */
         position: relative;
         display: flex;
-        align-items: flex-start;
+        align-items: flex-start; /* Value at the top */
         justify-content: center;
+        transition: height 0.3s ease-out; /* Smooth height transition */
     }
     
     .chart-value {
         color: white;
         font-size: 10px;
         font-weight: bold;
-        padding: 2px;
+        padding-top: 2px; /* Padding for value inside the bar */
     }
     
     .chart-label {
         font-size: 10px;
         margin-top: 4px;
-        text-align: center;
+        color: var(--rz-text-secondary-color); /* Radzen secondary text color */
     }
-    
-    .accuracy-chart {
-        flex-direction: column;
-        height: auto;
-        align-items: stretch;
-    }
-    
-    .accuracy-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 8px;
-    }
-    
-    .accuracy-label {
-        flex: 0 0 40px;
-        text-align: center;
-        font-weight: bold;
-    }
-    
-    .accuracy-bar-container {
-        flex: 1;
-        background-color: rgba(0,0,0,0.05);
-        border-radius: 4px;
-        overflow: hidden;
-        height: 24px;
-    }
-    
-    .accuracy-bar {
-        background-color: var(--mud-palette-primary);
-        height: 100%;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        padding-left: 8px;
-        color: white;
-        font-size: 12px;
-    }
-    
+        
     @@media (max-width: 600px) {
-        .leaderboard-table {
+        .leaderboard-table .rz-grid-table {
             font-size: 0.75rem;
         }
         
-        .mud-table-cell {
+        .leaderboard-table .rz-column-title,
+        .leaderboard-table .rz-cell-data {
             padding: 4px 3px;
         }
-        
-        .mud-chip {
-            height: 24px;
-            font-size: 0.7rem;
-        }
-        
-        .mud-chip-icon {
-            font-size: 1rem;
-            margin-right: 2px;
-        }
-        
-        .mud-container {
+                
+        .rz-card { /* Reduce padding on cards for mobile */
             padding: 0.5rem !important;
         }
         
-        .mud-paper {
-            padding: 8px !important;
-        }
-        
-        .mud-typography-h5 {
+        .rz-text-h5 { /* Adjust heading size for mobile */
             font-size: 1.1rem !important;
             margin-bottom: 0.5rem !important;
         }
         
         .chart-container {
-            height: 100px;
+            height: 100px; /* Smaller chart on mobile */
         }
         
         .chart-item {
@@ -327,14 +264,12 @@
     private List<Player> Players { get; set; } = new List<Player>();
     private List<GameSession> RecentGames { get; set; } = new List<GameSession>();
     
-    // Global statistics
     private int TotalGamesPlayed => Players.Sum(p => p.GamesPlayed);
-    private int TotalQuestionsAsked => TotalGamesPlayed * 20; // 10 questions per player, 2 players per game
+    private int TotalQuestionsAsked => TotalGamesPlayed * 20;
     private int TotalCorrectAnswers => Players.Sum(p => p.TotalCorrectAnswers);
     private double OverallAccuracy => TotalQuestionsAsked > 0 ? (double)TotalCorrectAnswers / TotalQuestionsAsked : 0;
     private string AverageGameDuration => CalculateAverageGameDuration();
     
-    // Daily statistics
     private Dictionary<DateTime, int> GamesPlayedPerDay { get; set; } = new Dictionary<DateTime, int>();
     private Dictionary<DateTime, int> QuestionsAskedPerDay { get; set; } = new Dictionary<DateTime, int>();
     
@@ -353,128 +288,107 @@
             ErrorMessage = null;
             StateHasChanged();
             
-            // Simulate loading data for now
-            await Task.Delay(500); // Simulate network delay
+            await Task.Delay(500); 
             
-            // Create dummy players
             Players = new List<Player>
             {
-                new Player { Initials = "ABC", GamesPlayed = 10, GamesWon = 7, TotalScore = 750, TotalCorrectAnswers = 70, Rank = 1 },
-                new Player { Initials = "DEF", GamesPlayed = 12, GamesWon = 6, TotalScore = 680, TotalCorrectAnswers = 65, Rank = 2 },
-                new Player { Initials = "GHI", GamesPlayed = 8, GamesWon = 5, TotalScore = 500, TotalCorrectAnswers = 50, Rank = 3 }
+                new Player { Initials = "ACE", GamesPlayed = 10, GamesWon = 7, TotalScore = 750, TotalCorrectAnswers = 70 },
+                new Player { Initials = "BOB", GamesPlayed = 12, GamesWon = 6, TotalScore = 680, TotalCorrectAnswers = 65 },
+                new Player { Initials = "CAT", GamesPlayed = 8, GamesWon = 5, TotalScore = 500, TotalCorrectAnswers = 50 },
+                new Player { Initials = "DAN", GamesPlayed = 15, GamesWon = 10, TotalScore = 1050, TotalCorrectAnswers = 95 },
+                new Player { Initials = "ELI", GamesPlayed = 5, GamesWon = 1, TotalScore = 120, TotalCorrectAnswers = 15 }
             };
             
-            // Create dummy game sessions
-            RecentGames = new List<GameSession>
+            RecentGames = new List<GameSession>();
+            var random = new Random();
+            for(int i = 0; i < 20; i++) // More game sessions for better chart data
             {
-                new GameSession { StartTime = DateTime.UtcNow.AddDays(-1), EndTime = DateTime.UtcNow.AddDays(-1).AddMinutes(5), Player1 = new Player { Initials = "P1" }, Player2 = new Player { Initials = "P2" } },
-                new GameSession { StartTime = DateTime.UtcNow.AddDays(-2), EndTime = DateTime.UtcNow.AddDays(-2).AddMinutes(6), Player1 = new Player { Initials = "P3" }, Player2 = new Player { Initials = "P4" } },
-                new GameSession { StartTime = DateTime.UtcNow.AddDays(-1), EndTime = DateTime.UtcNow.AddDays(-1).AddMinutes(4), Player1 = new Player { Initials = "P5" }, Player2 = new Player { Initials = "P6" } }
-            };
+                var daysAgo = random.Next(0, 7);
+                var durationMins = random.Next(3, 8);
+                RecentGames.Add(new GameSession { 
+                    StartTime = DateTime.UtcNow.AddDays(-daysAgo).AddHours(-random.Next(0,5)), 
+                    EndTime = DateTime.UtcNow.AddDays(-daysAgo).AddHours(-random.Next(0,5)).AddMinutes(durationMins), 
+                    Player1 = new Player { Initials = "P1" }, Player2 = new Player { Initials = "P2" } 
+                });
+            }
             
-            // Calculate per-day statistics
             CalculateDailyStatistics();
             
-            // Sort and rank players by total score
             Players = Players
                 .OrderByDescending(p => p.TotalScore)
-                .Take(10)
                 .Select((p, index) => {
-                    p.Rank = index + 1; // Add rank property
+                    p.Rank = index + 1;
                     return p;
                 })
                 .ToList();
             
             Logger.LogInformation("Leaderboard loaded successfully with {Count} players", Players.Count);
-            Loading = false;
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Failed to load leaderboard");
             ErrorMessage = $"Failed to load leaderboard: {ex.Message}";
+        }
+        finally
+        {
             Loading = false;
+            StateHasChanged();
         }
     }
     
-    // Calculate daily statistics
     private void CalculateDailyStatistics()
     {
         GamesPlayedPerDay.Clear();
         QuestionsAskedPerDay.Clear();
         
-        // Default data for the last 7 days if there's no actual data
         var today = DateTime.Today;
-        for (int i = 6; i >= 0; i--)
+        for (int i = 6; i >= 0; i--) // Initialize last 7 days
         {
             var day = today.AddDays(-i);
             GamesPlayedPerDay[day] = 0;
             QuestionsAskedPerDay[day] = 0;
         }
         
-        // Process real data from game sessions
         foreach (var game in RecentGames.Where(g => g.EndTime.HasValue))
         {
             var gameDate = game.EndTime!.Value.Date;
-            
-            // Add or update games per day
-            if (GamesPlayedPerDay.ContainsKey(gameDate))
+            if (GamesPlayedPerDay.ContainsKey(gameDate)) // Only count if within the last 7 days initialized
+            {
                 GamesPlayedPerDay[gameDate]++;
-            else
-                GamesPlayedPerDay[gameDate] = 1;
-            
-            // Add or update questions per day (20 questions per game - 10 for each player)
-            if (QuestionsAskedPerDay.ContainsKey(gameDate))
-                QuestionsAskedPerDay[gameDate] += 20;
-            else
-                QuestionsAskedPerDay[gameDate] = 20;
+                QuestionsAskedPerDay[gameDate] += 20; 
+            }
         }
-        
-        // Keep only the 7 most recent days with data
-        GamesPlayedPerDay = GamesPlayedPerDay
-            .OrderByDescending(d => d.Key)
-            .Take(7)
-            .ToDictionary(d => d.Key, d => d.Value);
-            
-        QuestionsAskedPerDay = QuestionsAskedPerDay
-            .OrderByDescending(d => d.Key)
-            .Take(7)
-            .ToDictionary(d => d.Key, d => d.Value);
     }
     
-    // Calculate average game duration
     private string CalculateAverageGameDuration()
     {
-        if (RecentGames.Count == 0)
-            return "0:00";
-            
+        if (RecentGames.Count == 0) return "0:00";
         var completedGames = RecentGames.Where(g => g.StartTime.HasValue && g.EndTime.HasValue).ToList();
-        if (completedGames.Count == 0)
-            return "0:00";
-            
+        if (completedGames.Count == 0) return "0:00";
         var totalDuration = completedGames.Sum(g => (g.EndTime!.Value - g.StartTime!.Value).TotalSeconds);
         var averageSeconds = totalDuration / completedGames.Count;
-        
-        var minutes = (int)(averageSeconds / 60);
-        var seconds = (int)(averageSeconds % 60);
-        
-        return $"{minutes}:{seconds:00}";
+        return $"{(int)(averageSeconds / 60)}:{(int)(averageSeconds % 60):00}";
     }
     
-    // Format date for chart labels
-    private string FormatDayLabel(DateTime date)
-    {
-        return date.ToString("MM/dd");
-    }
+    private string FormatDayLabel(DateTime date) => date.ToString("MM/dd");
     
-    // Helper method to get color for player rank
-    private Color GetPlayerColor(int rank)
+    private BadgeStyle GetPlayerBadgeStyle(int rank)
     {
-        return rank switch
-        {
-            1 => Color.Warning,  // Gold
-            2 => Color.Tertiary, // Silver
-            3 => Color.Tertiary, // Bronze
-            _ => Color.Default   // Default for other ranks
+        return rank switch {
+            1 => BadgeStyle.Success, // Using Success for Gold
+            2 => BadgeStyle.Info,    // Using Info for Silver
+            3 => BadgeStyle.Warning, // Using Warning for Bronze
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private string GetRankColorString(int rank)
+    {
+        return rank switch {
+            1 => "gold", 
+            2 => "silver",
+            3 => "#cd7f32", // Bronze hex
+            _ => "inherit"
         };
     }
 }

@@ -1,9 +1,11 @@
 @page "/game-board"
-@using PoFunQuiz.Client;
+@using PoFunQuiz.Client
 @using PoFunQuiz.Core.Services
 @using PoFunQuiz.Core.Models
 @using System.Timers
 @using System.Diagnostics
+@using Radzen
+@using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject PoFunQuiz.Client.GameState GameState
 @inject IJSRuntime JS
@@ -11,72 +13,72 @@
 @implements IDisposable
 @rendermode InteractiveWebAssembly
 
-<PageTitle>PoFunQuiz</PageTitle>
+<PageTitle>PoFunQuiz - Game On!</PageTitle>
 
 <!-- Import the separate CSS file for mobile styles -->
 <link href="css/gameboard-mobile.css" rel="stylesheet" />
 
 <div class="game-page">
-    @if (GameState.CurrentGame == null || 
-         GameState.CurrentGame.Player1Questions == null || 
+    @if (GameState.CurrentGame == null ||
+         GameState.CurrentGame.Player1Questions == null ||
          GameState.CurrentGame.Player2Questions == null)
     {
-        <MudContainer Class="d-flex flex-column align-center justify-center" Style="height: 85vh;">
-            <MudText Typo="Typo.h4" Class="mb-4">Game session not ready.</MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/">Return to Main Menu</MudButton>
-        </MudContainer>
+        <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;">
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4">Game session not ready.</RadzenText>
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/">Return to Main Menu</RadzenButton>
+        </div>
     }
     else
     {
         <div @onkeydown="HandleKeyDown" tabindex="0" @ref="gameContainer" id="gameContainer" @onclick="FocusGameContainer" class="game-container">
-            <MudContainer MaxWidth="MaxWidth.Large" Class="pa-2 mt-2">
+            <div class="rz-p-2 rz-mt-2">
                 <!-- Game Timer and Score Info -->
-                <MudGrid>
-                    <MudItem xs="12">
-                        <MudPaper Elevation="3" Class="d-flex justify-space-between align-center pa-2 mb-2" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
-                            <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Timer" Class="mr-2" />
-                                <MudText Typo="Typo.body1" Class="@(TimeRemaining <= 5 ? "timer-pulse" : "")" Color="@(TimeRemaining <= 10 ? Color.Error : Color.Default)">
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <RadzenCard class="rz-display-flex rz-justify-content-space-between rz-align-items-center rz-p-2 rz-mb-2" Style="background: linear-gradient(to right, #6a11cb, #2575fc); color: white;">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+                                <RadzenIcon Icon="timer" class="rz-mr-2" />
+                                <RadzenText TextStyle="TextStyle.Body1" class="@GetTimerClass()">
                                     @TimeRemaining s
-                                </MudText>
-                            </div>
-                            <div class="d-flex gap-4">
-                                <div class="text-center">
-                                    <MudText Typo="Typo.caption">P1 Streak: @GameState.CurrentGame.Player1Streak</MudText>
-                                    <MudText Typo="Typo.caption">Score: @GameState.CurrentGame.Player1Score</MudText>
+                                </RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="4">
+                                <div class="rz-text-align-center">
+                                    <RadzenText TextStyle="TextStyle.Caption">P1 Streak: @GameState.CurrentGame.Player1Streak</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Caption">Score: @GameState.CurrentGame.Player1Score</RadzenText>
                                 </div>
-                                <div class="text-center">
-                                    <MudText Typo="Typo.caption">P2 Streak: @GameState.CurrentGame.Player2Streak</MudText>
-                                    <MudText Typo="Typo.caption">Score: @GameState.CurrentGame.Player2Score</MudText>
+                                <div class="rz-text-align-center">
+                                    <RadzenText TextStyle="TextStyle.Caption">P2 Streak: @GameState.CurrentGame.Player2Streak</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Caption">Score: @GameState.CurrentGame.Player2Score</RadzenText>
                                 </div>
-                            </div>
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
+                            </RadzenStack>
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
 
                 <!-- Player Boards -->
-                <MudGrid>
+                <RadzenRow Gutters="true">
                     <!-- Player 1 Board -->
-                    <MudItem xs="12" md="6" Class="@(Player1HasFinished ? "opacity-50" : "")">
-                        <MudPaper Elevation="3" Class="pa-4">
-                            <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-2">
+                    <RadzenColumn Size="12" SizeMD="6" class="@(GetPlayerColumnClass(Player1HasFinished) + " rz-mb-3 rz-mb-md-0")">
+                        <RadzenCard class="rz-p-4">
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-text-primary rz-mb-2 rz-display-flex rz-align-items-center">
                                 @GameState.CurrentGame.Player1.Initials
                                 @if (GameState.CurrentGame.Player1Streak >= 3)
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Whatshot" Color="Color.Error" />
+                                    <RadzenIcon Icon="whatshot" class="rz-text-danger rz-ml-1" />
                                 }
-                            </MudText>
-                            
+                            </RadzenText>
+
                             @if (Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
                             {
                                 var question = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
                                 <div class="question-container">
-                                    <MudText Class="mb-4">@question.Question</MudText>
+                                    <RadzenText class="rz-mb-4">@question.Question</RadzenText>
                                     <div class="options-grid">
                                         @for (int i = 0; i < question.Options.Count; i++)
                                         {
                                             var index = i;
-                                            <div class="option-item @GetAnswerItemClass(1, index)" 
+                                            <div class="option-item @GetAnswerItemClass(1, index)"
                                                  @onclick="() => HandleTouchAnswer(1, index)">
                                                 <span class="option-number">@(i + 1)</span>
                                                 <span class="option-text">@question.Options[i]</span>
@@ -85,25 +87,33 @@
                                     </div>
                                 </div>
                             }
-                        </MudPaper>
-                    </MudItem>
+                            else if (!Player1HasFinished)
+                            {
+                                 <RadzenText>Waiting for questions or game to end...</RadzenText>
+                            }
+                            else
+                            {
+                                <RadzenText>Player 1 has finished!</RadzenText>
+                            }
+                        </RadzenCard>
+                    </RadzenColumn>
 
                     <!-- Player 2 Board -->
-                    <MudItem xs="12" md="6" Class="@(Player2HasFinished ? "opacity-50" : "")">
-                        <MudPaper Elevation="3" Class="pa-4">
-                            <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mb-2">
+                    <RadzenColumn Size="12" SizeMD="6" class="@GetPlayerColumnClass(Player2HasFinished)">
+                        <RadzenCard class="rz-p-4">
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-text-secondary rz-mb-2 rz-display-flex rz-align-items-center">
                                 @GameState.CurrentGame.Player2.Initials
                                 @if (GameState.CurrentGame.Player2Streak >= 3)
                                 {
-                                    <MudIcon Icon="@Icons.Material.Filled.Whatshot" Color="Color.Error" />
+                                    <RadzenIcon Icon="whatshot" class="rz-text-danger rz-ml-1" />
                                 }
-                            </MudText>
-                            
+                            </RadzenText>
+
                             @if (Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
                             {
                                 var question = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
                                 <div class="question-container">
-                                    <MudText Class="mb-4">@question.Question</MudText>
+                                    <RadzenText class="rz-mb-4">@question.Question</RadzenText>
                                     <div class="options-grid">
                                         @for (int i = 0; i < question.Options.Count; i++)
                                         {
@@ -117,10 +127,18 @@
                                     </div>
                                 </div>
                             }
-                        </MudPaper>
-                    </MudItem>
-                </MudGrid>
-            </MudContainer>
+                             else if (!Player2HasFinished)
+                            {
+                                 <RadzenText>Waiting for questions or game to end...</RadzenText>
+                            }
+                            else
+                            {
+                                <RadzenText>Player 2 has finished!</RadzenText>
+                            }
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+            </div>
         </div>
     }
 </div>
@@ -128,14 +146,14 @@
 <style>
     /* --- Animation Styles --- */
     @@keyframes correctAnswerFlash {
-      0%, 100% { background-color: var(--mud-palette-background-grey); transform: scale(1); } /* Use a subtle background */
-      50% { background-color: var(--mud-palette-success); color: white; transform: scale(1.03); } /* Flash success color */
+      0%, 100% { background-color: var(--rz-base-300); transform: scale(1); } /* Subtle background */
+      50% { background-color: var(--rz-success); color: white; transform: scale(1.03); } /* Flash success color */
     }
 
     @@keyframes incorrectAnswerShake {
-      0%, 100% { background-color: var(--mud-palette-background-grey); transform: translateX(0); } /* Use a subtle background */
-      10%, 30%, 50%, 70%, 90% { background-color: var(--mud-palette-error); color: white; transform: translateX(-3px); } /* Flash error color and shake */
-      20%, 40%, 60%, 80% { background-color: var(--mud-palette-error); color: white; transform: translateX(3px); }
+      0%, 100% { background-color: var(--rz-base-300); transform: translateX(0); } /* Subtle background */
+      10%, 30%, 50%, 70%, 90% { background-color: var(--rz-danger); color: white; transform: translateX(-3px); } /* Flash error color and shake */
+      20%, 40%, 60%, 80% { background-color: var(--rz-danger); color: white; transform: translateX(3px); }
     }
 
     @@keyframes timerPulse {
@@ -144,11 +162,11 @@
     }
 
     .correct-answer-flash {
-      animation: correctAnswerFlash 0.4s ease-in-out; /* Slightly faster animation */
+      animation: correctAnswerFlash 0.4s ease-in-out;
     }
 
     .incorrect-answer-shake {
-      animation: incorrectAnswerShake 0.4s ease-in-out; /* Slightly faster animation */
+      animation: incorrectAnswerShake 0.4s ease-in-out;
     }
 
     .timer-pulse {
@@ -156,7 +174,7 @@
     }
 
     .score-text {
-        transition: color 0.3s ease, transform 0.3s ease; /* Simple transition for score */
+        transition: color 0.3s ease, transform 0.3s ease;
     }
     /* --- End Animation Styles --- */
 
@@ -164,90 +182,62 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
-        padding-bottom: 20px;
+        padding-bottom: 20px; /* Ensure space for content at the bottom */
     }
     
     .game-container {
         flex: 1;
         display: flex;
         flex-direction: column;
-        overflow-y: auto;
+        overflow-y: auto; /* Allow scrolling if content overflows */
+        outline: none; /* Remove default focus outline */
     }
-    
-    .answer-list {
-        margin-bottom: 10px;
-        overflow-y: auto;
-        max-height: 200px;
+        
+    .selected-option { /* This class might be redundant if GetAnswerItemClass handles all states */
+        background-color: var(--rz-secondary-lighter); /* Example Radzen selection color */
     }
-    
-    .selected-option {
-        background-color: rgba(0, 0, 0, 0.05);
-    }
-    
-    .score-container {
-        background-color: rgba(0, 0, 0, 0.05);
-        border-radius: 4px;
-        padding: 2px 8px;
-        min-width: 30px;
-        text-align: center;
-        margin-right: 4px;
-    }
-    
-    /* Optimized question container */
-    .compact-question {
-        min-height: unset !important;
-        max-height: 80px !important;
-    }
-    
-    .question-text {
-        line-height: 1.3 !important;
-        margin: 0 !important;
-    }
-
-    .game-container {
-        outline: none;
-    }
-
+        
     .question-container {
-        min-height: 200px;
+        min-height: 200px; /* Adjust as needed */
     }
 
     .options-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        gap: 1rem; /* Or var(--rz-spacing-3) or similar */
     }
 
     .option-item {
         position: relative;
-        padding: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        padding: 1rem; /* Or var(--rz-spacing-3) or similar */
+        border: 1px solid var(--rz-base-400); /* Radzen border color */
+        border-radius: var(--rz-border-radius); /* Radzen border radius */
         cursor: pointer;
         transition: all 0.2s ease;
         display: flex;
         align-items: center;
         min-height: 60px;
+        background-color: var(--rz-base-100); /* Radzen default background */
     }
 
     .option-item:hover {
-        background-color: #f5f5f5;
+        background-color: var(--rz-base-200); /* Radzen hover background */
         transform: translateY(-2px);
     }
 
-    .option-item.selected {
-        background-color: #e3f2fd;
-        border-color: #2196f3;
+    .option-item.selected { /* Applied when selected but before feedback */
+        background-color: var(--rz-secondary-lighter);
+        border-color: var(--rz-secondary);
     }
 
-    .option-item.correct {
-        background-color: #c8e6c9;
-        border-color: #4caf50;
+    .option-item.correct { /* Applied during feedback for correct answer */
+        /* Animation handles flash, this can be a fallback or final state if needed */
+         border-color: var(--rz-success);
     }
 
-    .option-item.incorrect {
-        background-color: #ffcdd2;
-        border-color: #f44336;
+    .option-item.incorrect { /* Applied during feedback for incorrect answer */
+        /* Animation handles flash, this can be a fallback or final state if needed */
+        border-color: var(--rz-danger);
     }
 
     .option-number {
@@ -255,22 +245,29 @@
         top: 0.5rem;
         left: 0.5rem;
         font-size: 0.8rem;
-        color: #666;
+        color: var(--rz-text-disabled-color); /* Radzen disabled/subtle text color */
     }
 
     .option-text {
-        margin-left: 1.5rem;
+        margin-left: 1.5rem; /* Space for the number */
         flex: 1;
+    }
+    
+    .opacity-50 {
+        opacity: 0.5;
     }
 
     @@media (max-width: 600px) {
         .options-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr; /* Single column on small screens */
         }
 
         .option-item {
             min-height: 50px;
-            padding: 0.75rem;
+            padding: 0.75rem; /* Adjust padding for smaller screens */
+        }
+        .rz-p-4 { /* Reduce padding on cards for mobile */
+            padding: 0.75rem !important;
         }
     }
 </style>
@@ -279,326 +276,221 @@
     private ElementReference gameContainer;
     private Timer? gameTimer;
     private Timer? feedbackTimer;
-    private Timer? reconnectTimer;
     private int TimeRemaining { get; set; } = 60;
-    private bool isInitialized = false;
     private Stopwatch answerStopwatch = new();
-    
-    // Player 1 state
+
     private int Player1QuestionIndex { get; set; } = 0;
     private bool Player1HasFinished { get; set; } = false;
     private bool Player1FeedbackVisible { get; set; } = false;
     private bool Player1LastAnswerCorrect { get; set; } = false;
-    private List<int> Player1Selections { get; set; } = new List<int>();
     private int? Player1JustSelectedAnswerIndex { get; set; } = null;
-    
-    // Player 2 state
+
     private int Player2QuestionIndex { get; set; } = 0;
     private bool Player2HasFinished { get; set; } = false;
     private bool Player2FeedbackVisible { get; set; } = false;
     private bool Player2LastAnswerCorrect { get; set; } = false;
-    private List<int> Player2Selections { get; set; } = new List<int>();
     private int? Player2JustSelectedAnswerIndex { get; set; } = null;
 
-    private DotNetObjectReference<GameBoard>? objRef;
-    private bool isMobileDevice = false;
+    private string GetTimerClass()
+    {
+        var classes = new List<string>();
+        if (TimeRemaining <= 5) classes.Add("timer-pulse");
+        if (TimeRemaining <= 10) classes.Add("rz-text-danger");
+        return string.Join(" ", classes);
+    }
+
+    private string GetPlayerColumnClass(bool hasFinished)
+    {
+        return hasFinished ? "opacity-50 " : ""; // Added trailing space
+    }
 
     protected override void OnInitialized()
     {
-        try
-        {
-            Logger.LogInformation("🔵 GameBoard OnInitialized called at {Time}", DateTime.Now);
-            Console.WriteLine($"🔵 GameBoard OnInitialized called at {DateTime.Now}");
-            
-            base.OnInitialized();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "❌ Error in OnInitialized: {Message}", ex.Message);
-            Console.WriteLine($"❌ Error in OnInitialized: {ex.Message}");
-        }
+        Logger.LogInformation("🔵 GameBoard OnInitialized called at {Time}", DateTime.Now);
+        base.OnInitialized();
     }
-    
+
     private async Task FocusGameContainer()
     {
         try
         {
-            await JS.InvokeVoidAsync("focusGameContainer", "gameContainer");
+            await JS.InvokeVoidAsync("eval", $"document.getElementById('gameContainer').focus()");
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error focusing game container");
         }
     }
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            try
+            Logger.LogInformation("🔵 GameBoard first render at {Time}", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
+            if (GameState.CurrentGame == null)
             {
-                Logger.LogInformation("🔵 GameBoard first render at {Time}", DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"));
-                Console.WriteLine($"🔵 GameBoard first render at {DateTime.Now}");
-                
-                if (GameState.CurrentGame == null)
-                {
-                    Logger.LogWarning("⚠️ GameState.CurrentGame is null, navigating to home");
-                    Console.WriteLine("⚠️ GameState.CurrentGame is null, navigating to home");
-                    Navigation.NavigateTo("/");
-                    return;
-                }
-                
-                // Set focus to the container to enable keyboard events
-                await JS.InvokeVoidAsync("focusElement", gameContainer);
-                
-                // Check if we're on a mobile device
-                isMobileDevice = await JS.InvokeAsync<bool>("isMobileDevice");
-                Logger.LogInformation("Game board initialized. Mobile device: {IsMobile}", isMobileDevice);
-                
-                if (isMobileDevice)
-                {
-                    // Add touch support for mobile devices
-                    objRef = DotNetObjectReference.Create(this);
-                    await JS.InvokeVoidAsync("addTouchSupport", "gameContainer", objRef);
-                }
-                
-                // Start the game timer
-                StartGameTimer();
-                
-                isInitialized = true;
-                Logger.LogInformation("✅ GameBoard initialization complete");
-                Console.WriteLine("✅ GameBoard initialization complete");
+                Logger.LogWarning("⚠️ GameState.CurrentGame is null, navigating to home");
+                Navigation.NavigateTo("/");
+                return;
             }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "❌ Error during GameBoard first render: {Message}", ex.Message);
-                Console.WriteLine($"❌ Error during GameBoard first render: {ex.Message}");
-            }
-        }
-        else
-        {
-            try
-            {
-                // Add touch feedback after each render to ensure new options get the handlers
-                await JS.InvokeVoidAsync("addTouchFeedback");
-            }
-            catch (Exception ex)
-            {
-                // Log the error but don't crash the component
-                Logger.LogWarning(ex, "⚠️ Error adding touch feedback: {Message}", ex.Message);
-                Console.WriteLine($"⚠️ Error adding touch feedback: {ex.Message}");
-            }
+            await JS.InvokeVoidAsync("eval", $"document.getElementById('gameContainer').focus()");
+            StartGameTimer();
+            answerStopwatch.Start();
+            Logger.LogInformation("✅ GameBoard initialization complete");
         }
     }
 
     private void StartGameTimer()
     {
-        try
-        {
-            Logger.LogInformation("⏱️ StartGameTimer called at {Time}", DateTime.Now);
-            Console.WriteLine($"⏱️ StartGameTimer called at {DateTime.Now}");
-            
-            gameTimer?.Stop();
-            gameTimer?.Dispose();
-            
-            gameTimer = new Timer(1000);
-            gameTimer.Elapsed += OnGameTimerElapsed;
-            gameTimer.AutoReset = true;
-            gameTimer.Enabled = true;
-            
-            Logger.LogInformation("✅ Game timer successfully started");
-            Console.WriteLine("✅ Game timer successfully started");
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "❌ Error starting game timer: {Message}", ex.Message);
-            Console.WriteLine($"❌ Error starting game timer: {ex.Message}");
-        }
-    }
-    
-    private void OnGameTimerElapsed(object? sender, ElapsedEventArgs e) // Made sender nullable
-    {
-        try
-        {
-            InvokeAsync(() => 
-            {
-                TimeRemaining--;
-                
-                if (TimeRemaining % 5 == 0 || TimeRemaining <= 10)
-                {
-                    Logger.LogInformation("⏱️ Timer update: {TimeRemaining} seconds remaining at {Time}", 
-                        TimeRemaining, DateTime.Now);
-                    Console.WriteLine($"⏱️ Timer update: {TimeRemaining} seconds remaining at {DateTime.Now}");
-                }
-                
-                if (TimeRemaining <= 0)
-                {
-                    Logger.LogInformation("⏱️ Timer reached zero, ending game");
-                    Console.WriteLine("⏱️ Timer reached zero, ending game");
-                    EndGame();
-                }
-                
-                StateHasChanged();
-            });
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "❌ Error in timer callback: {Message}", ex.Message);
-            Console.WriteLine($"❌ Error in timer callback: {ex.Message}");
-        }
+        Logger.LogInformation("⏱️ StartGameTimer called at {Time}", DateTime.Now);
+        gameTimer?.Dispose(); 
+        gameTimer = new Timer(1000);
+        gameTimer.Elapsed += OnGameTimerElapsed;
+        gameTimer.AutoReset = true;
+        gameTimer.Start();
+        Logger.LogInformation("✅ Game timer successfully started");
     }
 
+    private void OnGameTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            TimeRemaining--;
+            if (TimeRemaining % 5 == 0 || TimeRemaining <= 10)
+            {
+                Logger.LogInformation("⏱️ Timer update: {TimeRemaining} seconds remaining at {Time}", TimeRemaining, DateTime.Now);
+            }
+            if (TimeRemaining <= 0)
+            {
+                Logger.LogInformation("⏱️ Timer reached zero, ending game");
+                EndGame();
+            }
+            StateHasChanged();
+        });
+    }
 
     private string GetAnswerItemClass(int playerNumber, int optionIndex)
     {
-        var selections = playerNumber == 1 ? Player1Selections : Player2Selections;
         var feedbackVisible = playerNumber == 1 ? Player1FeedbackVisible : Player2FeedbackVisible;
         var lastAnswerCorrect = playerNumber == 1 ? Player1LastAnswerCorrect : Player2LastAnswerCorrect;
         var justSelected = playerNumber == 1 ? Player1JustSelectedAnswerIndex : Player2JustSelectedAnswerIndex;
-        
-        if (!selections.Contains(optionIndex))
-            return "";
-            
-        if (!feedbackVisible)
-            return "selected";
-            
+
         if (justSelected == optionIndex)
-            return lastAnswerCorrect ? "correct" : "incorrect";
-            
-        return "selected";
+        {
+            if (feedbackVisible)
+            {
+                return lastAnswerCorrect ? "correct-answer-flash" : "incorrect-answer-shake";
+            }
+            return "selected";
+        }
+        return "";
     }
-    
+
     private void HandleKeyDown(KeyboardEventArgs e)
     {
-        try
+        if (GameState.CurrentGame?.Player1Questions == null || GameState.CurrentGame?.Player2Questions == null) return;
+
+        if (!Player1HasFinished && Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
         {
-            // Handle Player 1 inputs (keys 1-4)
-            if (!Player1HasFinished && (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4"))
-            {
-                int index = int.Parse(e.Key) - 1;
-                HandlePlayerAnswer(1, index);
-            }
-            
-            // Handle Player 2 inputs (keys 6-9)
-            if (!Player2HasFinished && (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9"))
-            {
-                int index = int.Parse(e.Key) - 6;
-                HandlePlayerAnswer(2, index);
-            }
+            if (e.Key == "1") HandlePlayerAnswer(1, 0);
+            else if (e.Key == "2") HandlePlayerAnswer(1, 1);
+            else if (e.Key == "3") HandlePlayerAnswer(1, 2);
+            else if (e.Key == "4") HandlePlayerAnswer(1, 3);
         }
-        catch (Exception ex)
+
+        if (!Player2HasFinished && Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
         {
-            Logger.LogError(ex, "Error handling keyboard input");
+            if (e.Key == "6") HandlePlayerAnswer(2, 0);
+            else if (e.Key == "7") HandlePlayerAnswer(2, 1);
+            else if (e.Key == "8") HandlePlayerAnswer(2, 2);
+            else if (e.Key == "9") HandlePlayerAnswer(2, 3);
         }
     }
-    
+
     private void HandleTouchAnswer(int playerNumber, int selectedOptionIndex)
     {
-        if ((playerNumber == 1 && !Player1HasFinished) || 
-            (playerNumber == 2 && !Player2HasFinished))
+        if ((playerNumber == 1 && !Player1HasFinished) || (playerNumber == 2 && !Player2HasFinished))
         {
             HandlePlayerAnswer(playerNumber, selectedOptionIndex);
         }
     }
-    
+
     private void HandlePlayerAnswer(int playerNumber, int selectedOptionIndex)
     {
-        try
+        if (GameState.CurrentGame == null) return;
+        if ((playerNumber == 1 && Player1FeedbackVisible) || (playerNumber == 2 && Player2FeedbackVisible)) return;
+
+        var elapsedSeconds = answerStopwatch.Elapsed.TotalSeconds;
+        var speedMultiplier = CalculateSpeedMultiplier(elapsedSeconds);
+
+        if (playerNumber == 1)
         {
-            if (GameState.CurrentGame?.Player1Questions == null || GameState.CurrentGame?.Player2Questions == null)
-                return;
-
-            var elapsedSeconds = answerStopwatch.Elapsed.TotalSeconds;
-            var speedMultiplier = CalculateSpeedMultiplier(elapsedSeconds);
-            
-            if (playerNumber == 1 && !Player1HasFinished && Player1QuestionIndex < GameState.CurrentGame.Player1Questions.Count)
-            {
-                var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
-                bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
-                
-                Player1LastAnswerCorrect = isCorrect;
-                Player1FeedbackVisible = true;
-                Player1Selections.Add(selectedOptionIndex);
-                Player1JustSelectedAnswerIndex = selectedOptionIndex;
-
-                GameState.CurrentGame.AddAnswer(1, isCorrect, currentQuestion.BasePoints, speedMultiplier);
-                
-                ShowFeedbackThenAdvance(playerNumber);
-            }
-            else if (playerNumber == 2 && !Player2HasFinished && Player2QuestionIndex < GameState.CurrentGame.Player2Questions.Count)
-            {
-                var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
-                bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
-                
-                Player2LastAnswerCorrect = isCorrect;
-                Player2FeedbackVisible = true;
-                Player2Selections.Add(selectedOptionIndex);
-                Player2JustSelectedAnswerIndex = selectedOptionIndex;
-
-                GameState.CurrentGame.AddAnswer(2, isCorrect, currentQuestion.BasePoints, speedMultiplier);
-                
-                ShowFeedbackThenAdvance(playerNumber);
-            }
-
-            // Reset stopwatch for next answer
-            answerStopwatch.Restart();
+            if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count) return;
+            var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
+            Player1LastAnswerCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
+            Player1FeedbackVisible = true;
+            Player1JustSelectedAnswerIndex = selectedOptionIndex;
+            GameState.CurrentGame.AddAnswer(1, Player1LastAnswerCorrect, currentQuestion.BasePoints, speedMultiplier);
         }
-        catch (Exception ex)
+        else 
         {
-            Logger.LogError(ex, "Error handling player answer");
+            if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count) return;
+            var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
+            Player2LastAnswerCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
+            Player2FeedbackVisible = true;
+            Player2JustSelectedAnswerIndex = selectedOptionIndex;
+            GameState.CurrentGame.AddAnswer(2, Player2LastAnswerCorrect, currentQuestion.BasePoints, speedMultiplier);
         }
+        
+        ShowFeedbackThenAdvance(playerNumber);
+        answerStopwatch.Restart();
+        StateHasChanged();
     }
-    
+
     private double CalculateSpeedMultiplier(double elapsedSeconds)
     {
         return elapsedSeconds switch
         {
-            <= 2.0 => 2.0,  // Super fast - 2x points
-            <= 4.0 => 1.5,  // Fast - 1.5x points
-            <= 6.0 => 1.25, // Quick - 1.25x points
-            _ => 1.0        // Normal speed - no bonus
+            <= 2.0 => 2.0, <= 4.0 => 1.5, <= 6.0 => 1.25, _ => 1.0
         };
     }
-    
+
     private void ShowFeedbackThenAdvance(int playerNumber)
     {
         feedbackTimer?.Dispose();
-        feedbackTimer = new Timer(1000);
+        feedbackTimer = new Timer(700); 
         feedbackTimer.Elapsed += (_, _) =>
         {
             InvokeAsync(() =>
             {
+                if (GameState.CurrentGame == null) return;
+
                 if (playerNumber == 1)
                 {
                     Player1FeedbackVisible = false;
-                    Player1Selections.Clear();
                     Player1JustSelectedAnswerIndex = null;
                     Player1QuestionIndex++;
-                    
-                    if (Player1QuestionIndex >= GameState.CurrentGame!.Player1Questions.Count)
+                    if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count)
                     {
                         Player1HasFinished = true;
-                        CalculateTimeBonus(playerNumber);
+                        CalculateTimeBonus(1);
                     }
                 }
-                else
+                else 
                 {
                     Player2FeedbackVisible = false;
-                    Player2Selections.Clear();
                     Player2JustSelectedAnswerIndex = null;
                     Player2QuestionIndex++;
-                    
-                    if (Player2QuestionIndex >= GameState.CurrentGame!.Player2Questions.Count)
+                    if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count)
                     {
                         Player2HasFinished = true;
-                        CalculateTimeBonus(playerNumber);
+                        CalculateTimeBonus(2);
                     }
                 }
-                
+
                 if (Player1HasFinished && Player2HasFinished)
                 {
                     EndGame();
-                    Navigation.NavigateTo("/results");
                 }
                 else
                 {
@@ -606,60 +498,45 @@
                 }
             });
         };
-        
         feedbackTimer.AutoReset = false;
-        feedbackTimer.Enabled = true;
+        feedbackTimer.Start();
     }
     
     private void CalculateTimeBonus(int playerNumber)
     {
-        int bonus = Math.Min(3, (int)Math.Ceiling(TimeRemaining / 20.0));
+        if (GameState.CurrentGame == null) return;
+        int effectiveTimeRemaining = Math.Max(0, TimeRemaining);
+        int bonus = Math.Min(3, (int)Math.Ceiling(effectiveTimeRemaining / 20.0));
         
-        if (playerNumber == 1)
-            GameState.CurrentGame!.Player1TimeBonus = bonus;
-        else
-            GameState.CurrentGame!.Player2TimeBonus = bonus;
+        if (playerNumber == 1) {
+            GameState.CurrentGame.Player1TimeBonus = bonus;
+        } else {
+            GameState.CurrentGame.Player2TimeBonus = bonus;
+        }
+        Logger.LogInformation($"Player {playerNumber} time bonus: {bonus} for {effectiveTimeRemaining}s left.");
+        StateHasChanged(); 
     }
-    
+
     private void EndGame()
     {
         gameTimer?.Stop();
-        feedbackTimer?.Stop();
-
-        if (GameState.CurrentGame == null)
-            return;
-            
+        feedbackTimer?.Stop(); 
+        if (GameState.CurrentGame == null) return;
         GameState.CurrentGame.EndTime = DateTime.UtcNow;
-        
-        // _ = GameSessionService.SaveGameResultsAsync(GameState.CurrentGame); // Removed server-side call
+        Logger.LogInformation("🏁 Game ended at {Time}. Navigating to results.", GameState.CurrentGame.EndTime);
+        Navigation.NavigateTo("/results", forceLoad: true);
     }
-    
+
     [JSInvokable]
     public void HandleSwipe(string direction)
     {
         Logger.LogInformation("Swipe detected: {Direction}", direction);
-        // Handle swipe actions if needed
     }
-    
+
     public void Dispose()
     {
-        try
-        {
-            Logger.LogInformation("♻️ Disposing GameBoard component at {Time}", DateTime.Now);
-            Console.WriteLine($"♻️ Disposing GameBoard component at {DateTime.Now}");
-            
-            gameTimer?.Stop();
-            gameTimer?.Dispose();
-            feedbackTimer?.Stop();
-            feedbackTimer?.Dispose();
-            
-            // Dispose of the .NET object reference
-            objRef?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "❌ Error in Dispose: {Message}", ex.Message);
-            Console.WriteLine($"❌ Error in Dispose: {ex.Message}");
-        }
+        Logger.LogInformation("♻️ Disposing GameBoard component at {Time}", DateTime.Now);
+        gameTimer?.Dispose();
+        feedbackTimer?.Dispose();
     }
 }

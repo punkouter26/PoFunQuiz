@@ -1,65 +1,61 @@
 @page "/category-select"
-@using PoFunQuiz.Client;
+@using PoFunQuiz.Client
 @using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject PoFunQuiz.Client.GameState GameState
 @rendermode InteractiveWebAssembly
 
-<PageTitle>PoFunQuiz</PageTitle>
+<PageTitle>PoFunQuiz - Select Category</PageTitle>
 
-<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height: 85vh;">
-    <MudPaper Elevation="3" Class="pa-6" Style="width: 100%; max-width: 600px;">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Choose Categories</MudText>
+<div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="min-height: 85vh;">
+    <RadzenCard class="rz-p-4 rz-p-md-6" style="width: 100%; max-width: 600px;">
+        <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center" class="rz-mb-4">Choose Categories</RadzenText>
         
-        <MudText Typo="Typo.body1" Class="mb-4">
+        <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-4">
             Select at least one category and difficulty level for your game.
-        </MudText>
+        </RadzenText>
 
         <!-- Difficulty Selection -->
-        <MudSelect T="QuestionDifficulty" 
-                  Label="Difficulty" 
-                  @bind-Value="selectedDifficulty"
-                  Class="mb-4">
-            @foreach (var difficulty in Enum.GetValues<QuestionDifficulty>())
-            {
-                <MudSelectItem Value="@difficulty">@difficulty.ToString()</MudSelectItem>
-            }
-        </MudSelect>
+        <RadzenLabel Text="Difficulty" For="difficultyDropDown" />
+        <RadzenDropDown TValue="QuestionDifficulty" 
+                        Data="@(Enum.GetValues<QuestionDifficulty>())" 
+                        @bind-Value="selectedDifficulty"
+                        TextProperty="ToString()" 
+                        ValueProperty="." 
+                        Placeholder="Select difficulty" 
+                        class="rz-mb-4 rz-width-100" 
+                        Name="difficultyDropDown" />
 
         <!-- Category Selection -->
-        <div class="d-flex flex-wrap gap-2 mb-6">
+        <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-2">Categories</RadzenText>
+        <div class="rz-display-flex rz-flex-wrap rz-gap-2 rz-mb-6">
             @foreach (var category in QuestionCategories.All)
             {
-                <MudChip T="string" 
-                         Color="@(selectedCategories.Contains(category) ? Color.Primary : Color.Default)"
-                         OnClick="@(() => ToggleCategory(category))"
-                         Size="Size.Large"
-                         Style="cursor: pointer;">
-                    @category
-                </MudChip>
+                <RadzenButton Text="@category"
+                              ButtonStyle="@(selectedCategories.Contains(category) ? ButtonStyle.Primary : ButtonStyle.Light)"
+                              Click="@(() => ToggleCategory(category))"
+                              Size="ButtonSize.Medium" />
             }
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex flex-column gap-2">
-            <MudButton Variant="Variant.Filled"
-                      Color="Color.Primary"
-                      FullWidth="true"
-                      Disabled="@(!IsValid)"
-                      OnClick="StartGame">
-                Start Game
-            </MudButton>
+        <RadzenStack Gap="2">
+            <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                          style="width: 100%;"
+                          Disabled="@(!IsValid)"
+                          Click="StartGame"
+                          Text="Start Game" />
             
-            <MudButton Variant="Variant.Outlined"
-                      Color="Color.Secondary"
-                      FullWidth="true"
-                      Href="/">
-                Back
-            </MudButton>
-        </div>
-    </MudPaper>
-</MudContainer>
-
+            <RadzenButton ButtonStyle="ButtonStyle.Secondary"
+                          Shade="Shade.Lighter" 
+                          style="width: 100%;"
+                          Path="/"
+                          Text="Back" />
+        </RadzenStack>
+    </RadzenCard>
+</div>
 
 @code {
     private HashSet<string> selectedCategories = new();
@@ -82,6 +78,7 @@
             selectedCategories.Remove(category);
         else
             selectedCategories.Add(category);
+        InvokeAsync(StateHasChanged); // Ensure UI updates if selection changes button style
     }
     
     private void StartGame()
