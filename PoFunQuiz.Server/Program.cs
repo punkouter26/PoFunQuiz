@@ -33,6 +33,9 @@ try
     builder.Services.AddAuthorization(); // Add this line
     builder.Services.AddControllers(); // Add this line
 
+    // Register OpenAI Service
+    builder.Services.AddScoped<PoFunQuiz.Server.Services.IOpenAIService, PoFunQuiz.Server.Services.OpenAIService>();
+
     // Register all application services
     builder.Services.AddApplicationServices(builder.Configuration);
 

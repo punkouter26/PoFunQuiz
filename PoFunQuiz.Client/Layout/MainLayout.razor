@@ -8,13 +8,9 @@
 <RadzenLayout>
     <RadzenHeader>
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => _sidebarExpanded = !_sidebarExpanded)" />
             <RadzenLabel Text="PoFunQuiz" />
         </RadzenStack>
     </RadzenHeader>
-    <RadzenSidebar @bind-Expanded="@_sidebarExpanded">
-        <NavMenu />
-    </RadzenSidebar>
     <RadzenBody>
         <div class="rz-p-4">
             @Body
@@ -24,7 +20,3 @@
         Footer
     </RadzenFooter>
 </RadzenLayout>
-
-@code {
-    bool _sidebarExpanded = true;
-}

@@ -1,5 +1,6 @@
-@page "/game-setup"
+@page "/gamesetup"
 @using PoFunQuiz.Client
+@using PoFunQuiz.Core.Models
 @using PoFunQuiz.Core.Services
 @using Microsoft.AspNetCore.Components.Web
 @using Radzen
@@ -7,6 +8,7 @@
 @inject NavigationManager Navigation
 @inject PoFunQuiz.Client.GameState GameState
 @inject IJSRuntime JSRuntime
+@inject IQuestionGeneratorService QuestionGeneratorService // Inject the question generator service
 @implements IDisposable
 @rendermode InteractiveWebAssembly
 
@@ -116,6 +118,12 @@ else
 </style>
 
 @code {
+    [SupplyParameterFromQuery]
+    public string? Initials { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Topic { get; set; }
+
     private bool Player1Ready { get; set; } = false;
     private bool Player2Ready { get; set; } = false;
     private bool IsLoading { get; set; } = false;
@@ -127,9 +135,21 @@ else
 
     protected override void OnInitialized()
     {
-        if (GameState.CurrentGame == null)
+        if (string.IsNullOrWhiteSpace(Initials) || string.IsNullOrWhiteSpace(Topic))
         {
             Navigation.NavigateTo("/");
+            return;
+        }
+
+        // Initialize GameState.CurrentGame with player initials and topic
+        if (GameState.CurrentGame == null)
+        {
+            GameState.CurrentGame = new PoFunQuiz.Core.Models.GameSession
+            {
+                Player1 = new PoFunQuiz.Core.Models.Player { Initials = Initials },
+                Player2 = new PoFunQuiz.Core.Models.Player { Initials = "P2" }, // Default for Player 2
+                SelectedCategories = new List<string> { Topic }
+            };
         }
     }
 
@@ -190,37 +210,36 @@ else
         }, null, 1000, 1000); // Start after 1 sec, repeat every 1 sec
     }
 
-    private void GenerateQuestions()
+    private async void GenerateQuestions() // Changed to async
     {
         try
         {
             IsLoading = true;
             StateHasChanged();
 
-            var uniqueQuestions = new List<QuizQuestion>();
-            for (int i = 0; i < 10; i++)
-            {
-                uniqueQuestions.Add(new QuizQuestion
-                {
-                    Question = $"Dummy Question {i + 1}",
-                    Options = new List<string> { "Option A", "Option B", "Option C", "Option D" },
-                    CorrectOptionIndex = 0,
-                    Category = "General"
-                });
-            }
-
-            if (GameState.CurrentGame != null)
-            {
-                GameState.CurrentGame.Player1Questions = uniqueQuestions;
-                GameState.CurrentGame.Player2Questions = uniqueQuestions;
-            }
-            else
+            if (GameState.CurrentGame == null)
             {
                 ErrorMessage = "Game state lost. Please return to the main menu.";
                 IsLoading = false;
                 StateHasChanged();
                 return;
             }
+
+            // Use the injected service to generate questions
+            var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
+            var uniqueQuestions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(10, topic); // Generate 10 questions
+
+            if (uniqueQuestions == null || uniqueQuestions.Count == 0)
+            {
+                ErrorMessage = "Failed to generate questions. Please try again.";
+                IsLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            GameState.CurrentGame.Player1Questions = uniqueQuestions;
+            GameState.CurrentGame.Player2Questions = uniqueQuestions;
+            
             Navigation.NavigateTo("/game-board");
         }
         catch (Exception ex)

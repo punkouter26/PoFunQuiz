@@ -7,6 +7,6 @@ namespace PoFunQuiz.Client
     /// </summary>
     public class GameState
     {
-        public GameSession? CurrentGame { get; set; }
+        public PoFunQuiz.Core.Models.GameSession? CurrentGame { get; set; }
     }
 }

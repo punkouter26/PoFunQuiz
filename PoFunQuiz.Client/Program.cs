@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using PoFunQuiz.Client;
+using PoFunQuiz.Client.Services; // Add this using statement
+using PoFunQuiz.Core.Services; // Add this using statement
 using Radzen;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -12,6 +14,9 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 // Add Radzen services
 builder.Services.AddRadzenComponents();
+
+// Register the client-side question generator service
+builder.Services.AddScoped<IQuestionGeneratorService, ClientQuestionGeneratorService>();
 
 // Add application state services
 builder.Services.AddSingleton<GameState>();

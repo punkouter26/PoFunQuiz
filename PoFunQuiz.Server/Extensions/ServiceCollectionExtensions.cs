@@ -6,6 +6,7 @@ using Azure.Data.Tables;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PoFunQuiz.Server.Middleware; // Updated namespace
+using PoFunQuiz.Server.Services; // Add this using statement
 
 namespace PoFunQuiz.Server.Extensions
 {
@@ -78,7 +79,7 @@ namespace PoFunQuiz.Server.Extensions
         public static IServiceCollection AddBusinessServices(this IServiceCollection services)
         {
             // Register business services
-            services.AddScoped<IQuestionGeneratorService, OpenAIQuestionGeneratorService>();
+            services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>(); // Changed to use new service
             
             return services;
         }

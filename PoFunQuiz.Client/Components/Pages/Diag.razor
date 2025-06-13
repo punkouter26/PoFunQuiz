@@ -1,6 +1,7 @@
 @page "/diag"
 @inject NavigationManager NavigationManager
 @inject ILogger<Diag> Logger
+@inject HttpClient HttpClient
 
 <PageTitle>PoFunQuiz - Diagnostics</PageTitle>
 
@@ -66,13 +67,13 @@
     {
         InitializeDiagnosticChecks();
         await RunDiagnostics();
-    }
-
-    private void InitializeDiagnosticChecks()
+    }    private void InitializeDiagnosticChecks()
     {
         _diagnosticChecks = new List<DiagnosticCheck>
         {
-            new() { Name = "Internet Connection" }
+            new() { Name = "Internet Connection" },
+            new() { Name = "API Health" },
+            new() { Name = "Azure OpenAI Connection" }
         };
     }
 
@@ -90,6 +91,8 @@
             }
 
             await CheckInternetConnection();
+            await CheckAPIHealth();
+            await CheckOpenAIConnection();
 
             Logger.LogInformation("Diagnostics check completed successfully");
         }
@@ -101,9 +104,7 @@
         {
             _isRunning = false;
         }
-    }
-
-    private async Task CheckInternetConnection()
+    }    private async Task CheckInternetConnection()
     {
         var check = _diagnosticChecks.First(c => c.Name == "Internet Connection");
         try
@@ -125,7 +126,75 @@
         }
     }
 
-    private class DiagnosticCheck
+    private async Task CheckAPIHealth()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "API Health");
+        try
+        {
+            var response = await HttpClient.GetAsync("api/diagnostics/api");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (result?.Status == "success")
+                {
+                    check.SetSuccess($"API is healthy. {result.Message}");
+                }
+                else
+                {
+                    check.SetFailure($"API returned unexpected status: {result?.Status}");
+                }
+            }
+            else
+            {
+                check.SetFailure($"API health check failed: {response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Error checking API health: {ex.Message}");
+        }
+    }
+
+    private async Task CheckOpenAIConnection()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Azure OpenAI Connection");
+        try
+        {
+            var response = await HttpClient.GetAsync("api/diagnostics/openai");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (result?.Status == "success")
+                {
+                    check.SetSuccess($"Azure OpenAI connected successfully. {result.Message}");
+                }
+                else if (result?.Status == "warning")
+                {
+                    check.SetSuccess($"Azure OpenAI connection with warning: {result.Message}");
+                }
+                else
+                {
+                    check.SetFailure($"Azure OpenAI error: {result?.Message}");
+                }
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                check.SetFailure($"Azure OpenAI connection failed: {result?.Message ?? response.ReasonPhrase}");
+            }
+        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Error checking Azure OpenAI connection: {ex.Message}");
+        }
+    }    private class DiagnosticCheck
     {
         public string Name { get; set; } = "";
         public bool IsChecked { get; private set; }
@@ -152,5 +221,14 @@
             IsSuccess = false;
             Message = message;
         }
+    }
+
+    private class DiagnosticResponse
+    {
+        public string Status { get; set; } = "";
+        public string Message { get; set; } = "";
+        public DateTime Timestamp { get; set; }
+        public string? Error { get; set; }
+        public int? QuestionCount { get; set; }
     }
 }
