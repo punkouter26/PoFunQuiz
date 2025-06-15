@@ -109,15 +109,24 @@
         var check = _diagnosticChecks.First(c => c.Name == "Internet Connection");
         try
         {
-            using var client = new HttpClient();
-            var response = await client.GetAsync("http://www.google.com");
+            var response = await HttpClient.GetAsync("api/diagnostics/internet");
             if (response.IsSuccessStatusCode)
             {
-                check.SetSuccess("Internet connection is active.");
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                if (result?.Status == "success")
+                {
+                    check.SetSuccess($"Internet connection is active. {result.Message}");
+                }
+                else
+                {
+                    check.SetFailure($"Internet connection check failed: {result?.Message}");
+                }
             }
             else
             {
-                check.SetFailure($"Failed to connect to Google: {response.ReasonPhrase}");
+                check.SetFailure($"Internet connection check failed: {response.ReasonPhrase}");
             }
         }
         catch (Exception ex)

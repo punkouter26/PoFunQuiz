@@ -23,9 +23,7 @@ try
     builder.Host.AddApplicationLogging();
 
     // Add Application Insights
-    builder.Services.AddApplicationInsightsTelemetry();
-
-    // Add services to the container.
+    builder.Services.AddApplicationInsightsTelemetry();    // Add services to the container.
     // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
     builder.Services.AddOpenApi();
 

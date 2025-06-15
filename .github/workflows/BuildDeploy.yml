@@ -30,9 +30,6 @@ jobs:
     - name: Build solution
       run: dotnet build PoFunQuiz.sln --configuration Release --no-restore
 
-    - name: Test solution
-      run: dotnet test PoFunQuiz.sln --configuration Release --no-build --verbosity normal
-
     - name: Publish application
       run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 

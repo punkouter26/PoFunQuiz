@@ -35,7 +35,7 @@ namespace PoFunQuiz.Server.Controllers
                 // Test with a simple question
                 var questions = await _openAIService.GenerateQuizQuestionsAsync("simple test", 1);
                 
-                if (questions != null && questions.Any())
+                if (questions != null && questions.Count > 0)
                 {
                     _logger.LogInformation("OpenAI connection test successful - received {QuestionCount} questions", questions.Count);
                     return Ok(new 
@@ -48,11 +48,11 @@ namespace PoFunQuiz.Server.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("OpenAI connection test returned empty result");
+                    _logger.LogWarning("OpenAI connection test returned no questions or empty result");
                     return Ok(new 
                     { 
                         status = "warning", 
-                        message = "OpenAI connection succeeded but returned no questions. Check API configuration.",
+                        message = "OpenAI connection succeeded but returned no questions. This might indicate an issue with the prompt or configuration.",
                         timestamp = DateTime.UtcNow,
                         questionCount = 0
                     });
@@ -118,6 +118,48 @@ namespace PoFunQuiz.Server.Controllers
                 { 
                     status = "error", 
                     message = "API health check failed",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("internet")]
+        public async Task<IActionResult> TestInternetConnection()
+        {
+            try
+            {
+                using var ping = new System.Net.NetworkInformation.Ping();
+                var reply = await ping.SendPingAsync("www.google.com", 5000); // 5 second timeout
+
+                if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                {
+                    _logger.LogInformation("Internet connection test successful");
+                    return Ok(new 
+                    { 
+                        status = "success", 
+                        message = "Internet connection is active.",
+                        timestamp = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("Internet connection test failed: {Status}", reply.Status);
+                    return BadRequest(new 
+                    { 
+                        status = "error", 
+                        message = $"Internet connection failed: {reply.Status}",
+                        timestamp = DateTime.UtcNow
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during internet connection test");
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = $"Error checking internet connection: {ex.Message}",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
                 });
