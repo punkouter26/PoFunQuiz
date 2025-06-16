@@ -73,11 +73,10 @@
         {
             new() { Name = "Internet Connection" },
             new() { Name = "API Health" },
+            new() { Name = "Table Storage Connection" },
             new() { Name = "Azure OpenAI Connection" }
         };
-    }
-
-    private async Task RunDiagnostics()
+    }    private async Task RunDiagnostics()
     {
         try
         {
@@ -92,6 +91,7 @@
 
             await CheckInternetConnection();
             await CheckAPIHealth();
+            await CheckTableStorageConnection();
             await CheckOpenAIConnection();
 
             Logger.LogInformation("Diagnostics check completed successfully");
@@ -104,7 +104,7 @@
         {
             _isRunning = false;
         }
-    }    private async Task CheckInternetConnection()
+    }private async Task CheckInternetConnection()
     {
         var check = _diagnosticChecks.First(c => c.Name == "Internet Connection");
         try
@@ -159,11 +159,46 @@
             else
             {
                 check.SetFailure($"API health check failed: {response.ReasonPhrase}");
+            }        }
+        catch (Exception ex)
+        {
+            check.SetFailure($"Error checking API health: {ex.Message}");
+        }
+    }
+
+    private async Task CheckTableStorageConnection()
+    {
+        var check = _diagnosticChecks.First(c => c.Name == "Table Storage Connection");
+        try
+        {
+            var response = await HttpClient.GetAsync("api/diagnostics/tablestorage");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                
+                if (result?.Status == "success")
+                {
+                    // Extract storage type from the response
+                    var storageType = result.StorageType ?? "Table Storage";
+                    check.SetSuccess($"{storageType} connected successfully. {result.Message}");
+                }
+                else
+                {
+                    check.SetFailure($"Table Storage error: {result?.Message}");
+                }
+            }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                check.SetFailure($"Table Storage connection failed: {result?.Message ?? response.ReasonPhrase}");
             }
         }
         catch (Exception ex)
         {
-            check.SetFailure($"Error checking API health: {ex.Message}");
+            check.SetFailure($"Error checking Table Storage connection: {ex.Message}");
         }
     }
 
@@ -230,14 +265,14 @@
             IsSuccess = false;
             Message = message;
         }
-    }
-
-    private class DiagnosticResponse
+    }    private class DiagnosticResponse
     {
         public string Status { get; set; } = "";
         public string Message { get; set; } = "";
         public DateTime Timestamp { get; set; }
         public string? Error { get; set; }
         public int? QuestionCount { get; set; }
+        public string? StorageType { get; set; }
+        public string? ConnectionString { get; set; }
     }
 }

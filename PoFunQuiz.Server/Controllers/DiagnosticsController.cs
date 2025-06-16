@@ -1,22 +1,33 @@
 using Microsoft.AspNetCore.Mvc;
 using PoFunQuiz.Server.Services;
 using PoFunQuiz.Core.Models;
+using Azure.Data.Tables;
+using Microsoft.Extensions.Options;
+using PoFunQuiz.Core.Configuration;
 
 namespace PoFunQuiz.Server.Controllers
 {
     // This is a diagnostics controller (GoF Design Pattern - Front Controller) that provides health check endpoints
-    // for testing connections to external services like Azure OpenAI.
+    // for testing connections to external services like Azure OpenAI and Table Storage.
     [ApiController]
     [Route("api/[controller]")]
     public class DiagnosticsController : ControllerBase
     {
         private readonly IOpenAIService _openAIService;
         private readonly ILogger<DiagnosticsController> _logger;
+        private readonly TableServiceClient _tableServiceClient;
+        private readonly TableStorageSettings _tableStorageSettings;
 
-        public DiagnosticsController(IOpenAIService openAIService, ILogger<DiagnosticsController> logger)
+        public DiagnosticsController(
+            IOpenAIService openAIService, 
+            ILogger<DiagnosticsController> logger,
+            TableServiceClient tableServiceClient,
+            IOptions<TableStorageSettings> tableStorageSettings)
         {
             _openAIService = openAIService;
             _logger = logger;
+            _tableServiceClient = tableServiceClient;
+            _tableStorageSettings = tableStorageSettings.Value;
         }
 
         [HttpGet("health")]
@@ -160,6 +171,158 @@ namespace PoFunQuiz.Server.Controllers
                 { 
                     status = "error", 
                     message = $"Error checking internet connection: {ex.Message}",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("tablestorage")]
+        public async Task<IActionResult> TestTableStorageConnection()
+        {
+            try
+            {
+                _logger.LogInformation("Testing Table Storage connection...");
+                
+                // Determine if we're using Azurite or Azure Table Storage
+                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true", 
+                    StringComparison.OrdinalIgnoreCase);
+                string storageType = isAzurite ? "Azurite (Local)" : "Azure Table Storage";
+
+                // Create a test table name
+                string testTableName = $"DiagnosticTest{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+                try
+                {
+                    // Test 1: Create a test table
+                    var tableClient = _tableServiceClient.GetTableClient(testTableName);
+                    await tableClient.CreateIfNotExistsAsync();
+                    _logger.LogInformation("Successfully created test table {TableName}", testTableName);
+
+                    // Test 2: Add a test entity
+                    var testEntity = new TableEntity("TestPartition", "TestRow")
+                    {
+                        { "TestProperty", "TestValue" },
+                        { "Timestamp", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") }
+                    };
+                    await tableClient.AddEntityAsync(testEntity);
+                    _logger.LogInformation("Successfully added test entity to table {TableName}", testTableName);
+
+                    // Test 3: Retrieve the test entity
+                    var retrievedEntity = await tableClient.GetEntityAsync<TableEntity>("TestPartition", "TestRow");
+                    if (retrievedEntity?.Value != null && 
+                        retrievedEntity.Value.GetString("TestProperty") == "TestValue")
+                    {
+                        _logger.LogInformation("Successfully retrieved test entity from table {TableName}", testTableName);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Retrieved entity does not match expected values");
+                    }
+
+                    // Test 4: Query entities
+                    var queryResults = new List<TableEntity>();
+                    await foreach (var entity in tableClient.QueryAsync<TableEntity>())
+                    {
+                        queryResults.Add(entity);
+                    }
+
+                    if (queryResults.Count == 0)
+                    {
+                        throw new InvalidOperationException("Query returned no results");
+                    }
+
+                    // Test 5: Delete the test entity
+                    await tableClient.DeleteEntityAsync("TestPartition", "TestRow");
+                    _logger.LogInformation("Successfully deleted test entity from table {TableName}", testTableName);
+
+                    // Cleanup: Delete the test table
+                    await tableClient.DeleteAsync();
+                    _logger.LogInformation("Successfully deleted test table {TableName}", testTableName);
+
+                    return Ok(new 
+                    { 
+                        status = "success", 
+                        message = $"{storageType} connection successful. Performed full CRUD operations test.",
+                        timestamp = DateTime.UtcNow,
+                        storageType = storageType,
+                        connectionString = isAzurite ? "UseDevelopmentStorage=true" : "[Azure Storage Account]"
+                    });
+                }
+                catch (Exception testEx)
+                {
+                    // Cleanup on error: try to delete test table if it exists
+                    try
+                    {
+                        var tableClient = _tableServiceClient.GetTableClient(testTableName);
+                        await tableClient.DeleteAsync();
+                        _logger.LogInformation("Cleaned up test table {TableName} after error", testTableName);
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        _logger.LogWarning(cleanupEx, "Failed to cleanup test table {TableName}", testTableName);
+                    }
+
+                    throw testEx; // Re-throw the original test exception
+                }
+            }
+            catch (ArgumentNullException ex)
+            {
+                _logger.LogError(ex, "Table Storage configuration missing");
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = "Table Storage configuration is missing. Please check appsettings.json.",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+            catch (Azure.RequestFailedException ex) when (ex.ErrorCode == "AuthenticationFailed")
+            {
+                _logger.LogError(ex, "Table Storage authentication failed");
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = "Table Storage authentication failed. Check connection string and credentials.",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+            catch (Azure.RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
+            {
+                _logger.LogError(ex, "Table Storage resource not found");
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = "Table Storage resource not found. Check if storage account exists.",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+            catch (System.Net.Sockets.SocketException ex)
+            {
+                _logger.LogError(ex, "Network error connecting to Table Storage");
+                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true", 
+                    StringComparison.OrdinalIgnoreCase);
+                string suggestion = isAzurite 
+                    ? "Make sure Azurite is running (try 'azurite --silent --location ./AzuriteData --debug ./AzuriteData/debug.log')"
+                    : "Check your internet connection and Azure Storage account availability.";
+                    
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = $"Network error connecting to Table Storage. {suggestion}",
+                    timestamp = DateTime.UtcNow,
+                    error = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Table Storage connection test failed");
+                return BadRequest(new 
+                { 
+                    status = "error", 
+                    message = "Table Storage connection test failed. Check your configuration and service availability.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
                 });
