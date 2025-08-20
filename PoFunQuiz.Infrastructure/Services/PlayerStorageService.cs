@@ -26,14 +26,14 @@ namespace PoFunQuiz.Infrastructure.Services
             ILogger<PlayerStorageService> logger)
         {
             var storageSettings = settings.Value;
-            
+
             _tableClient = new TableClient(
                 storageSettings.ConnectionString,
                 storageSettings.PlayerTableName);
-            
+
             // Ensure table exists
             _tableClient.CreateIfNotExists();
-            
+
             _logger = logger;
         }
 
@@ -42,7 +42,7 @@ namespace PoFunQuiz.Infrastructure.Services
         {
             if (string.IsNullOrWhiteSpace(initials))
                 throw new ArgumentException("Player initials cannot be empty", nameof(initials));
-            
+
             try
             {
                 // Try to get existing player
@@ -64,10 +64,10 @@ namespace PoFunQuiz.Infrastructure.Services
                         TotalCorrectAnswers = 0,
                         LastPlayed = DateTime.UtcNow
                     };
-                    
+
                     // Save to storage
                     await UpdatePlayerAsync(newPlayer);
-                    
+
                     return newPlayer;
                 }
             }
@@ -84,17 +84,17 @@ namespace PoFunQuiz.Infrastructure.Services
             try
             {
                 var players = new List<Player>();
-                
+
                 // Query all players from table storage
                 var queryResults = _tableClient.QueryAsync<PlayerEntity>(filter: "");
-                
+
                 await foreach (var entity in queryResults)
                 {
                     try
                     {
                         _logger.LogDebug("Processing player entity: PartitionKey={PartitionKey}, RowKey={RowKey}, LastPlayed={LastPlayed}",
                             entity.PartitionKey, entity.RowKey, entity.LastPlayed);
-                        
+
                         players.Add(ConvertToPlayerModel(entity));
                     }
                     catch (FormatException ex)
@@ -108,7 +108,7 @@ namespace PoFunQuiz.Infrastructure.Services
                         _logger.LogWarning(ex, "Unexpected error processing player entity with RowKey {RowKey}. Skipping this player.", entity.RowKey);
                     }
                 }
-                
+
                 _logger.LogInformation("Successfully loaded {Count} players from storage", players.Count);
                 return players;
             }
@@ -124,7 +124,7 @@ namespace PoFunQuiz.Infrastructure.Services
         {
             if (player == null)
                 throw new ArgumentNullException(nameof(player));
-            
+
             try
             {
                 // Validate Initials before proceeding
@@ -144,12 +144,12 @@ namespace PoFunQuiz.Infrastructure.Services
                     TotalCorrectAnswers = player.TotalCorrectAnswers,
                     // Convert DateTime to DateTimeOffset?
                     // Assuming player.LastPlayed is UTC. If it might be local, adjust accordingly.
-                    LastPlayed = new DateTimeOffset(player.LastPlayed, TimeSpan.Zero) 
+                    LastPlayed = new DateTimeOffset(player.LastPlayed, TimeSpan.Zero)
                 };
-                
+
                 // Save to table storage (upsert)
                 await _tableClient.UpsertEntityAsync(entity);
-                
+
                 return player;
             }
             catch (Exception ex)
@@ -166,7 +166,7 @@ namespace PoFunQuiz.Infrastructure.Services
             try
             {
                 var allPlayers = await GetAllPlayersAsync();
-                
+
                 // Sort by total score and take top N
                 return allPlayers
                     .OrderByDescending(p => p.TotalScore)
@@ -179,7 +179,7 @@ namespace PoFunQuiz.Infrastructure.Services
                 throw;
             }
         }
-        
+
         // Helper method to convert PlayerEntity to Player model
         private Player ConvertToPlayerModel(PlayerEntity entity)
         {
@@ -190,7 +190,7 @@ namespace PoFunQuiz.Infrastructure.Services
             {
                 // Convert the DateTimeOffset to the local DateTime for the Player model
                 // Assuming the Player model expects local time. If it expects UTC, use .UtcDateTime
-                lastPlayed = entity.LastPlayed.Value.LocalDateTime; 
+                lastPlayed = entity.LastPlayed.Value.LocalDateTime;
                 _logger.LogDebug("Converted LastPlayed from DateTimeOffset: {LastPlayed} (Local)", lastPlayed);
             }
             else
@@ -203,7 +203,7 @@ namespace PoFunQuiz.Infrastructure.Services
             return new Player
             {
                 // Use null-coalescing for safety, although RowKey should be the initials
-                Id = entity.RowKey ?? "[Unknown]", 
+                Id = entity.RowKey ?? "[Unknown]",
                 Initials = entity.RowKey ?? "[Unknown]", // Assuming RowKey stores initials for PartitionKey "PLAYER"
                 GamesPlayed = entity.GamesPlayed,
                 GamesWon = entity.GamesWon,

@@ -12,7 +12,7 @@ public class ApiError
     public HttpStatusCode StatusCode { get; set; }
     public Dictionary<string, string[]> ValidationErrors { get; set; } = new();
     public string? StackTrace { get; set; }
-    
+
     public static ApiError FromException(Exception ex, HttpStatusCode statusCode = HttpStatusCode.InternalServerError)
     {
         return new ApiError
@@ -29,7 +29,7 @@ public class ValidationError : Exception
 {
     public Dictionary<string, string[]> Errors { get; }
 
-    public ValidationError(Dictionary<string, string[]> errors) 
+    public ValidationError(Dictionary<string, string[]> errors)
         : base("Validation failed")
     {
         Errors = errors;
@@ -48,4 +48,4 @@ public class UnauthorizedException : Exception
     public UnauthorizedException(string message) : base(message)
     {
     }
-} 
+}

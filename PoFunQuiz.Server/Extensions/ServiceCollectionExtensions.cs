@@ -22,34 +22,36 @@ namespace PoFunQuiz.Server.Extensions
         {
             // Add configuration services
             services.AddConfigurationServices(configuration);
-            
+
             // Add storage services
             services.AddStorageServices(configuration);
-            
+
             // Add business services
             services.AddBusinessServices();
-            
+
             // Add diagnostics services (server-side part)
             // services.AddScoped<OpenAIEndpointTester>(); // Moved to client
-            
+
             return services;
         }
-        
+
         /// <summary>
         /// Adds configuration services
         /// </summary>
         public static IServiceCollection AddConfigurationServices(this IServiceCollection services, IConfiguration configuration)
         {
             // Register configuration options
+            // Bind AppSettings for feature flags and other strongly-typed config
+            services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
             services.Configure<OpenAISettings>(configuration.GetSection("OpenAI"));
             services.Configure<TableStorageSettings>(configuration.GetSection("AzureTableStorage"));
-            
+
             // Register configuration service
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-            
+
             return services;
         }
-        
+
         /// <summary>
         /// Adds storage services
         /// </summary>
@@ -65,14 +67,14 @@ namespace PoFunQuiz.Server.Extensions
                 }
                 return new TableServiceClient(tableStorageSettings.ConnectionString);
             });
-            
+
             // Register storage services
             services.AddScoped<IPlayerStorageService, PlayerStorageService>();
             services.AddScoped<IGameSessionService, GameSessionService>();
-            
+
             return services;
         }
-        
+
         /// <summary>
         /// Adds business services
         /// </summary>
@@ -80,10 +82,10 @@ namespace PoFunQuiz.Server.Extensions
         {
             // Register business services
             services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>(); // Changed to use new service
-            
+
             return services;
         }
-        
+
         // Removed AddUIServices as it's for Blazor Server and will be handled in the client project
 
         public static IServiceCollection AddAppConfiguration(
@@ -91,8 +93,8 @@ namespace PoFunQuiz.Server.Extensions
             IConfiguration configuration)
         {
             // Bind configuration to strongly-typed settings
-            services.Configure<AppSettings>(configuration);
-            
+            services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
+
             // Register configuration service
             services.AddSingleton<IConfigurationService, ConfigurationService>();
 

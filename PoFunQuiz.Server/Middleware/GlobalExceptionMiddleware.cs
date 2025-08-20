@@ -61,9 +61,9 @@ public class GlobalExceptionMiddleware
 
         response.StatusCode = (int)apiError.StatusCode;
 
-        #if DEBUG
+#if DEBUG
         apiError.StackTrace = exception.StackTrace;
-        #endif
+#endif
 
         var result = JsonSerializer.Serialize(apiError, new JsonSerializerOptions
         {

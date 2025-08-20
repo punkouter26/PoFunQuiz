@@ -79,7 +79,7 @@
                                         {
                                             var index = i;
                                             <div class="option-item @GetAnswerItemClass(1, index)"
-                                                 @onclick="() => HandleTouchAnswer(1, index)">
+                                                 @onclick="@(async () => await LogAndHandle(1, index))">
                                                 <span class="option-number">@(i + 1)</span>
                                                 <span class="option-text">@question.Options[i]</span>
                                             </div>
@@ -119,7 +119,7 @@
                                         {
                                             var index = i;
                                             <div class="option-item @GetAnswerItemClass(2, index)"
-                                                 @onclick="() => HandleTouchAnswer(2, index)">
+                                                 @onclick="@(async () => await LogAndHandle(2, index))">
                                                 <span class="option-number">@(i + 1)</span>
                                                 <span class="option-text">@question.Options[i]</span>
                                             </div>
@@ -417,29 +417,55 @@
 
     private void HandlePlayerAnswer(int playerNumber, int selectedOptionIndex)
     {
-        if (GameState.CurrentGame == null) return;
-        if ((playerNumber == 1 && Player1FeedbackVisible) || (playerNumber == 2 && Player2FeedbackVisible)) return;
+        Logger.LogInformation("HandlePlayerAnswer called for player {Player} option {Option}", playerNumber, selectedOptionIndex);
+
+        if (GameState.CurrentGame == null)
+        {
+            Logger.LogWarning("HandlePlayerAnswer: GameState.CurrentGame is null");
+            return;
+        }
+
+        if ((playerNumber == 1 && Player1FeedbackVisible) || (playerNumber == 2 && Player2FeedbackVisible))
+        {
+            Logger.LogInformation("HandlePlayerAnswer: feedback visible for player {Player}, ignoring input", playerNumber);
+            return;
+        }
 
         var elapsedSeconds = answerStopwatch.Elapsed.TotalSeconds;
         var speedMultiplier = CalculateSpeedMultiplier(elapsedSeconds);
+        Logger.LogInformation("Answer elapsedSeconds={ElapsedSeconds} speedMultiplier={Speed}", elapsedSeconds, speedMultiplier);
 
         if (playerNumber == 1)
         {
-            if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count) return;
+            if (Player1QuestionIndex >= GameState.CurrentGame.Player1Questions.Count)
+            {
+                Logger.LogInformation("Player1QuestionIndex {Index} >= question count {Count}", Player1QuestionIndex, GameState.CurrentGame.Player1Questions.Count);
+                return;
+            }
+
             var currentQuestion = GameState.CurrentGame.Player1Questions[Player1QuestionIndex];
             Player1LastAnswerCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
             Player1FeedbackVisible = true;
             Player1JustSelectedAnswerIndex = selectedOptionIndex;
             GameState.CurrentGame.AddAnswer(1, Player1LastAnswerCorrect, currentQuestion.BasePoints, speedMultiplier);
+
+            Logger.LogInformation("Player 1 answered. Correct={Correct}. Index={Index}", Player1LastAnswerCorrect, Player1QuestionIndex);
         }
         else 
         {
-            if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count) return;
+            if (Player2QuestionIndex >= GameState.CurrentGame.Player2Questions.Count)
+            {
+                Logger.LogInformation("Player2QuestionIndex {Index} >= question count {Count}", Player2QuestionIndex, GameState.CurrentGame.Player2Questions.Count);
+                return;
+            }
+
             var currentQuestion = GameState.CurrentGame.Player2Questions[Player2QuestionIndex];
             Player2LastAnswerCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
             Player2FeedbackVisible = true;
             Player2JustSelectedAnswerIndex = selectedOptionIndex;
             GameState.CurrentGame.AddAnswer(2, Player2LastAnswerCorrect, currentQuestion.BasePoints, speedMultiplier);
+
+            Logger.LogInformation("Player 2 answered. Correct={Correct}. Index={Index}", Player2LastAnswerCorrect, Player2QuestionIndex);
         }
         
         ShowFeedbackThenAdvance(playerNumber);
@@ -531,6 +557,22 @@
     public void HandleSwipe(string direction)
     {
         Logger.LogInformation("Swipe detected: {Direction}", direction);
+    }
+
+    private async Task LogAndHandle(int playerNumber, int index)
+    {
+        try
+        {
+            // Log to browser console immediately so we can see the click in captured console logs
+            await JS.InvokeVoidAsync("console.log", $"""Option clicked: player {playerNumber} index {index}""");
+        }
+        catch
+        {
+            // ignore JS interop errors
+        }
+
+        // Call the existing touch handler
+        HandleTouchAnswer(playerNumber, index);
     }
 
     public void Dispose()

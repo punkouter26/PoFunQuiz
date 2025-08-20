@@ -19,7 +19,7 @@ namespace PoFunQuiz.Server.Controllers
         private readonly TableStorageSettings _tableStorageSettings;
 
         public DiagnosticsController(
-            IOpenAIService openAIService, 
+            IOpenAIService openAIService,
             ILogger<DiagnosticsController> logger,
             TableServiceClient tableServiceClient,
             IOptions<TableStorageSettings> tableStorageSettings)
@@ -42,16 +42,16 @@ namespace PoFunQuiz.Server.Controllers
             try
             {
                 _logger.LogInformation("Testing OpenAI connection...");
-                
+
                 // Test with a simple question
                 var questions = await _openAIService.GenerateQuizQuestionsAsync("simple test", 1);
-                
+
                 if (questions != null && questions.Count > 0)
                 {
                     _logger.LogInformation("OpenAI connection test successful - received {QuestionCount} questions", questions.Count);
-                    return Ok(new 
-                    { 
-                        status = "success", 
+                    return Ok(new
+                    {
+                        status = "success",
                         message = $"OpenAI connection successful. Generated {questions.Count} question(s).",
                         timestamp = DateTime.UtcNow,
                         questionCount = questions.Count
@@ -60,9 +60,9 @@ namespace PoFunQuiz.Server.Controllers
                 else
                 {
                     _logger.LogWarning("OpenAI connection test returned no questions or empty result");
-                    return Ok(new 
-                    { 
-                        status = "warning", 
+                    return Ok(new
+                    {
+                        status = "warning",
                         message = "OpenAI connection succeeded but returned no questions. This might indicate an issue with the prompt or configuration.",
                         timestamp = DateTime.UtcNow,
                         questionCount = 0
@@ -72,9 +72,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (ArgumentNullException ex)
             {
                 _logger.LogError(ex, "OpenAI configuration missing");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "OpenAI configuration is missing. Please check appsettings.json.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -83,9 +83,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "OpenAI network error");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "Network error connecting to OpenAI. Check your internet connection and API endpoint.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -94,9 +94,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "OpenAI connection test failed");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "OpenAI connection test failed. Check your API key and configuration.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -118,16 +118,16 @@ namespace PoFunQuiz.Server.Controllers
                     environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown",
                     version = "1.0.0"
                 };
-                
+
                 _logger.LogInformation("API health check successful");
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "API health check failed");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "API health check failed",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -146,9 +146,9 @@ namespace PoFunQuiz.Server.Controllers
                 if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
                 {
                     _logger.LogInformation("Internet connection test successful");
-                    return Ok(new 
-                    { 
-                        status = "success", 
+                    return Ok(new
+                    {
+                        status = "success",
                         message = "Internet connection is active.",
                         timestamp = DateTime.UtcNow
                     });
@@ -156,9 +156,9 @@ namespace PoFunQuiz.Server.Controllers
                 else
                 {
                     _logger.LogWarning("Internet connection test failed: {Status}", reply.Status);
-                    return BadRequest(new 
-                    { 
-                        status = "error", 
+                    return BadRequest(new
+                    {
+                        status = "error",
                         message = $"Internet connection failed: {reply.Status}",
                         timestamp = DateTime.UtcNow
                     });
@@ -167,9 +167,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during internet connection test");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = $"Error checking internet connection: {ex.Message}",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -183,9 +183,9 @@ namespace PoFunQuiz.Server.Controllers
             try
             {
                 _logger.LogInformation("Testing Table Storage connection...");
-                
+
                 // Determine if we're using Azurite or Azure Table Storage
-                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true", 
+                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true",
                     StringComparison.OrdinalIgnoreCase);
                 string storageType = isAzurite ? "Azurite (Local)" : "Azure Table Storage";
 
@@ -210,7 +210,7 @@ namespace PoFunQuiz.Server.Controllers
 
                     // Test 3: Retrieve the test entity
                     var retrievedEntity = await tableClient.GetEntityAsync<TableEntity>("TestPartition", "TestRow");
-                    if (retrievedEntity?.Value != null && 
+                    if (retrievedEntity?.Value != null &&
                         retrievedEntity.Value.GetString("TestProperty") == "TestValue")
                     {
                         _logger.LogInformation("Successfully retrieved test entity from table {TableName}", testTableName);
@@ -240,9 +240,9 @@ namespace PoFunQuiz.Server.Controllers
                     await tableClient.DeleteAsync();
                     _logger.LogInformation("Successfully deleted test table {TableName}", testTableName);
 
-                    return Ok(new 
-                    { 
-                        status = "success", 
+                    return Ok(new
+                    {
+                        status = "success",
                         message = $"{storageType} connection successful. Performed full CRUD operations test.",
                         timestamp = DateTime.UtcNow,
                         storageType = storageType,
@@ -263,15 +263,15 @@ namespace PoFunQuiz.Server.Controllers
                         _logger.LogWarning(cleanupEx, "Failed to cleanup test table {TableName}", testTableName);
                     }
 
-                    throw testEx; // Re-throw the original test exception
+                    throw; // Re-throw the original test exception
                 }
             }
             catch (ArgumentNullException ex)
             {
                 _logger.LogError(ex, "Table Storage configuration missing");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "Table Storage configuration is missing. Please check appsettings.json.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -280,9 +280,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (Azure.RequestFailedException ex) when (ex.ErrorCode == "AuthenticationFailed")
             {
                 _logger.LogError(ex, "Table Storage authentication failed");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "Table Storage authentication failed. Check connection string and credentials.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -291,9 +291,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (Azure.RequestFailedException ex) when (ex.ErrorCode == "ResourceNotFound")
             {
                 _logger.LogError(ex, "Table Storage resource not found");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "Table Storage resource not found. Check if storage account exists.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -302,15 +302,15 @@ namespace PoFunQuiz.Server.Controllers
             catch (System.Net.Sockets.SocketException ex)
             {
                 _logger.LogError(ex, "Network error connecting to Table Storage");
-                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true", 
+                bool isAzurite = _tableStorageSettings.ConnectionString.Contains("UseDevelopmentStorage=true",
                     StringComparison.OrdinalIgnoreCase);
-                string suggestion = isAzurite 
+                string suggestion = isAzurite
                     ? "Make sure Azurite is running (try 'azurite --silent --location ./AzuriteData --debug ./AzuriteData/debug.log')"
                     : "Check your internet connection and Azure Storage account availability.";
-                    
-                return BadRequest(new 
-                { 
-                    status = "error", 
+
+                return BadRequest(new
+                {
+                    status = "error",
                     message = $"Network error connecting to Table Storage. {suggestion}",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message
@@ -319,9 +319,9 @@ namespace PoFunQuiz.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Table Storage connection test failed");
-                return BadRequest(new 
-                { 
-                    status = "error", 
+                return BadRequest(new
+                {
+                    status = "error",
                     message = "Table Storage connection test failed. Check your configuration and service availability.",
                     timestamp = DateTime.UtcNow,
                     error = ex.Message

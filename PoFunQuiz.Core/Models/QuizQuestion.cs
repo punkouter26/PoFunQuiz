@@ -7,16 +7,16 @@ namespace PoFunQuiz.Core.Models
     {
         // Question Identity
         public string Id { get; set; } = Guid.NewGuid().ToString();
-        
+
         // Question Content
         public string Question { get; set; } = string.Empty;
         public List<string> Options { get; set; } = new();
         public int CorrectOptionIndex { get; set; }
-        
+
         // Optional Properties
         public string Category { get; set; } = "General";
         public QuestionDifficulty Difficulty { get; set; } = QuestionDifficulty.Medium;
-        
+
         // Helper properties
         public string CorrectAnswer => Options.Count > CorrectOptionIndex ? Options[CorrectOptionIndex] : string.Empty;
         public int BasePoints => Difficulty switch

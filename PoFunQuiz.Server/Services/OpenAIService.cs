@@ -47,7 +47,8 @@ namespace PoFunQuiz.Server.Services
 
             var azureClient = new AzureOpenAIClient(baseUri, new AzureKeyCredential(apiKey));
             _chatClient = azureClient.GetChatClient(deploymentName);
-        }        public async Task<List<QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
+        }
+        public async Task<List<QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
         {
             var messages = new List<ChatMessage>
             {
@@ -91,7 +92,7 @@ namespace PoFunQuiz.Server.Services
 
                 // Deserialize the JSON response into a list of QuizQuestion objects
                 var questions = System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestion>>(jsonResponse, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
+
                 if (questions == null || !questions.Any())
                 {
                     _logger.LogWarning("Deserialization resulted in no questions for topic '{Topic}'. Raw JSON: {JsonResponse}", topic, jsonResponse);

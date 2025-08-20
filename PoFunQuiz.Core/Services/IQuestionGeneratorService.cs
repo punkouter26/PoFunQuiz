@@ -15,7 +15,7 @@ namespace PoFunQuiz.Core.Services
         /// <param name="count">Number of questions to generate</param>
         /// <returns>A list of generated quiz questions</returns>
         Task<List<QuizQuestion>> GenerateQuestionsAsync(int count);
-        
+
         /// <summary>
         /// Generates a specified number of questions in a specific category
         /// </summary>

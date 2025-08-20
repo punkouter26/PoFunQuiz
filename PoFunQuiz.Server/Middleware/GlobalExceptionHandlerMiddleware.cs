@@ -31,6 +31,8 @@ namespace PoFunQuiz.Server.Middleware
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception occurred");
+                // Also ensure the exception is captured by Serilog so it appears in structured logs
+                Serilog.Log.Error(ex, "Unhandled exception occurred in HTTP request pipeline");
                 await HandleExceptionAsync(context, ex);
             }
         }
@@ -41,7 +43,7 @@ namespace PoFunQuiz.Server.Middleware
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
             ErrorResponse response;
-            
+
             if (_env.IsDevelopment())
             {
                 response = new ErrorResponse
@@ -62,9 +64,17 @@ namespace PoFunQuiz.Server.Middleware
             }
 
             var jsonResponse = JsonSerializer.Serialize(response);
+
+            // Log the error to Serilog for centralized structured logging (avoid throwing from here)
+            try
+            {
+                Serilog.Log.Error(exception, "Handled exception producing error response");
+            }
+            catch { /* swallow to avoid secondary failures */ }
+
             return context.Response.WriteAsync(jsonResponse);
         }
-        
+
         /// <summary>
         /// Error response class for consistent error handling
         /// </summary>

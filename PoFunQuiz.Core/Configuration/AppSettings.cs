@@ -8,6 +8,7 @@ public class AppSettings
     public AuthSettings Auth { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
     public DiagnosticsSettings Diagnostics { get; set; } = new();
+    public FeatureFlagsSettings FeatureFlags { get; set; } = new();
 }
 
 public class StorageSettings
@@ -36,4 +37,16 @@ public class DiagnosticsSettings
     public bool EnableDetailedErrors { get; set; } = false;
     public int HealthCheckIntervalSeconds { get; set; } = 30;
     public string[] MonitoredEndpoints { get; set; } = Array.Empty<string>();
-} 
+}
+
+public class FeatureFlagsSettings
+{
+    /// <summary>
+    /// Example feature flags. Add more flags here. Default values should be true.
+    /// Use these flags to isolate UI/components/features for easy removal/disable.
+    /// </summary>
+    public bool EnableNewLeaderboard { get; set; } = true;
+    public bool EnableExperimentalGameMode { get; set; } = true;
+    public bool EnableBrowserLoggingIntegration { get; set; } = true;
+    public bool EnableDiagPage { get; set; } = true;
+}

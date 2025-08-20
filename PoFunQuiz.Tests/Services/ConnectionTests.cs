@@ -42,7 +42,7 @@ namespace PoFunQuiz.Tests.Services
             // Initialize table service client for Azurite
             var azuriteConnectionString = "UseDevelopmentStorage=true";
             _tableServiceClient = new TableServiceClient(azuriteConnectionString);
-            
+
             // Check if running in CI environment
             _isCIEnvironment = Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true";
             _output.WriteLine($"Running in CI environment: {_isCIEnvironment}");
@@ -62,7 +62,7 @@ namespace PoFunQuiz.Tests.Services
             };
 
             var options = Options.Create(openAISettings);
-            
+
             if (_isCIEnvironment)
             {
                 _output.WriteLine("Skipping actual OpenAI call in CI environment");
@@ -77,12 +77,12 @@ namespace PoFunQuiz.Tests.Services
                         Category = "Geography"
                     }
                 };
-                
+
                 // Assert on the mock data
                 Assert.NotNull(mockQuestions);
                 Assert.NotEmpty(mockQuestions);
                 _output.WriteLine($"Successfully mocked {mockQuestions.Count} question(s)");
-                
+
                 var mockQuestion = mockQuestions[0];
                 Assert.NotNull(mockQuestion.Question);
                 Assert.NotEmpty(mockQuestion.Question);
@@ -91,10 +91,10 @@ namespace PoFunQuiz.Tests.Services
                 Assert.InRange(mockQuestion.CorrectOptionIndex, 0, 3);
                 Assert.NotNull(mockQuestion.Category);
                 Assert.NotEmpty(mockQuestion.Category);
-                
+
                 return;
             }
-            
+
             // Only run the actual test with real OpenAI if not in CI
             var questionGenerator = new OpenAIQuestionGeneratorService(_logger, options);
 
@@ -105,7 +105,7 @@ namespace PoFunQuiz.Tests.Services
             Assert.NotNull(questions);
             Assert.NotEmpty(questions);
             _output.WriteLine($"Successfully generated {questions.Count} question(s)");
-            
+
             // Verify question structure
             var generatedQuestion = questions[0];
             Assert.NotNull(generatedQuestion.Question);
@@ -126,7 +126,7 @@ namespace PoFunQuiz.Tests.Services
             try
             {
                 _output.WriteLine("Testing Azurite connection...");
-                
+
                 // Skip actual test if running in CI and Azurite is not available
                 if (_isCIEnvironment)
                 {
@@ -144,7 +144,7 @@ namespace PoFunQuiz.Tests.Services
                         return; // Skip the test
                     }
                 }
-                
+
                 // Act
                 // Create a test table
                 var tableClient = _tableServiceClient.GetTableClient(tableName);

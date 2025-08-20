@@ -13,13 +13,13 @@ namespace PoFunQuiz.Infrastructure.Storage
         public required string RowKey { get; set; }
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
-        
+
         // Player statistics
         public int GamesPlayed { get; set; }
         public int GamesWon { get; set; }
         public int TotalScore { get; set; }
         public int TotalCorrectAnswers { get; set; }
-        
+
         // Represents the last time the player played. Nullable to handle new players.
         public DateTimeOffset? LastPlayed { get; set; }
     }

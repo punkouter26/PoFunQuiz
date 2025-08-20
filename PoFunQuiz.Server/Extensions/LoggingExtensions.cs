@@ -1,5 +1,6 @@
 using Serilog;
 using Serilog.Events;
+using Serilog.Formatting.Compact;
 using System.IO;
 
 namespace PoFunQuiz.Server.Extensions
@@ -16,9 +17,24 @@ namespace PoFunQuiz.Server.Extensions
         {
             // Get the solution root directory (one level up from the Web project)
             var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\.."));
-            var logFilePath = Path.Combine(rootDirectory, "log.txt");
-            
-            // Delete existing log file if it exists to create a new one each run
+            var debugDirectory = Path.Combine(rootDirectory, "DEBUG");
+
+            // Ensure DEBUG directory exists
+            try
+            {
+                if (!Directory.Exists(debugDirectory))
+                {
+                    Directory.CreateDirectory(debugDirectory);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Could not create DEBUG directory: {ex.Message}");
+            }
+
+            var logFilePath = Path.Combine(debugDirectory, "log.txt");
+
+            // Delete existing log file if it exists to create a new one each run (overwrite on startup)
             if (File.Exists(logFilePath))
             {
                 try
@@ -32,19 +48,19 @@ namespace PoFunQuiz.Server.Extensions
                     // We'll continue and overwrite the existing file rather than creating a timestamped version
                 }
             }
-            
-            // Configure Serilog
+
+            // Configure Serilog to emit structured JSON to file for easier parsing
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Information()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
                 .WriteTo.Console()
-                .WriteTo.File(logFilePath, 
-                    rollOnFileSizeLimit: false, // Don't roll on file size
-                    shared: false, // Don't share the file
-                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
+                .WriteTo.File(new CompactJsonFormatter(),
+                    path: logFilePath,
+                    rollOnFileSizeLimit: false,
+                    shared: false)
                 .CreateLogger();
-            
+
             // Use Serilog for the host application
             return builder.UseSerilog();
         }

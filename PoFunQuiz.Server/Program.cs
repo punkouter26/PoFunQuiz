@@ -3,6 +3,12 @@ using PoFunQuiz.Server.Middleware;
 using Serilog;
 using System.IO;
 
+// Bootstrap logger so early startup logs are captured
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .CreateLogger();
+
 try
 {
     Log.Information("Starting PoFunQuiz web application");
@@ -55,6 +61,7 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseBlazorFrameworkFiles();
     app.UseStaticFiles();
 
     app.UseRouting();
@@ -62,6 +69,12 @@ try
 
     app.MapControllers(); // Map controllers for API
     app.MapFallbackToFile("index.html");
+
+    // Register and log application lifecycle events
+    var lifetime = app.Lifetime;
+    lifetime.ApplicationStarted.Register(() => Log.Information("Application started"));
+    lifetime.ApplicationStopping.Register(() => Log.Information("Application is stopping"));
+    lifetime.ApplicationStopped.Register(() => Log.Information("Application stopped"));
 
     app.Run();
 }
