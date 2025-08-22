@@ -61,6 +61,9 @@ try
 
     app.UseHttpsRedirection();
 
+    // Add frontend selector middleware before static files
+    app.UseMiddleware<FrontendSelectorMiddleware>();
+
     app.UseBlazorFrameworkFiles();
     app.UseStaticFiles();
 
@@ -68,7 +71,40 @@ try
     app.UseAuthorization(); // Add UseAuthorization for API
 
     app.MapControllers(); // Map controllers for API
-    app.MapFallbackToFile("index.html");
+    
+    // Configure fallback based on frontend type
+    var frontendType = app.Configuration["Frontend:Type"] ?? "Blazor";
+    if (frontendType.Equals("React", StringComparison.OrdinalIgnoreCase))
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.Logger.LogInformation("React development mode: Please start React dev server on http://localhost:3000");
+            app.MapFallbackToFile("index.html"); // Fallback to Blazor during React development
+        }
+        else
+        {
+            // In production, serve React build files
+            var reactBuildPath = Path.Combine(app.Environment.ContentRootPath, "..", "PoFunQuiz.ReactClient", "build");
+            if (Directory.Exists(reactBuildPath))
+            {
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(reactBuildPath),
+                    RequestPath = "/react-client"
+                });
+                app.MapFallbackToFile("/react-client/index.html");
+            }
+            else
+            {
+                app.Logger.LogWarning("React build not found. Run 'npm run build' in PoFunQuiz.ReactClient");
+                app.MapFallbackToFile("index.html");
+            }
+        }
+    }
+    else
+    {
+        app.MapFallbackToFile("index.html");
+    }
 
     // Register and log application lifecycle events
     var lifetime = app.Lifetime;

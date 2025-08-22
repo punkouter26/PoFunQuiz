@@ -1,0 +1,178 @@
+.results-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.results-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.results-content h1 {
+  font-size: 3em;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.winner-text {
+  color: #ffd700;
+  font-size: 2.2em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tie-text {
+  color: #90ee90;
+  font-size: 2.2em;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.scores-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin: 40px 0;
+  gap: 20px;
+}
+
+.player-score {
+  flex: 1;
+  max-width: 250px;
+}
+
+.player-score h3 {
+  font-size: 1.8em;
+  margin-bottom: 15px;
+  color: #fff;
+}
+
+.score-breakdown {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.total-score {
+  font-size: 3em;
+  font-weight: bold;
+  color: #ffd700;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.score-details {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.score-details div {
+  margin: 5px 0;
+  padding: 3px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.score-details div:last-child {
+  border-bottom: none;
+}
+
+.vs-divider {
+  font-size: 2em;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+.game-info {
+  margin: 30px 0;
+  font-size: 1.1em;
+  opacity: 0.9;
+}
+
+.game-info p {
+  margin: 10px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.button {
+  padding: 15px 30px;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 1.1em;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.button.primary {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+  color: white;
+}
+
+.button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.button.secondary {
+  background: linear-gradient(45deg, #74b9ff, #0984e3);
+  color: white;
+}
+
+.button.secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+  .results-content {
+    padding: 30px 20px;
+  }
+  
+  .results-content h1 {
+    font-size: 2.2em;
+  }
+  
+  .winner-text, .tie-text {
+    font-size: 1.8em;
+  }
+  
+  .scores-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+  
+  .vs-divider {
+    transform: rotate(90deg);
+    margin: 10px 0;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .button {
+    width: 200px;
+  }
+}
