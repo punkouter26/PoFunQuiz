@@ -43,8 +43,7 @@ namespace PoFunQuiz.Server.Extensions
             // Register configuration options
             // Bind AppSettings for feature flags and other strongly-typed config
             services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
-            services.Configure<OpenAISettings>(configuration.GetSection("OpenAI"));
-            services.Configure<TableStorageSettings>(configuration.GetSection("AzureTableStorage"));
+            services.Configure<OpenAISettings>(configuration.GetSection("AzureOpenAI"));
 
             // Register configuration service
             services.AddSingleton<IConfigurationService, ConfigurationService>();
@@ -60,12 +59,12 @@ namespace PoFunQuiz.Server.Extensions
             // Register TableServiceClient as a singleton
             services.AddSingleton(sp =>
             {
-                var tableStorageSettings = sp.GetRequiredService<IOptions<TableStorageSettings>>().Value;
-                if (string.IsNullOrEmpty(tableStorageSettings.ConnectionString))
+                var appSettings = sp.GetRequiredService<IOptions<AppSettings>>().Value;
+                if (string.IsNullOrEmpty(appSettings.Storage.TableStorageConnectionString))
                 {
                     throw new InvalidOperationException("Azure Table Storage connection string is not configured.");
                 }
-                return new TableServiceClient(tableStorageSettings.ConnectionString);
+                return new TableServiceClient(appSettings.Storage.TableStorageConnectionString);
             });
 
             // Register storage services

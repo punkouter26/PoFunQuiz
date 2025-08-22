@@ -49,7 +49,7 @@ else
                         <RadzenStack Gap="0">
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="question_answer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(1) of 10</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(1) of 5</RadzenText>
                             </RadzenStack>
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="check" />
@@ -58,6 +58,14 @@ else
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="close" />
                                 <RadzenText TextStyle="TextStyle.Body2">Incorrect: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="speed" />
+                                <RadzenText TextStyle="TextStyle.Body2">Speed Bonus: +@GetSpeedBonus(1) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="whatshot" />
+                                <RadzenText TextStyle="TextStyle.Body2">Streak Bonus: +@GetStreakBonus(1) points</RadzenText>
                             </RadzenStack>
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="timer" />
@@ -79,7 +87,7 @@ else
                         <RadzenStack Gap="0">
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="question_answer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(2) of 10</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(2) of 5</RadzenText>
                             </RadzenStack>
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="check" />
@@ -88,6 +96,14 @@ else
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="close" />
                                 <RadzenText TextStyle="TextStyle.Body2">Incorrect: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="speed" />
+                                <RadzenText TextStyle="TextStyle.Body2">Speed Bonus: +@GetSpeedBonus(2) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                                <RadzenIcon Icon="whatshot" />
+                                <RadzenText TextStyle="TextStyle.Body2">Streak Bonus: +@GetStreakBonus(2) points</RadzenText>
                             </RadzenStack>
                             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
                                 <RadzenIcon Icon="timer" />
@@ -180,26 +196,51 @@ else
     private int GetCorrectAnswers(int playerNumber)
     {
         if (GameState.CurrentGame == null) return 0;
-        var baseScore = playerNumber == 1
-            ? GameState.CurrentGame.Player1Score - GetTimeBonus(1)
-            : GameState.CurrentGame.Player2Score - GetTimeBonus(2);
-        return Math.Max(0, baseScore);
+        
+        // Return the actual base score which represents correct answers (1 point each)
+        return playerNumber == 1 
+            ? GameState.CurrentGame.Player1BaseScore 
+            : GameState.CurrentGame.Player2BaseScore;
     }
 
     private int GetTimeBonus(int playerNumber)
     {
         if (GameState.CurrentGame == null) return 0;
-        var totalScore = playerNumber == 1
-            ? GameState.CurrentGame.Player1Score
-            : GameState.CurrentGame.Player2Score;
-        var correctAnswers = GetQuestionsAnswered(playerNumber);
-        return Math.Min(3, Math.Max(0, totalScore - correctAnswers));
+        
+        // Return the actual time bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1TimeBonus
+            : GameState.CurrentGame.Player2TimeBonus;
     }
 
     private int GetQuestionsAnswered(int playerNumber)
     {
         if (GameState.CurrentGame == null) return 0;
-        return 10;
+        
+        // Return the actual base score which represents questions answered correctly
+        return playerNumber == 1 
+            ? GameState.CurrentGame.Player1BaseScore 
+            : GameState.CurrentGame.Player2BaseScore;
+    }
+
+    private int GetSpeedBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual speed bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1SpeedBonus
+            : GameState.CurrentGame.Player2SpeedBonus;
+    }
+
+    private int GetStreakBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual streak bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1StreakBonus
+            : GameState.CurrentGame.Player2StreakBonus;
     }
 
     private string GetGameDuration()

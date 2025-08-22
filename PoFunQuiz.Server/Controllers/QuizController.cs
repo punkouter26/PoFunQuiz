@@ -3,6 +3,7 @@ using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PoFunQuiz.Server.Controllers
 {
@@ -13,10 +14,12 @@ namespace PoFunQuiz.Server.Controllers
     public class QuizController : ControllerBase
     {
         private readonly IQuestionGeneratorService _questionGeneratorService;
+        private readonly ILogger<QuizController> _logger;
 
-        public QuizController(IQuestionGeneratorService questionGeneratorService)
+        public QuizController(IQuestionGeneratorService questionGeneratorService, ILogger<QuizController> logger)
         {
             _questionGeneratorService = questionGeneratorService;
+            _logger = logger;
         }
 
         [HttpGet("generate")]
@@ -33,15 +36,22 @@ namespace PoFunQuiz.Server.Controllers
         [HttpGet("generateincategory")]
         public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestionsInCategory(int count, string category)
         {
+            _logger.LogInformation("🔍 API: GenerateQuestionsInCategory called with count={Count}, category={Category}", count, category);
+            
             if (count <= 0)
             {
+                _logger.LogWarning("🚨 API: Invalid count parameter: {Count}", count);
                 return BadRequest("Count must be a positive number.");
             }
             if (string.IsNullOrWhiteSpace(category))
             {
+                _logger.LogWarning("🚨 API: Invalid category parameter: {Category}", category);
                 return BadRequest("Category cannot be empty.");
             }
+            
             var questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(count, category);
+            _logger.LogInformation("🔍 API: Generated {QuestionCount} questions for category {Category}", questions?.Count ?? 0, category);
+            
             return Ok(questions);
         }
     }

@@ -1,7 +1,9 @@
 using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PoFunQuiz.Server.Services
 {
@@ -10,15 +12,16 @@ namespace PoFunQuiz.Server.Services
     public class QuestionGeneratorService : IQuestionGeneratorService
     {
         private readonly IOpenAIService _openAIService;
+        private readonly ILogger<QuestionGeneratorService> _logger;
 
-        public QuestionGeneratorService(IOpenAIService openAIService)
+        public QuestionGeneratorService(IOpenAIService openAIService, ILogger<QuestionGeneratorService> logger)
         {
             _openAIService = openAIService;
+            _logger = logger;
         }
 
         public async Task<List<QuizQuestion>> GenerateQuestionsAsync(int count)
         {
-            // Try to generate via OpenAI, but fall back to local sample questions on error or empty result
             try
             {
                 var result = await _openAIService.GenerateQuizQuestionsAsync("general knowledge", count);
@@ -29,79 +32,36 @@ namespace PoFunQuiz.Server.Services
             }
             catch
             {
-                // Swallow exceptions here to allow fallback to sample questions
+                // Log exception if needed
             }
-
-            return GetSampleQuestions(count);
+            // No fallback: return empty list if OpenAI fails
+            return new List<QuizQuestion>();
         }
 
         public async Task<List<QuizQuestion>> GenerateQuestionsInCategoryAsync(int count, string category)
         {
+            _logger.LogInformation("🔍 SERVICE: GenerateQuestionsInCategoryAsync called with count={Count}, category={Category}", count, category);
+            
             try
             {
                 var result = await _openAIService.GenerateQuizQuestionsAsync(category, count);
+                _logger.LogInformation("🔍 SERVICE: OpenAI returned {QuestionCount} questions", result?.Count ?? 0);
+                
                 if (result != null && result.Count > 0)
                 {
                     return result;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // fall through to sample fallback
+                _logger.LogError(ex, "🚨 SERVICE: Exception in GenerateQuestionsInCategoryAsync");
             }
-
-            return GetSampleQuestionsForCategory(count, category);
+            
+            _logger.LogWarning("🚨 SERVICE: Returning empty list for category {Category}", category);
+            // No fallback: return empty list if OpenAI fails
+            return new List<QuizQuestion>();
         }
 
-        // Local fallback sample questions to keep the app usable when OpenAI is not configured or unreachable
-        private static List<QuizQuestion> GetSampleQuestions(int count)
-        {
-            var samples = new List<QuizQuestion>
-            {
-                new QuizQuestion
-                {
-                    Question = "What is the capital of France?",
-                    Options = new List<string> { "Paris", "London", "Berlin", "Madrid" },
-                    CorrectOptionIndex = 0,
-                    Category = "Geography"
-                },
-                new QuizQuestion
-                {
-                    Question = "Which planet is known as the Red Planet?",
-                    Options = new List<string> { "Earth", "Mars", "Jupiter", "Venus" },
-                    CorrectOptionIndex = 1,
-                    Category = "Science"
-                },
-                new QuizQuestion
-                {
-                    Question = "Which language is primarily used for web styling?",
-                    Options = new List<string> { "HTML", "C#", "CSS", "SQL" },
-                    CorrectOptionIndex = 2,
-                    Category = "Technology"
-                },
-                new QuizQuestion
-                {
-                    Question = "Who painted the Mona Lisa?",
-                    Options = new List<string> { "Leonardo da Vinci", "Vincent van Gogh", "Pablo Picasso", "Rembrandt" },
-                    CorrectOptionIndex = 0,
-                    Category = "Art"
-                }
-            };
 
-            return samples.Take(count).ToList();
-        }
-
-        private static List<QuizQuestion> GetSampleQuestionsForCategory(int count, string category)
-        {
-            var all = GetSampleQuestions(int.MaxValue);
-            var filtered = all.Where(q => string.Equals(q.Category, category, StringComparison.OrdinalIgnoreCase)).ToList();
-            if (filtered.Count == 0)
-            {
-                // If no questions match the category, just return top samples
-                return GetSampleQuestions(count);
-            }
-
-            return filtered.Take(count).ToList();
-        }
     }
 }

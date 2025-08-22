@@ -118,8 +118,11 @@ else
 </style>
 
 @code {
-    [SupplyParameterFromQuery]
-    public string? Initials { get; set; }
+    [SupplyParameterFromQuery(Name = "player1")]
+    public string? Player1Initials { get; set; }
+
+    [SupplyParameterFromQuery(Name = "player2")]
+    public string? Player2Initials { get; set; }
 
     [SupplyParameterFromQuery]
     public string? Topic { get; set; }
@@ -135,7 +138,7 @@ else
 
     protected override void OnInitialized()
     {
-        if (string.IsNullOrWhiteSpace(Initials) || string.IsNullOrWhiteSpace(Topic))
+        if (string.IsNullOrWhiteSpace(Player1Initials) || string.IsNullOrWhiteSpace(Player2Initials) || string.IsNullOrWhiteSpace(Topic))
         {
             Navigation.NavigateTo("/");
             return;
@@ -146,8 +149,10 @@ else
         {
             GameState.CurrentGame = new PoFunQuiz.Core.Models.GameSession
             {
-                Player1 = new PoFunQuiz.Core.Models.Player { Initials = Initials },
-                Player2 = new PoFunQuiz.Core.Models.Player { Initials = "P2" }, // Default for Player 2
+                Player1 = new PoFunQuiz.Core.Models.Player { Initials = Player1Initials },
+                Player2 = new PoFunQuiz.Core.Models.Player { Initials = Player2Initials },
+                Player1Initials = Player1Initials,
+                Player2Initials = Player2Initials,
                 SelectedCategories = new List<string> { Topic }
             };
         }
@@ -227,9 +232,15 @@ else
 
             // Use the injected service to generate questions
             var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
-            var uniqueQuestions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(10, topic); // Generate 10 questions
+            Console.WriteLine($"🔍 GAMESETUP: Generating questions for topic: {topic}");
+            
+            var player1Questions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic); // Generate 5 questions for Player 1
+            var player2Questions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic); // Generate 5 questions for Player 2
 
-            if (uniqueQuestions == null || uniqueQuestions.Count == 0)
+            Console.WriteLine($"🔍 GAMESETUP: Generated {player1Questions?.Count ?? 0} questions for Player 1");
+            Console.WriteLine($"🔍 GAMESETUP: Generated {player2Questions?.Count ?? 0} questions for Player 2");
+
+            if (player1Questions == null || player1Questions.Count == 0 || player2Questions == null || player2Questions.Count == 0)
             {
                 ErrorMessage = "Failed to generate questions. Please try again.";
                 IsLoading = false;
@@ -237,8 +248,10 @@ else
                 return;
             }
 
-            GameState.CurrentGame.Player1Questions = uniqueQuestions;
-            GameState.CurrentGame.Player2Questions = uniqueQuestions;
+            GameState.CurrentGame.Player1Questions = player1Questions;
+            GameState.CurrentGame.Player2Questions = player2Questions;
+            
+            Console.WriteLine($"🔍 GAMESETUP: Final assignment - P1: {GameState.CurrentGame.Player1Questions?.Count ?? 0}, P2: {GameState.CurrentGame.Player2Questions?.Count ?? 0}");
             
             Navigation.NavigateTo("/game-board");
         }

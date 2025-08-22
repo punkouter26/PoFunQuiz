@@ -6,11 +6,16 @@
 <div class="home-container">
     <div class="card">
         <h1>Welcome to PoFunQuiz!</h1>
-        <p>Enter your initials and choose a topic to start the game.</p>
+        <p>Enter initials for both players and choose a topic to start the game.</p>
 
         <div class="form-group">
-            <label for="initials">Your Initials:</label>
-            <input type="text" id="initials" @bind="playerInitials" maxlength="3" />
+            <label for="player1Initials">Player 1 Initials:</label>
+            <input type="text" id="player1Initials" @bind="player1Initials" maxlength="3" placeholder="P1" />
+        </div>
+
+        <div class="form-group">
+            <label for="player2Initials">Player 2 Initials:</label>
+            <input type="text" id="player2Initials" @bind="player2Initials" maxlength="3" placeholder="P2" />
         </div>
 
         <div class="form-group">
@@ -29,20 +34,21 @@
 </div>
 
 @code {
-    private string playerInitials = "";
+    private string player1Initials = "";
+    private string player2Initials = "";
     private string selectedTopic = "";
 
     private void StartGame()
     {
-        if (!string.IsNullOrWhiteSpace(playerInitials) && !string.IsNullOrWhiteSpace(selectedTopic))
+        if (!string.IsNullOrWhiteSpace(player1Initials) && !string.IsNullOrWhiteSpace(player2Initials) && !string.IsNullOrWhiteSpace(selectedTopic))
         {
-            // Navigate to GameSetup, passing initials and topic as query parameters
-            NavigationManager.NavigateTo($"/gamesetup?initials={playerInitials}&topic={selectedTopic}");
+            // Navigate to GameSetup, passing both player initials and topic as query parameters
+            NavigationManager.NavigateTo($"/gamesetup?player1={player1Initials}&player2={player2Initials}&topic={selectedTopic}");
         }
         else
         {
             // Optionally, add some user feedback here if fields are not filled
-            Console.WriteLine("Please enter your initials and select a topic.");
+            Console.WriteLine("Please enter initials for both players and select a topic.");
         }
     }
 }
