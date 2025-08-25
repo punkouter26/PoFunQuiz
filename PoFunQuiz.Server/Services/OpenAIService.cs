@@ -44,7 +44,7 @@ namespace PoFunQuiz.Server.Services
 
             Uri baseUri = new Uri(endpoint);
             _logger.LogInformation("Base URI: {BaseUri}, Host: {Host}", baseUri.ToString(), baseUri.Host);
-            
+
             // If the endpoint is the generic Cognitive Services endpoint, append the deployment name
             if (baseUri.Host.Equals("eastus.api.cognitive.microsoft.com", StringComparison.OrdinalIgnoreCase))
             {
@@ -58,7 +58,7 @@ namespace PoFunQuiz.Server.Services
         public async Task<List<QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
         {
             _logger.LogInformation("🔍 OPENAI: GenerateQuizQuestionsAsync called with topic='{Topic}', numberOfQuestions={Count}", topic, numberOfQuestions);
-            
+
             var messages = new List<ChatMessage>
             {
                 new SystemChatMessage($@"You are a helpful assistant designed to output JSON.
@@ -146,7 +146,7 @@ namespace PoFunQuiz.Server.Services
                     var schemaResponse = System.Text.Json.JsonSerializer.Deserialize<JsonDocument>(jsonResponse);
                     if (schemaResponse?.RootElement.TryGetProperty("questions", out var questionsProperty) == true)
                     {
-                        questions = System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestion>>(questionsProperty.GetRawText(), 
+                        questions = System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestion>>(questionsProperty.GetRawText(),
                             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                         _logger.LogInformation("🔍 OPENAI: Successfully deserialized schema wrapper with {Count} questions", questions?.Count ?? 0);
                     }
@@ -158,7 +158,7 @@ namespace PoFunQuiz.Server.Services
                 catch (System.Text.Json.JsonException ex)
                 {
                     _logger.LogWarning("🚨 OPENAI: Failed to deserialize with schema wrapper: {Error}", ex.Message);
-                    
+
                     // Fallback: Try to deserialize as a direct array
                     try
                     {

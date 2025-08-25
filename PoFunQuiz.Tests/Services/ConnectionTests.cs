@@ -107,7 +107,7 @@ namespace PoFunQuiz.Tests.Services
                     builder.AddXUnit(_output);
                     builder.SetMinimumLevel(LogLevel.Debug);
                 }).CreateLogger<QuestionGeneratorService>();
-                
+
                 var questionGenerator = new QuestionGeneratorService(openAIService, questionGeneratorLogger);
                 var questions = await questionGenerator.GenerateQuestionsAsync(1);
                 _output.WriteLine($"OpenAI service generated {questions?.Count ?? 0} question(s)");

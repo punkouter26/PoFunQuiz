@@ -1,4 +1,5 @@
 @page "/gamesetup"
+@page "/game-setup"
 @using PoFunQuiz.Client
 @using PoFunQuiz.Core.Models
 @using PoFunQuiz.Core.Services
@@ -234,13 +235,12 @@ else
             var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
             Console.WriteLine($"🔍 GAMESETUP: Generating questions for topic: {topic}");
             
-            var player1Questions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic); // Generate 5 questions for Player 1
-            var player2Questions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic); // Generate 5 questions for Player 2
+            // FIXED: Generate questions once and assign the same questions to both players for fairness
+            var sharedQuestions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic);
 
-            Console.WriteLine($"🔍 GAMESETUP: Generated {player1Questions?.Count ?? 0} questions for Player 1");
-            Console.WriteLine($"🔍 GAMESETUP: Generated {player2Questions?.Count ?? 0} questions for Player 2");
+            Console.WriteLine($"🔍 GAMESETUP: Generated {sharedQuestions?.Count ?? 0} shared questions");
 
-            if (player1Questions == null || player1Questions.Count == 0 || player2Questions == null || player2Questions.Count == 0)
+            if (sharedQuestions == null || sharedQuestions.Count == 0)
             {
                 ErrorMessage = "Failed to generate questions. Please try again.";
                 IsLoading = false;
@@ -248,10 +248,11 @@ else
                 return;
             }
 
-            GameState.CurrentGame.Player1Questions = player1Questions;
-            GameState.CurrentGame.Player2Questions = player2Questions;
+            // Assign the SAME questions to both players
+            GameState.CurrentGame.Player1Questions = sharedQuestions;
+            GameState.CurrentGame.Player2Questions = sharedQuestions;
             
-            Console.WriteLine($"🔍 GAMESETUP: Final assignment - P1: {GameState.CurrentGame.Player1Questions?.Count ?? 0}, P2: {GameState.CurrentGame.Player2Questions?.Count ?? 0}");
+            Console.WriteLine($"🔍 GAMESETUP: Final assignment - Both players get the same {GameState.CurrentGame.Player1Questions?.Count ?? 0} questions");
             
             Navigation.NavigateTo("/game-board");
         }

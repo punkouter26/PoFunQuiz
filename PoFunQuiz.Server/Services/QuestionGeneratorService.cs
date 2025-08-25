@@ -41,12 +41,12 @@ namespace PoFunQuiz.Server.Services
         public async Task<List<QuizQuestion>> GenerateQuestionsInCategoryAsync(int count, string category)
         {
             _logger.LogInformation("🔍 SERVICE: GenerateQuestionsInCategoryAsync called with count={Count}, category={Category}", count, category);
-            
+
             try
             {
                 var result = await _openAIService.GenerateQuizQuestionsAsync(category, count);
                 _logger.LogInformation("🔍 SERVICE: OpenAI returned {QuestionCount} questions", result?.Count ?? 0);
-                
+
                 if (result != null && result.Count > 0)
                 {
                     return result;
@@ -56,7 +56,7 @@ namespace PoFunQuiz.Server.Services
             {
                 _logger.LogError(ex, "🚨 SERVICE: Exception in GenerateQuestionsInCategoryAsync");
             }
-            
+
             _logger.LogWarning("🚨 SERVICE: Returning empty list for category {Category}", category);
             // No fallback: return empty list if OpenAI fails
             return new List<QuizQuestion>();

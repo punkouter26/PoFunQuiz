@@ -12,8 +12,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.8" PrivateAssets="all" />
-    <PackageReference Include="Azure.Core" Version="1.47.2" />
-    <PackageReference Include="Radzen.Blazor" Version="7.2.2" />
+    <PackageReference Include="Azure.Core" Version="1.47.3" />
+    <PackageReference Include="Radzen.Blazor" Version="7.2.3" />
   </ItemGroup>
 
   <ItemGroup>

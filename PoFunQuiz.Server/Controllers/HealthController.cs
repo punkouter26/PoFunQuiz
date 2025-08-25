@@ -20,8 +20,21 @@ public class HealthController : ControllerBase
     [HttpGet("healthz")]
     public async Task<IActionResult> GetHealthz()
     {
-        var diagnosticsBase = "/api/diagnostics";
-        var client = _httpClientFactory?.CreateClient() ?? new HttpClient { BaseAddress = new Uri($"{Request.Scheme}://{Request.Host}") };
+        var handler = new HttpClientHandler();
+        handler.ServerCertificateCustomValidationCallback = 
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+        
+        var client = _httpClientFactory?.CreateClient() ?? new HttpClient(handler);
+        
+        // Use hardcoded URIs for local testing
+        var baseUri = "https://localhost:5001";
+        var apiUri = $"{baseUri}/api/diagnostics/api";
+        var internetUri = $"{baseUri}/api/diagnostics/internet";
+        var tableStorageUri = $"{baseUri}/api/diagnostics/tablestorage";
+        var openAiUri = $"{baseUri}/api/diagnostics/openai";
+        
+        // Remove base address since we're using absolute URIs
+        client.BaseAddress = null;
 
         var results = new Dictionary<string, object?>();
         var overallHealthy = true;
@@ -30,7 +43,8 @@ public class HealthController : ControllerBase
         {
             try
             {
-                var resp = await client.GetAsync(path);
+                var request = new HttpRequestMessage(HttpMethod.Get, path);
+                var resp = await client.SendAsync(request);
                 var ok = resp.IsSuccessStatusCode;
                 if (!ok) overallHealthy = false;
 
@@ -60,19 +74,19 @@ public class HealthController : ControllerBase
         }
 
         // API
-        var (apiOk, apiBody) = await CallEndpoint(diagnosticsBase + "/api");
+        var (apiOk, apiBody) = await CallEndpoint(apiUri);
         results["api"] = new { status = apiOk ? "success" : "error", body = apiBody };
 
         // Internet
-        var (internetOk, internetBody) = await CallEndpoint(diagnosticsBase + "/internet");
+        var (internetOk, internetBody) = await CallEndpoint(internetUri);
         results["internet"] = new { status = internetOk ? "success" : "error", body = internetBody };
 
         // Table storage
-        var (tableOk, tableBody) = await CallEndpoint(diagnosticsBase + "/tablestorage");
+        var (tableOk, tableBody) = await CallEndpoint(tableStorageUri);
         results["tablestorage"] = new { status = tableOk ? "success" : "error", body = tableBody };
 
         // OpenAI
-        var (openAiOk, openAiBody) = await CallEndpoint(diagnosticsBase + "/openai");
+        var (openAiOk, openAiBody) = await CallEndpoint(openAiUri);
         results["openai"] = new { status = openAiOk ? "success" : "error", body = openAiBody };
 
         // Build a summary

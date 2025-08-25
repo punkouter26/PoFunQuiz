@@ -37,7 +37,7 @@ namespace PoFunQuiz.Server.Controllers
         public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestionsInCategory(int count, string category)
         {
             _logger.LogInformation("🔍 API: GenerateQuestionsInCategory called with count={Count}, category={Category}", count, category);
-            
+
             if (count <= 0)
             {
                 _logger.LogWarning("🚨 API: Invalid count parameter: {Count}", count);
@@ -48,10 +48,10 @@ namespace PoFunQuiz.Server.Controllers
                 _logger.LogWarning("🚨 API: Invalid category parameter: {Category}", category);
                 return BadRequest("Category cannot be empty.");
             }
-            
+
             var questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(count, category);
             _logger.LogInformation("🔍 API: Generated {QuestionCount} questions for category {Category}", questions?.Count ?? 0, category);
-            
+
             return Ok(questions);
         }
     }
