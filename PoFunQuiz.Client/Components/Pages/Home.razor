@@ -30,6 +30,7 @@
         </div>
 
         <button @onclick="StartGame" class="start-button">Start Game</button>
+        <button @onclick="ViewLeaderboard" class="secondary-button">View Leaderboard</button>
     </div>
 </div>
 
@@ -50,6 +51,11 @@
             // Optionally, add some user feedback here if fields are not filled
             Console.WriteLine("Please enter initials for both players and select a topic.");
         }
+    }
+
+    private void ViewLeaderboard()
+    {
+        NavigationManager.NavigateTo("/leaderboard");
     }
 }
 
@@ -117,9 +123,26 @@
         cursor: pointer;
         transition: background-color 0.3s ease;
         margin-top: 20px;
+        margin-right: 10px;
     }
 
     .start-button:hover {
         background-color: #0056b3; /* Darker blue on hover */
+    }
+
+    .secondary-button {
+        background-color: #6c757d; /* Secondary gray */
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.2em;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin-top: 20px;
+    }
+
+    .secondary-button:hover {
+        background-color: #545b62; /* Darker gray on hover */
     }
 </style>

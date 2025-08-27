@@ -151,3 +151,4 @@ ServiceFabricBackup/
 appsettings.Development.json
 appsettings.local.json
 launchSettings.json
+.azure

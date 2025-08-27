@@ -1,0 +1,49 @@
+name: Deploy PoFunQuiz to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+      
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
+      
+    - name: Publish
+      run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ./publish
+      
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'PoFunQuiz'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: './publish'
+        
+    - name: Health Check
+      run: |
+        sleep 30
+        response=$(curl -s -o /dev/null -w "%{http_code}" https://pofunquiz.azurewebsites.net/healthz)
+        if [ $response -eq 200 ]; then
+          echo "Health check passed! Status code: $response"
+        else
+          echo "Health check failed! Status code: $response"
+          exit 1
+        fi
