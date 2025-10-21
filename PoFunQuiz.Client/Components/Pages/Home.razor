@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject NavigationManager NavigationManager
+@inject PoFunQuiz.Client.Services.IClientLogger ClientLogger
 
 <PageTitle>PoFunQuiz - Home</PageTitle>
 
@@ -39,15 +40,27 @@
     private string player2Initials = "";
     private string selectedTopic = "";
 
-    private void StartGame()
+    private async Task StartGame()
     {
         if (!string.IsNullOrWhiteSpace(player1Initials) && !string.IsNullOrWhiteSpace(player2Initials) && !string.IsNullOrWhiteSpace(selectedTopic))
         {
+            // Log game start event
+            await ClientLogger.LogInformation(
+                $"Game started: {player1Initials} vs {player2Initials}, Topic: {selectedTopic}",
+                page: "/",
+                component: "Home");
+
             // Navigate to GameSetup, passing both player initials and topic as query parameters
             NavigationManager.NavigateTo($"/gamesetup?player1={player1Initials}&player2={player2Initials}&topic={selectedTopic}");
         }
         else
         {
+            // Log validation error
+            await ClientLogger.LogWarning(
+                "Game start attempted with incomplete fields",
+                page: "/",
+                component: "Home");
+
             // Optionally, add some user feedback here if fields are not filled
             Console.WriteLine("Please enter initials for both players and select a topic.");
         }

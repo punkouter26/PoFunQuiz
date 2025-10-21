@@ -21,18 +21,18 @@ public class HealthController : ControllerBase
     public async Task<IActionResult> GetHealthz()
     {
         var handler = new HttpClientHandler();
-        handler.ServerCertificateCustomValidationCallback = 
+        handler.ServerCertificateCustomValidationCallback =
             HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-        
+
         var client = _httpClientFactory?.CreateClient() ?? new HttpClient(handler);
-        
+
         // Use hardcoded URIs for local testing
         var baseUri = "https://localhost:5001";
         var apiUri = $"{baseUri}/api/diagnostics/api";
         var internetUri = $"{baseUri}/api/diagnostics/internet";
         var tableStorageUri = $"{baseUri}/api/diagnostics/tablestorage";
         var openAiUri = $"{baseUri}/api/diagnostics/openai";
-        
+
         // Remove base address since we're using absolute URIs
         client.BaseAddress = null;
 

@@ -1,7 +1,11 @@
 using PoFunQuiz.Server.Extensions;
 using PoFunQuiz.Server.Middleware;
+using PoFunQuiz.Server.HealthChecks;
 using Serilog;
 using System.IO;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+using Scalar.AspNetCore;
 
 // Bootstrap logger so early startup logs are captured
 Log.Logger = new LoggerConfiguration()
@@ -38,6 +42,12 @@ try
     builder.Services.AddControllers(); // Add this line
     builder.Services.AddHttpClient(); // Add HttpClient factory
 
+    // Register Health Checks
+    builder.Services.AddHealthChecks()
+        .AddCheck<TableStorageHealthCheck>("table_storage")
+        .AddCheck<OpenAIHealthCheck>("openai")
+        .AddCheck<InternetConnectivityHealthCheck>("internet");
+
     // Register OpenAI Service
     builder.Services.AddScoped<PoFunQuiz.Server.Services.IOpenAIService, PoFunQuiz.Server.Services.OpenAIService>();
 
@@ -47,11 +57,11 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-    }
-    else
+    // Enable Swagger in all environments for API testing (Phase 5 requirement)
+    app.MapOpenApi();
+    app.MapScalarApiReference();  // Modern Swagger UI at /scalar/v1
+    
+    if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Error");
         app.UseHsts();
@@ -70,6 +80,29 @@ try
 
     app.UseRouting();
     app.UseAuthorization(); // Add UseAuthorization for API
+
+    // Map health check endpoint
+    app.MapHealthChecks("/api/health", new HealthCheckOptions
+    {
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new
+            {
+                status = report.Status.ToString(),
+                timestamp = DateTime.UtcNow,
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.TotalMilliseconds,
+                    exception = e.Value.Exception?.Message
+                })
+            });
+            await context.Response.WriteAsync(result);
+        }
+    });
 
     app.MapControllers(); // Map controllers for API
 
@@ -92,3 +125,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make the Program class accessible to integration tests
+public partial class Program { }

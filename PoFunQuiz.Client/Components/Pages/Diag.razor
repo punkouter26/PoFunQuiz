@@ -8,49 +8,78 @@
 <div class="container mt-4">
     <h1 class="mb-4">System Diagnostics</h1>
 
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
-        @foreach (var check in _diagnosticChecks)
-        {
-            <div class="col">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            @if (!check.IsChecked)
-                            {
-                                <div class="spinner-border spinner-border-sm me-2" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                            }
-                            else
-                            {
-                                @if (check.IsSuccess)
+    @if (_isLoading)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Checking system health...</p>
+        </div>
+    }
+    else if (_healthReport != null)
+    {
+        <div class="alert @GetOverallStatusClass() mb-4" role="alert">
+            <h5>Overall Status: @_healthReport.Status</h5>
+            <small>Last checked: @_healthReport.Timestamp.ToLocalTime().ToString("g")</small>
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
+            @foreach (var check in _healthReport.Checks)
+            {
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                @if (check.Status == "Healthy")
                                 {
                                     <span class="text-success me-2">✅</span>
+                                }
+                                else if (check.Status == "Degraded")
+                                {
+                                    <span class="text-warning me-2">⚠️</span>
                                 }
                                 else
                                 {
                                     <span class="text-danger me-2">❌</span>
                                 }
+                                <h5 class="card-title mb-0">@FormatCheckName(check.Name)</h5>
+                            </div>
+                            @if (!string.IsNullOrEmpty(check.Description))
+                            {
+                                <p class="card-text mt-2 @GetStatusClass(check.Status)">
+                                    @check.Description
+                                </p>
                             }
-                            <h5 class="card-title mb-0">@check.Name</h5>
+                            @if (check.Duration > 0)
+                            {
+                                <small class="text-muted">Duration: @check.Duration ms</small>
+                            }
+                            @if (!string.IsNullOrEmpty(check.Exception))
+                            {
+                                <div class="mt-2">
+                                    <small class="text-danger">Error: @check.Exception</small>
+                                </div>
+                            }
                         </div>
-                        @if (check.IsChecked && !string.IsNullOrEmpty(check.Message))
-                        {
-                            <p class="card-text mt-2 @(check.IsSuccess ? "text-success" : "text-danger")">
-                                @check.Message
-                            </p>
-                        }
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
+    else if (_errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <h5>Error Loading Health Status</h5>
+            <p>@_errorMessage</p>
+        </div>
+    }
 
     <hr class="my-4" />
 
     <div class="d-flex gap-2">
-        <button class="btn btn-primary" @onclick="RunDiagnostics" disabled="@_isRunning">
-            Run Diagnostics Again
+        <button class="btn btn-primary" @onclick="LoadHealthStatus" disabled="@_isLoading">
+            @(_isLoading ? "Checking..." : "Refresh Status")
         </button>
 
         <button class="btn btn-outline-secondary" @onclick="@(() => NavigationManager.NavigateTo("/"))">
@@ -60,219 +89,98 @@
 </div>
 
 @code {
-    private bool _isRunning;
-    private List<DiagnosticCheck> _diagnosticChecks = new();
+    private bool _isLoading = true;
+    private HealthReport? _healthReport;
+    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        InitializeDiagnosticChecks();
-        await RunDiagnostics();
-    }    private void InitializeDiagnosticChecks()
-    {
-        _diagnosticChecks = new List<DiagnosticCheck>
-        {
-            new() { Name = "Internet Connection" },
-            new() { Name = "API Health" },
-            new() { Name = "Table Storage Connection" },
-            new() { Name = "Azure OpenAI Connection" }
-        };
-    }    private async Task RunDiagnostics()
+        await LoadHealthStatus();
+    }
+
+    private async Task LoadHealthStatus()
     {
         try
         {
-            _isRunning = true;
-            Logger.LogInformation("Starting diagnostics check");
+            _isLoading = true;
+            _errorMessage = null;
+            Logger.LogInformation("Loading health status from /api/health");
 
-            foreach (var check in _diagnosticChecks)
+            var response = await HttpClient.GetAsync("/api/health");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
             {
-                check.Reset();
-                StateHasChanged();
+                _healthReport = System.Text.Json.JsonSerializer.Deserialize<HealthReport>(
+                    content,
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                Logger.LogInformation("Health status loaded successfully");
             }
-
-            await CheckInternetConnection();
-            await CheckAPIHealth();
-            await CheckTableStorageConnection();
-            await CheckOpenAIConnection();
-
-            Logger.LogInformation("Diagnostics check completed successfully");
+            else
+            {
+                _errorMessage = $"Failed to load health status: {response.ReasonPhrase}";
+                Logger.LogWarning("Failed to load health status: {StatusCode}", response.StatusCode);
+            }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error during diagnostics check");
+            _errorMessage = $"Error loading health status: {ex.Message}";
+            Logger.LogError(ex, "Error loading health status");
         }
         finally
         {
-            _isRunning = false;
-        }
-    }private async Task CheckInternetConnection()
-    {
-        var check = _diagnosticChecks.First(c => c.Name == "Internet Connection");
-        try
-        {
-            var response = await HttpClient.GetAsync("api/diagnostics/internet");
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                if (result?.Status == "success")
-                {
-                    check.SetSuccess($"Internet connection is active. {result.Message}");
-                }
-                else
-                {
-                    check.SetFailure($"Internet connection check failed: {result?.Message}");
-                }
-            }
-            else
-            {
-                check.SetFailure($"Internet connection check failed: {response.ReasonPhrase}");
-            }
-        }
-        catch (Exception ex)
-        {
-            check.SetFailure($"Error checking internet connection: {ex.Message}");
+            _isLoading = false;
         }
     }
 
-    private async Task CheckAPIHealth()
+    private string FormatCheckName(string name)
     {
-        var check = _diagnosticChecks.First(c => c.Name == "API Health");
-        try
+        return name switch
         {
-            var response = await HttpClient.GetAsync("api/diagnostics/api");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
-                if (result?.Status == "success")
-                {
-                    check.SetSuccess($"API is healthy. {result.Message}");
-                }
-                else
-                {
-                    check.SetFailure($"API returned unexpected status: {result?.Status}");
-                }
-            }
-            else
-            {
-                check.SetFailure($"API health check failed: {response.ReasonPhrase}");
-            }        }
-        catch (Exception ex)
-        {
-            check.SetFailure($"Error checking API health: {ex.Message}");
-        }
+            "table_storage" => "Table Storage",
+            "openai" => "Azure OpenAI",
+            "internet" => "Internet Connectivity",
+            _ => name.Replace("_", " ").ToUpper()
+        };
     }
 
-    private async Task CheckTableStorageConnection()
+    private string GetStatusClass(string status)
     {
-        var check = _diagnosticChecks.First(c => c.Name == "Table Storage Connection");
-        try
+        return status switch
         {
-            var response = await HttpClient.GetAsync("api/diagnostics/tablestorage");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
-                if (result?.Status == "success")
-                {
-                    // Extract storage type from the response
-                    var storageType = result.StorageType ?? "Table Storage";
-                    check.SetSuccess($"{storageType} connected successfully. {result.Message}");
-                }
-                else
-                {
-                    check.SetFailure($"Table Storage error: {result?.Message}");
-                }
-            }
-            else
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                check.SetFailure($"Table Storage connection failed: {result?.Message ?? response.ReasonPhrase}");
-            }
-        }
-        catch (Exception ex)
-        {
-            check.SetFailure($"Error checking Table Storage connection: {ex.Message}");
-        }
+            "Healthy" => "text-success",
+            "Degraded" => "text-warning",
+            "Unhealthy" => "text-danger",
+            _ => "text-muted"
+        };
     }
 
-    private async Task CheckOpenAIConnection()
+    private string GetOverallStatusClass()
     {
-        var check = _diagnosticChecks.First(c => c.Name == "Azure OpenAI Connection");
-        try
+        return _healthReport?.Status switch
         {
-            var response = await HttpClient.GetAsync("api/diagnostics/openai");
-            
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
-                if (result?.Status == "success")
-                {
-                    check.SetSuccess($"Azure OpenAI connected successfully. {result.Message}");
-                }
-                else if (result?.Status == "warning")
-                {
-                    check.SetSuccess($"Azure OpenAI connection with warning: {result.Message}");
-                }
-                else
-                {
-                    check.SetFailure($"Azure OpenAI error: {result?.Message}");
-                }
-            }
-            else
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                var result = System.Text.Json.JsonSerializer.Deserialize<DiagnosticResponse>(content, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                check.SetFailure($"Azure OpenAI connection failed: {result?.Message ?? response.ReasonPhrase}");
-            }
-        }
-        catch (Exception ex)
-        {
-            check.SetFailure($"Error checking Azure OpenAI connection: {ex.Message}");
-        }
-    }    private class DiagnosticCheck
-    {
-        public string Name { get; set; } = "";
-        public bool IsChecked { get; private set; }
-        public bool IsSuccess { get; private set; }
-        public string Message { get; private set; } = "";
+            "Healthy" => "alert-success",
+            "Degraded" => "alert-warning",
+            "Unhealthy" => "alert-danger",
+            _ => "alert-info"
+        };
+    }
 
-        public void Reset()
-        {
-            IsChecked = false;
-            IsSuccess = false;
-            Message = "";
-        }
-
-        public void SetSuccess(string message)
-        {
-            IsChecked = true;
-            IsSuccess = true;
-            Message = message;
-        }
-
-        public void SetFailure(string message)
-        {
-            IsChecked = true;
-            IsSuccess = false;
-            Message = message;
-        }
-    }    private class DiagnosticResponse
+    private class HealthReport
     {
         public string Status { get; set; } = "";
-        public string Message { get; set; } = "";
         public DateTime Timestamp { get; set; }
-        public string? Error { get; set; }
-        public int? QuestionCount { get; set; }
-        public string? StorageType { get; set; }
-        public string? ConnectionString { get; set; }
+        public List<HealthCheck> Checks { get; set; } = new();
+    }
+
+    private class HealthCheck
+    {
+        public string Name { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string? Description { get; set; }
+        public double Duration { get; set; }
+        public string? Exception { get; set; }
     }
 }
+

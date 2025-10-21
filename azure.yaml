@@ -2,13 +2,11 @@
 
 name: PoFunQuiz
 metadata:
-    template: azd-init@1.18.1
+  template: PoFunQuiz@1.0.0
+
 services:
-    PoFunQuiz:
-        project: PoFunQuiz.Server
-        host: appservice
-        language: dotnet
-resources:
-    PoFunQuiz:
-        type: host.appservice
-        port: 80
+  PoFunQuiz:
+    project: PoFunQuiz.Server
+    host: appservice
+    language: dotnet
+

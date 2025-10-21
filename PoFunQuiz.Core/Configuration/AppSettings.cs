@@ -9,6 +9,7 @@ public class AppSettings
     public LoggingSettings Logging { get; set; } = new();
     public DiagnosticsSettings Diagnostics { get; set; } = new();
     public FeatureFlagsSettings FeatureFlags { get; set; } = new();
+    public OpenAISettings AzureOpenAI { get; set; } = new();
 }
 
 public class StorageSettings

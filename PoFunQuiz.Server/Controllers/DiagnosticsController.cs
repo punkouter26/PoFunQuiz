@@ -105,7 +105,7 @@ namespace PoFunQuiz.Server.Controllers
         }
 
         [HttpGet("api")]
-        public async Task<IActionResult> TestAPIHealth()
+        public IActionResult TestAPIHealth()
         {
             try
             {
@@ -249,7 +249,7 @@ namespace PoFunQuiz.Server.Controllers
                         connectionString = isAzurite ? "UseDevelopmentStorage=true" : "[Azure Storage Account]"
                     });
                 }
-                catch (Exception testEx)
+                catch (Exception ex)
                 {
                     // Cleanup on error: try to delete test table if it exists
                     try
@@ -263,7 +263,14 @@ namespace PoFunQuiz.Server.Controllers
                         _logger.LogWarning(cleanupEx, "Failed to cleanup test table {TableName}", testTableName);
                     }
 
-                    throw; // Re-throw the original test exception
+                    _logger.LogError(ex, "Table Storage test failed");
+                    return StatusCode(500, new
+                    {
+                        status = "error",
+                        message = $"Table Storage test failed: {ex.Message}",
+                        timestamp = DateTime.UtcNow,
+                        error = ex.Message
+                    });
                 }
             }
             catch (ArgumentNullException ex)

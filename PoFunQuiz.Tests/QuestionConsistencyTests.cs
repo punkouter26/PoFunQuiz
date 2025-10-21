@@ -23,16 +23,16 @@ namespace PoFunQuiz.Tests
         public QuestionConsistencyTests(ITestOutputHelper output)
         {
             _output = output;
-            
+
             // Create a service collection for dependency injection
             var services = new ServiceCollection();
             services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-            
+
             // For this test, we'll mock the OpenAI service to return deterministic results
             var mockOpenAIService = new MockOpenAIService();
             services.AddSingleton<IOpenAIService>(mockOpenAIService);
             services.AddSingleton<IQuestionGeneratorService, QuestionGeneratorService>();
-            
+
             var serviceProvider = services.BuildServiceProvider();
             _questionGeneratorService = serviceProvider.GetRequiredService<IQuestionGeneratorService>();
             _logger = serviceProvider.GetRequiredService<ILogger<QuestionGeneratorService>>();
@@ -74,12 +74,12 @@ namespace PoFunQuiz.Tests
             {
                 var q1 = player1Questions[i];
                 var q2 = player2Questions[i];
-                
+
                 _output.WriteLine($"Question {i + 1}:");
                 _output.WriteLine($"  P1: {q1.Question}");
                 _output.WriteLine($"  P2: {q2.Question}");
                 _output.WriteLine($"  Same: {q1.Question == q2.Question}");
-                
+
                 // For now, let's just verify they're both valid questions
                 Assert.False(string.IsNullOrEmpty(q1.Question));
                 Assert.False(string.IsNullOrEmpty(q2.Question));
@@ -106,7 +106,7 @@ namespace PoFunQuiz.Tests
             Assert.NotNull(firstCall);
             Assert.NotNull(secondCall);
             Assert.NotNull(thirdCall);
-            
+
             Assert.Equal(questionCount, firstCall.Count);
             Assert.Equal(questionCount, secondCall.Count);
             Assert.Equal(questionCount, thirdCall.Count);
