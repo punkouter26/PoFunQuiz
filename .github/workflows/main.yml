@@ -44,12 +44,18 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
+    - name: Authenticate azd
+      run: |
+        azd config set auth.useAzCliAuth true
+        
     - name: Deploy with azd
       run: azd deploy --no-prompt
       env:
         AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
         AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
         AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         
     - name: Wait for deployment
       run: sleep 60
