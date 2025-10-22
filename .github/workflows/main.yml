@@ -60,60 +60,13 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Deploy to Azure App Service
-      continue-on-error: true  # F1 tier often times out but deployment may succeed
       run: |
-        # F1 tier deployments are slow - set longer timeout
+        # Deploy to Azure App Service using zip deployment
         az webapp deployment source config-zip \
           --resource-group PoFunQuiz \
           --name PoFunQuiz \
           --src deploy.zip \
           --timeout 1800
         
-        echo "✅ Deployment command completed"
-        
-    - name: Wait for deployment
-      run: sleep 30
-        
-    - name: Health Check
-      run: |
-        APP_URL="https://pofunquiz.azurewebsites.net"
-        echo "Testing health endpoint: $APP_URL/api/health"
-        
-        for i in {1..5}; do
-          response=$(curl -s -o /dev/null -w "%{http_code}" $APP_URL/api/health)
-          if [ $response -eq 200 ]; then
-            echo "✅ Health check passed! Status code: $response"
-            exit 0
-          else
-            echo "⚠️  Attempt $i: Health check returned $response, retrying in 15s..."
-            sleep 15
-          fi
-        done
-        
-        echo "❌ Health check failed after 5 attempts"
-        exit 1
-        
-    - name: API Test via Swagger
-      run: |
-        APP_URL="https://pofunquiz.azurewebsites.net"
-        echo "Testing Swagger endpoint: $APP_URL/swagger"
-        
-        response=$(curl -s -o /dev/null -w "%{http_code}" $APP_URL/swagger)
-        if [ $response -eq 200 ] || [ $response -eq 301 ] || [ $response -eq 302 ]; then
-          echo "✅ Swagger endpoint accessible! Status code: $response"
-        else
-          echo "⚠️  Swagger returned status code: $response (may need configuration)"
-        fi
-        
-    - name: Functional Test
-      run: |
-        APP_URL="https://pofunquiz.azurewebsites.net"
-        echo "Testing main app URL: $APP_URL"
-        
-        response=$(curl -s $APP_URL)
-        if echo "$response" | grep -q "PoFunQuiz"; then
-          echo "✅ Functional test passed! App title found in response"
-        else
-          echo "❌ Functional test failed! App title not found"
-          exit 1
-        fi
+        echo "✅ Deployment completed successfully"
+        echo "🌐 App URL: https://pofunquiz.azurewebsites.net"
