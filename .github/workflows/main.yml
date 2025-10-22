@@ -21,11 +21,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
-        
-    - name: Install azd
-      run: |
-        curl -fsSL https://aka.ms/install-azd.sh | bash
-        echo "$HOME/.azd/bin" >> $GITHUB_PATH
       
     - name: Restore dependencies
       run: dotnet restore
@@ -37,6 +32,9 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category!=E2E"
       continue-on-error: true  # Don't fail build on test failures (some require OpenAI credentials)
       
+    - name: Publish application
+      run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ./publish
+      
     - name: Azure Login (Federated Credentials)
       uses: azure/login@v2
       with:
@@ -44,26 +42,15 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
-    - name: Authenticate azd
-      run: |
-        azd config set auth.useAzCliAuth true
-        
-    - name: Setup azd environment
-      run: |
-        azd env new ${{ vars.AZURE_ENV_NAME }} --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --location ${{ vars.AZURE_LOCATION }}
-        azd env set AZURE_RESOURCE_GROUP PoFunQuiz
-      
-    - name: Provision and Deploy with azd
-      run: azd up --no-prompt
-      env:
-        AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
-        AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
-        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'PoFunQuiz'
+        package: './publish'
+        clean: true
         
     - name: Wait for deployment
-      run: sleep 60
+      run: sleep 30
         
     - name: Health Check
       run: |
