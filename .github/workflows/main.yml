@@ -48,8 +48,8 @@ jobs:
       run: |
         azd config set auth.useAzCliAuth true
         
-    - name: Deploy with azd
-      run: azd deploy --no-prompt
+    - name: Provision and Deploy with azd
+      run: azd up --no-prompt
       env:
         AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
         AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
