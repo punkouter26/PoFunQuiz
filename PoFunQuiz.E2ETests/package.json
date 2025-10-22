@@ -8,15 +8,25 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:local": "playwright test",
+    "test:azure": "cross-env TEST_ENV=azure playwright test",
+    "test:azure:headed": "cross-env TEST_ENV=azure playwright test --headed",
+    "test:both": "npm run test:local && npm run test:azure"
   },
-  "keywords": ["playwright", "e2e", "testing", "quiz"],
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "quiz"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.9.1",
+    "cross-env": "^10.1.0",
     "typescript": "^5.9.3"
   }
 }

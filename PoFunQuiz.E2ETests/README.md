@@ -20,8 +20,9 @@ npx playwright install chromium
 
 ## Running Tests
 
+### Local Development (Default)
 ```bash
-# Run all tests (headless)
+# Run all tests against localhost
 npm test
 
 # Run tests with browser visible
@@ -35,6 +36,37 @@ npm run test:ui
 
 # View test report
 npm run test:report
+```
+
+### Azure Production
+```bash
+# Run all tests against Azure deployment
+npm run test:azure
+
+# Run with visible browser against Azure
+npm run test:azure:headed
+```
+
+### Both Environments
+```bash
+# Run tests on localhost, then Azure
+npm run test:both
+```
+
+## Configuration
+
+### Environment Variables
+- `TEST_ENV`: Set to `'azure'` to test production, otherwise tests localhost
+- `AZURE_APP_URL`: Azure app URL (default: https://pofunquiz.azurewebsites.net)
+- `BASE_URL`: Local development URL (default: http://localhost:5000)
+
+### Custom URLs
+```bash
+# Test against custom Azure URL
+TEST_ENV=azure AZURE_APP_URL=https://custom.azurewebsites.net npm test
+
+# Test against custom local URL
+BASE_URL=http://localhost:8080 npm test
 ```
 
 ## Test Coverage
