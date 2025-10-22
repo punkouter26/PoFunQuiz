@@ -35,6 +35,12 @@ jobs:
     - name: Publish application
       run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ./publish
       
+    - name: Create deployment package
+      run: |
+        cd publish
+        zip -r ../deploy.zip .
+        cd ..
+      
     - name: Azure Login (Federated Credentials)
       uses: azure/login@v2
       with:
@@ -42,12 +48,40 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: 'PoFunQuiz'
-        package: './publish'
-        clean: true
+    - name: Upload package to Azure Storage
+      run: |
+        az storage blob upload \
+          --account-name pofunquiz \
+          --container-name deployments \
+          --name pofunquiz-${{ github.sha }}.zip \
+          --file deploy.zip \
+          --auth-mode login \
+          --overwrite
+        
+        BLOB_URL=$(az storage blob url \
+          --account-name pofunquiz \
+          --container-name deployments \
+          --name pofunquiz-${{ github.sha }}.zip \
+          --auth-mode login \
+          --output tsv)
+        
+        SAS_TOKEN=$(az storage blob generate-sas \
+          --account-name pofunquiz \
+          --container-name deployments \
+          --name pofunquiz-${{ github.sha }}.zip \
+          --permissions r \
+          --expiry $(date -u -d "+1 year" '+%Y-%m-%dT%H:%MZ') \
+          --auth-mode login \
+          --output tsv)
+        
+        PACKAGE_URL="${BLOB_URL}?${SAS_TOKEN}"
+        
+        az webapp config appsettings set \
+          --name PoFunQuiz \
+          --resource-group PoFunQuiz \
+          --settings WEBSITE_RUN_FROM_PACKAGE="$PACKAGE_URL"
+        
+        az webapp restart --name PoFunQuiz --resource-group PoFunQuiz
         
     - name: Wait for deployment
       run: sleep 30
