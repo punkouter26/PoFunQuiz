@@ -7,6 +7,19 @@
     <DebugType>none</DebugType>
     <DebugSymbols>false</DebugSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
+    
+    <!-- Optimization: Enable IL trimming to reduce deployment size -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>link</TrimMode>
+    
+    <!-- Optimization: Remove debug symbols and source maps from production builds -->
+    <WasmStripILAfterAOT>true</WasmStripILAfterAOT>
+    
+    <!-- Optimization: Enable compression -->
+    <BlazorEnableCompression>true</BlazorEnableCompression>
+    
+    <!-- Optimization: Don't copy symbols to output -->
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,5 +33,7 @@
     <ProjectReference Include="..\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
   </ItemGroup>
 
+  <!-- Import custom build targets to exclude unused resources -->
+  <Import Project="ExcludeUnusedRadzenThemes.targets" />
 
 </Project>

@@ -1,0 +1,20 @@
+<Project>
+  <!-- Clean up unused files after publish to reduce deployment size -->
+  <Target Name="CleanupUnusedFiles" AfterTargets="Publish">
+    <ItemGroup>
+      <!-- Find all Radzen CSS files except standard-base.css -->
+      <RadzenCssToDelete Include="$(PublishDir)wwwroot\_content\Radzen.Blazor\css\**\*" 
+                         Exclude="$(PublishDir)wwwroot\_content\Radzen.Blazor\css\standard-base.css*" />
+      
+      <!-- Find all source map files -->
+      <SourceMapsToDelete Include="$(PublishDir)wwwroot\_framework\**\*.map" />
+    </ItemGroup>
+    
+    <!-- Delete the files -->
+    <Delete Files="@(RadzenCssToDelete)" />
+    <Delete Files="@(SourceMapsToDelete)" />
+    
+    <Message Text="Deleted $(RadzenCssToDelete.Count()) unused Radzen theme files" Importance="high" />
+    <Message Text="Deleted $(SourceMapsToDelete.Count()) source map files" Importance="high" />
+  </Target>
+</Project>

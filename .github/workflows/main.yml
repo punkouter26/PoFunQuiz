@@ -35,10 +35,21 @@ jobs:
     - name: Publish application
       run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ./publish
       
+    - name: Optimize deployment size
+      run: |
+        # Remove unused Radzen CSS themes (keep only standard-base.css)
+        find ./publish/wwwroot/_content/Radzen.Blazor/css -type f ! -name 'standard-base.css*' -delete
+        
+        # Display optimization results
+        echo "✅ Deployment optimized - removed unused Radzen themes and source maps"
+      
     - name: Create deployment package
       run: |
         cd publish
+        ORIGINAL_SIZE=$(du -sh . | cut -f1)
         zip -r ../deploy.zip .
+        ZIP_SIZE=$(du -sh ../deploy.zip | cut -f1)
+        echo "📦 Deployment package created: $ZIP_SIZE (uncompressed: $ORIGINAL_SIZE)"
         cd ..
       
     - name: Azure Login (Federated Credentials)
