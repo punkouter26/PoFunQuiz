@@ -101,7 +101,9 @@ namespace PoFunQuiz.Tests.Services
             // Only the OpenAI-based generator is supported in production code.
             try
             {
-                var openAIService = new OpenAIService(_configuration, _logger);
+                var appSettings = _configuration.GetSection("AppSettings").Get<AppSettings>();
+                var appSettingsOptions = Options.Create(appSettings!);
+                var openAIService = new OpenAIService(appSettingsOptions, _configuration, _logger);
                 var questionGeneratorLogger = LoggerFactory.Create(builder =>
                 {
                     builder.AddXUnit(_output);

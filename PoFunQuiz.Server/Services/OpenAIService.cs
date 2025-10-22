@@ -1,9 +1,11 @@
 using Azure.AI.OpenAI;
 using Azure;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using PoFunQuiz.Core.Models; // Assuming QuizQuestion is in PoFunQuiz.Core.Models
+using PoFunQuiz.Core.Configuration;
 using System;
 using OpenAI.Chat;
 using Microsoft.Extensions.Logging; // Added for logging
@@ -24,14 +26,17 @@ namespace PoFunQuiz.Server.Services
         private readonly ChatClient _chatClient;
         private readonly IConfiguration _configuration;
         private readonly ILogger<OpenAIService> _logger; // Added logger
+        private readonly OpenAISettings _settings;
 
-        public OpenAIService(IConfiguration configuration, ILogger<OpenAIService> logger) // Injected logger
+        public OpenAIService(IOptions<AppSettings> appSettings, IConfiguration configuration, ILogger<OpenAIService> logger) // Injected logger
         {
             _configuration = configuration;
             _logger = logger; // Assigned logger
-            var endpoint = _configuration["AzureOpenAI:Endpoint"];
-            var apiKey = _configuration["AzureOpenAI:ApiKey"];
-            var deploymentName = _configuration["AzureOpenAI:DeploymentName"];
+            _settings = appSettings.Value.AzureOpenAI;
+            
+            var endpoint = _settings.Endpoint;
+            var apiKey = _settings.ApiKey;
+            var deploymentName = _settings.DeploymentName;
 
             _logger.LogInformation("OpenAI Configuration - Endpoint: {Endpoint}, DeploymentName: {DeploymentName}", endpoint, deploymentName);
 
