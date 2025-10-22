@@ -48,6 +48,11 @@ jobs:
       run: |
         azd config set auth.useAzCliAuth true
         
+    - name: Setup azd environment
+      run: |
+        azd env new ${{ vars.AZURE_ENV_NAME }} --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }} --location ${{ vars.AZURE_LOCATION }}
+        azd env set AZURE_RESOURCE_GROUP PoFunQuiz
+      
     - name: Provision and Deploy with azd
       run: azd up --no-prompt
       env:
