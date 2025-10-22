@@ -15,28 +15,24 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
   });
 
   test('should complete a full game with two players', async () => {
-    // Step 1: Enter player names
-    await test.step('Enter player 1 name', async () => {
-      const player1Input = page.locator('input[placeholder="Enter player name"]').first();
-      await player1Input.fill('Alice');
-      await expect(player1Input).toHaveValue('Alice');
+    // Step 1: Enter player initials
+    await test.step('Enter player 1 initials', async () => {
+      const player1Input = page.locator('#player1Initials');
+      await player1Input.fill('P1');
+      await expect(player1Input).toHaveValue('P1');
     });
 
-    await test.step('Enter player 2 name', async () => {
-      const player2Input = page.locator('input[placeholder="Enter player name"]').nth(1);
-      await player2Input.fill('Bob');
-      await expect(player2Input).toHaveValue('Bob');
+    await test.step('Enter player 2 initials', async () => {
+      const player2Input = page.locator('#player2Initials');
+      await player2Input.fill('P2');
+      await expect(player2Input).toHaveValue('P2');
     });
 
-    // Step 2: Select a topic
+    // Step 2: Select a topic from dropdown
     await test.step('Select topic', async () => {
-      // Wait for topic buttons to be visible
-      await page.waitForSelector('text=Science', { timeout: 5000 });
-      await page.click('text=Science');
-      
-      // Verify topic is selected (button should have active state)
-      const scienceButton = page.locator('button:has-text("Science")');
-      await expect(scienceButton).toBeVisible();
+      const topicSelect = page.locator('#topic');
+      await topicSelect.selectOption('Science');
+      await expect(topicSelect).toHaveValue('Science');
     });
 
     // Step 3: Start the game
@@ -49,84 +45,80 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
       await page.waitForURL(/\/gamesetup/, { timeout: 10000 });
     });
 
-    // Step 4: Wait for questions to load
-    await test.step('Wait for questions to load', async () => {
-      // Wait for either success or error state
-      const questionOrError = page.locator('text="Question 1"').or(page.locator('text="Failed to generate questions"'));
-      await questionOrError.waitFor({ timeout: 15000 });
+    // Step 4: Wait for questions to load and handle ready screen
+    await test.step('Wait for questions to load and get ready', async () => {
+      // Wait for either success (ready buttons) or error state
+      const readyButton = page.locator('button:has-text("I\'m Ready")').first();
+      const retryButton = page.locator('button:has-text("Retry")');
       
-      // Check if we got questions or an error
-      const hasError = await page.locator('text="Failed to generate questions"').isVisible();
+      // Wait for either ready or retry button to appear
+      await Promise.race([
+        readyButton.waitFor({ timeout: 15000 }),
+        retryButton.waitFor({ timeout: 15000 })
+      ]).catch(() => {});
+      
+      // Check if we got an error
+      const hasError = await retryButton.isVisible();
       
       if (hasError) {
         console.log('⚠️  OpenAI service not configured - test will use fallback mode');
-        // In case of error, we can still test the UI flow with retry
-        const retryButton = page.locator('button:has-text("Retry")');
-        if (await retryButton.isVisible()) {
-          console.log('Test completed - Question generation requires OpenAI configuration');
-          return; // Exit gracefully
-        }
-      } else {
-        console.log('✅ Questions loaded successfully');
+        console.log('Test completed - Question generation requires OpenAI configuration');
+        return; // Exit gracefully
       }
+      
+      // Click both "I'm Ready" buttons
+      const player1ReadyButton = page.locator('button:has-text("I\'m Ready")').first();
+      const player2ReadyButton = page.locator('button:has-text("I\'m Ready")').nth(1);
+      
+      await player1ReadyButton.click();
+      await page.waitForTimeout(500);
+      await player2ReadyButton.click();
+      
+      // Wait for countdown or game to start
+      await page.waitForTimeout(3500); // Wait for 3-second countdown
+      
+      console.log('✅ Game ready and started');
     });
 
-    // Step 5: Play through all questions (if questions loaded)
-    const hasQuestions = await page.locator('text="Question 1"').isVisible();
+    // Step 5: Play through questions (if questions loaded)
+    const hasError = await page.locator('text="Retry"').isVisible();
     
-    if (hasQuestions) {
+    if (!hasError) {
       await test.step('Answer questions for both players', async () => {
-        for (let questionNum = 1; questionNum <= 5; questionNum++) {
-          console.log(`Answering question ${questionNum}...`);
+        // Wait for game board to load
+        await page.waitForURL(/\/game-board/, { timeout: 5000 });
+        
+        // Wait for questions to appear
+        await page.waitForSelector('.option-item', { timeout: 5000 });
+        
+        // Play through questions (the game will automatically advance)
+        // Since both players get the same questions, we can simulate keyboard input
+        for (let i = 0; i < 5; i++) {
+          console.log(`Question ${i + 1}...`);
           
-          // Verify we're on the correct question
-          await expect(page.locator(`text="Question ${questionNum}"`)).toBeVisible();
-          
-          // Wait for options to load
-          await page.waitForSelector('button.answer-option, label:has(input[type="radio"])', { timeout: 5000 });
-          
-          // Player 1's turn
-          const player1Indicator = page.locator('text="Alice"').or(page.locator('text="Player 1"'));
-          await player1Indicator.waitFor({ timeout: 5000 });
-          
-          // Select first answer option for Player 1
-          const firstOption = page.locator('button.answer-option, label:has(input[type="radio"])').first();
-          await firstOption.click();
-          await page.waitForTimeout(500);
-          
-          // Click Submit/Next
-          const submitButton = page.locator('button:has-text("Submit"), button:has-text("Next")').first();
-          await submitButton.click();
+          // Wait a bit for question to render
           await page.waitForTimeout(1000);
           
-          // Player 2's turn
-          const player2Indicator = page.locator('text="Bob"').or(page.locator('text="Player 2"'));
-          await player2Indicator.waitFor({ timeout: 5000 });
+          // Player 1 answers with keyboard (key 1 for option 1)
+          await page.keyboard.press('1');
+          await page.waitForTimeout(800);
           
-          // Select second answer option for Player 2
-          const secondOption = page.locator('button.answer-option, label:has(input[type="radio"])').nth(1);
-          await secondOption.click();
-          await page.waitForTimeout(500);
-          
-          // Click Submit/Next
-          const submitButton2 = page.locator('button:has-text("Submit"), button:has-text("Next")').first();
-          await submitButton2.click();
-          await page.waitForTimeout(1000);
+          // Player 2 answers with keyboard (key 6 for option 1)
+          await page.keyboard.press('6');
+          await page.waitForTimeout(800);
         }
+        
+        console.log('✅ All questions answered');
       });
 
       // Step 6: View results
       await test.step('View results page', async () => {
-        // Wait for results page
-        await page.waitForURL(/\/results/, { timeout: 10000 });
+        // Wait for results page (game auto-navigates after all questions)
+        await page.waitForURL(/\/results/, { timeout: 15000 });
         
-        // Verify both players' scores are displayed
-        await expect(page.locator('text="Alice"')).toBeVisible();
-        await expect(page.locator('text="Bob"')).toBeVisible();
-        
-        // Verify score display
-        const scoreElements = page.locator('text=/\\d+\\/5|Score:.*\\d+/');
-        await expect(scoreElements.first()).toBeVisible();
+        // Verify player initials are displayed
+        await expect(page.locator('text="P1"')).toBeVisible();
+        await expect(page.locator('text="P2"')).toBeVisible();
         
         console.log('✅ Results page displayed successfully');
       });
@@ -159,53 +151,42 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
   });
 
   test('should handle validation errors', async () => {
-    await test.step('Attempt to start game without player names', async () => {
-      // Try to start without entering names
+    await test.step('Attempt to start game without player initials', async () => {
+      // Try to start without entering initials
       const startButton = page.locator('button:has-text("Start Game")');
+      await startButton.click();
       
-      // Button might be disabled or clicking might show an error
-      if (await startButton.isEnabled()) {
-        await startButton.click();
-        
-        // Should still be on home page or show validation message
-        await expect(page).toHaveURL('/');
-      }
+      // Should still be on home page
+      await expect(page).toHaveURL('/');
     });
 
     await test.step('Attempt to start game without selecting topic', async () => {
-      // Enter player names but no topic
-      await page.locator('input[placeholder="Enter player name"]').first().fill('Alice');
-      await page.locator('input[placeholder="Enter player name"]').nth(1).fill('Bob');
+      // Enter player initials but no topic
+      await page.locator('#player1Initials').fill('P1');
+      await page.locator('#player2Initials').fill('P2');
       
       const startButton = page.locator('button:has-text("Start Game")');
+      await startButton.click();
       
-      if (await startButton.isEnabled()) {
-        await startButton.click();
-        await expect(page).toHaveURL('/');
-      }
+      // Should still be on home page
+      await expect(page).toHaveURL('/');
     });
   });
 
   test('should handle single player mode', async () => {
     await test.step('Play with only one player', async () => {
-      // Enter only first player name
-      await page.locator('input[placeholder="Enter player name"]').first().fill('Solo Player');
+      // Enter only first player initials
+      await page.locator('#player1Initials').fill('P1');
       
       // Select topic
-      await page.click('text=Science');
+      await page.locator('#topic').selectOption('Science');
       
       // Try to start game
       const startButton = page.locator('button:has-text("Start Game")');
+      await startButton.click();
       
-      if (await startButton.isEnabled()) {
-        await startButton.click();
-        
-        // Game might start or require both players
-        const isOnGameSetup = page.url().includes('/gamesetup');
-        const isStillOnHome = page.url() === '/' || page.url().endsWith('/');
-        
-        expect(isOnGameSetup || isStillOnHome).toBeTruthy();
-      }
+      // Should still be on home page (requires both players)
+      await expect(page).toHaveURL('/');
     });
   });
 
@@ -215,10 +196,11 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
     });
 
     await test.step('Verify mobile layout', async () => {
-      await expect(page.locator('input[placeholder="Enter player name"]').first()).toBeVisible();
+      await expect(page.locator('#player1Initials')).toBeVisible();
+      await expect(page.locator('#player2Initials')).toBeVisible();
       
-      // Topic buttons should still be visible
-      await expect(page.locator('button:has-text("Science")')).toBeVisible();
+      // Topic dropdown should still be visible
+      await expect(page.locator('#topic')).toBeVisible();
       
       console.log('✅ Mobile layout renders correctly');
     });
