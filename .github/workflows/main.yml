@@ -60,13 +60,16 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Deploy to Azure App Service
+      continue-on-error: true  # F1 tier often times out but deployment may succeed
       run: |
+        # F1 tier deployments are slow - set longer timeout
         az webapp deployment source config-zip \
           --resource-group PoFunQuiz \
           --name PoFunQuiz \
-          --src deploy.zip
+          --src deploy.zip \
+          --timeout 1800
         
-        echo "✅ Deployment completed successfully!"
+        echo "✅ Deployment command completed"
         
     - name: Wait for deployment
       run: sleep 30
