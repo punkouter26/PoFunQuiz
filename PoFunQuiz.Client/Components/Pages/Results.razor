@@ -138,19 +138,10 @@ else
             </RadzenRow>
 
             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="2" class="rz-mt-4 rz-flex-wrap">
-                <RadzenButton ButtonStyle="ButtonStyle.Primary"
-                              Size="ButtonSize.Small"
-                              Click="@PlayAgain"
-                              Text="PLAY AGAIN" />
-                <RadzenButton ButtonStyle="ButtonStyle.Light"
-                              Shade="Shade.Lighter"
-                              Size="ButtonSize.Small"
-                              Path="/leaderboard"
-                              Text="VIEW LEADERBOARD" />
                 <RadzenButton Variant="Variant.Text"
                               Shade="Shade.Lighter"
                               Size="ButtonSize.Small"
-                              Path="/"
+                              Click="@GoToMainMenu"
                               Text="MAIN MENU" />
             </RadzenStack>
         </RadzenCard>
@@ -251,6 +242,12 @@ else
             return $"{duration.Minutes:D2}:{duration.Seconds:D2}";
         }
         return "00:00";
+    }
+
+    private void GoToMainMenu()
+    {
+        GameState.CurrentGame = null;
+        Navigation.NavigateTo("/", forceLoad: true);
     }
 
     private void PlayAgain()

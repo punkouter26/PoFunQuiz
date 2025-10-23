@@ -114,15 +114,7 @@ Favor reputable, well-maintained open-source libraries. All dependencies must be
 
 ---
 
-## **12. Progressive Web App (PWA) Requirements**
-
-*   **Manifest:** Ensure `manifest.webmanifest` is properly configured with app name, icons, theme colors, and display mode.
-*   **Service Worker:** Implement a service worker (`service-worker.js`) for offline support and caching strategies.
-*   **Installation:** The app must be installable on mobile devices as a PWA with proper icons and splash screens.
-
----
-
-## **13. Responsive Design**
+## **12. Responsive Design**
 
 *   All UI components must be responsive and work well on both desktop and mobile devices.
 *   Use Bootstrap's responsive grid system and Radzen.Blazor's built-in responsive components.
@@ -130,7 +122,7 @@ Favor reputable, well-maintained open-source libraries. All dependencies must be
 
 ---
 
-## **14. Local Development Ports**
+## **13. Local Development Ports**
 
 *   **HTTP:** `http://localhost:5000`
 *   **HTTPS:** `https://localhost:5001`

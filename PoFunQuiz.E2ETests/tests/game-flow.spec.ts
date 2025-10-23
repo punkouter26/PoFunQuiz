@@ -139,8 +139,8 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
           await page.keyboard.press('1');
           await page.waitForTimeout(800);
           
-          // Player 2 answers with keyboard (key 6 for option 1)
-          await page.keyboard.press('6');
+          // Player 2 answers with keyboard (key 7 for option 1)
+          await page.keyboard.press('7');
           await page.waitForTimeout(800);
         }
         

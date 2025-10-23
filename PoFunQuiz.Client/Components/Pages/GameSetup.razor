@@ -75,7 +75,7 @@ else
                         <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
                             <RadzenText TextStyle="TextStyle.H5" class="rz-text-secondary">Player 2</RadzenText>
                             <RadzenAvatar Color="AvatarColor.Secondary" Size="AvatarSize.Medium" class="rz-my-2" Text="@(GameState.CurrentGame?.Player2?.Initials ?? "P2")" />
-                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 6-9</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 7-0</RadzenText>
                             @if (!Player2Ready)
                             {
                                 <RadzenButton ButtonStyle="ButtonStyle.Secondary"
@@ -174,7 +174,7 @@ else
             SetPlayerReady(1);
         }
 
-        if (!Player2Ready && (e.Key == "6" || e.Key == "7" || e.Key == "8" || e.Key == "9"))
+        if (!Player2Ready && (e.Key == "7" || e.Key == "8" || e.Key == "9" || e.Key == "0"))
         {
             SetPlayerReady(2);
         }

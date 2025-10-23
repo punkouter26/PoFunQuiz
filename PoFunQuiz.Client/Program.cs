@@ -23,9 +23,6 @@ builder.Services.AddRadzenComponents();
 // Register the client-side question generator service
 builder.Services.AddScoped<IQuestionGeneratorService, ClientQuestionGeneratorService>();
 
-// Register client-side logging service
-builder.Services.AddScoped<IClientLogger, ClientLogger>();
-
 // Add application state services
 builder.Services.AddSingleton<GameState>();
 builder.Services.AddSingleton<ConnectionState>();
