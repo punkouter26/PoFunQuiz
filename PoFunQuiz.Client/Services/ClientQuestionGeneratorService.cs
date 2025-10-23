@@ -21,13 +21,13 @@ namespace PoFunQuiz.Client.Services
         public async Task<List<QuizQuestion>> GenerateQuestionsAsync(int count)
         {
             // Call the server-side API to generate questions
-            return await _httpClient.GetFromJsonAsync<List<QuizQuestion>>($"/api/quiz/generate?count={count}");
+            return await _httpClient.GetFromJsonAsync<List<QuizQuestion>>($"/api/quiz/generate?count={count}") ?? new List<QuizQuestion>();
         }
 
         public async Task<List<QuizQuestion>> GenerateQuestionsInCategoryAsync(int count, string category)
         {
             // Call the server-side API to generate questions in a specific category
-            return await _httpClient.GetFromJsonAsync<List<QuizQuestion>>($"/api/quiz/generateincategory?count={count}&category={category}");
+            return await _httpClient.GetFromJsonAsync<List<QuizQuestion>>($"/api/quiz/generateincategory?count={count}&category={category}") ?? new List<QuizQuestion>();
         }
     }
 }

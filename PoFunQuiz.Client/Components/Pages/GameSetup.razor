@@ -55,7 +55,7 @@ else
                     <RadzenColumn SizeSM="6" SizeXS="12" class="rz-mb-sm-0 rz-mb-3">
                         <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
                             <RadzenText TextStyle="TextStyle.H5" class="rz-text-primary">Player 1</RadzenText>
-                            <RadzenAvatar Color="AvatarColor.Primary" Size="AvatarSize.Medium" class="rz-my-2" Text="@(GameState.CurrentGame?.Player1?.Initials ?? "P1")" />
+                            <div class="player-avatar player-avatar-primary rz-my-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</div>
                             <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 1-4</RadzenText>
                             @if (!Player1Ready)
                             {
@@ -74,7 +74,7 @@ else
                     <RadzenColumn SizeSM="6" SizeXS="12">
                         <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
                             <RadzenText TextStyle="TextStyle.H5" class="rz-text-secondary">Player 2</RadzenText>
-                            <RadzenAvatar Color="AvatarColor.Secondary" Size="AvatarSize.Medium" class="rz-my-2" Text="@(GameState.CurrentGame?.Player2?.Initials ?? "P2")" />
+                            <div class="player-avatar player-avatar-secondary rz-my-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</div>
                             <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 7-0</RadzenText>
                             @if (!Player2Ready)
                             {
@@ -96,6 +96,26 @@ else
 }
 
 <style>
+    .player-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .player-avatar-primary {
+        background-color: var(--rz-primary);
+    }
+    
+    .player-avatar-secondary {
+        background-color: var(--rz-secondary);
+    }
+    
     /* Keep responsive styles if needed, adjust for Radzen classes if necessary */
     @@media (max-width: 600px) {
         .rz-card { /* Example: if RadzenCard needs specific padding on mobile */

@@ -8,9 +8,9 @@
     <DebugSymbols>false</DebugSymbols>
     <InvariantGlobalization>true</InvariantGlobalization>
     
-    <!-- Optimization: Enable IL trimming to reduce deployment size -->
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>link</TrimMode>
+    <!-- Trimming disabled to ensure consistent behavior between local and Azure deployments -->
+    <!--<PublishTrimmed>true</PublishTrimmed>-->
+    <!--<TrimMode>link</TrimMode>-->
     
     <!-- Optimization: Remove debug symbols and source maps from production builds -->
     <WasmStripILAfterAOT>true</WasmStripILAfterAOT>

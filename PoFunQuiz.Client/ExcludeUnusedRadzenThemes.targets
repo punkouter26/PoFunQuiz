@@ -14,7 +14,7 @@
     <Delete Files="@(RadzenCssToDelete)" />
     <Delete Files="@(SourceMapsToDelete)" />
     
-    <Message Text="Deleted $(RadzenCssToDelete.Count()) unused Radzen theme files" Importance="high" />
-    <Message Text="Deleted $(SourceMapsToDelete.Count()) source map files" Importance="high" />
+    <Message Text="Deleted @(RadzenCssToDelete->Count()) unused Radzen theme files" Importance="high" />
+    <Message Text="Deleted @(SourceMapsToDelete->Count()) source map files" Importance="high" />
   </Target>
 </Project>
