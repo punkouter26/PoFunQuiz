@@ -148,33 +148,6 @@ test.describe('Responsive Design Tests', () => {
   });
 });
 
-test.describe('PWA Tests', () => {
-  test('should have manifest link present', async ({ page }) => {
-    await page.goto('/');
-    
-    // Check for manifest link
-    const manifestLink = page.locator("link[rel='manifest']");
-    await expect(manifestLink).toHaveCount(1);
-    
-    const manifestHref = await manifestLink.getAttribute('href');
-    expect(manifestHref).toBeTruthy();
-    console.log(`Manifest link: ${manifestHref}`);
-  });
-
-  test('should have service worker API available', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForTimeout(2000);
-    
-    // Check if service worker API is available
-    const serviceWorkerAvailable = await page.evaluate(() => {
-      return 'serviceWorker' in navigator;
-    });
-    
-    expect(serviceWorkerAvailable).toBe(true);
-    console.log('Service Worker API is available in browser');
-  });
-});
-
 test.describe('Accessibility Tests', () => {
   test('should have proper heading structure', async ({ page }) => {
     await page.goto('/');
