@@ -23,17 +23,28 @@ namespace PoFunQuiz.Server.Services
 
     public class OpenAIService : IOpenAIService
     {
-        private readonly ChatClient _chatClient;
+        private ChatClient _chatClient;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<OpenAIService> _logger; // Added logger
+        private readonly ILogger<OpenAIService> _logger;
         private readonly OpenAISettings _settings;
+        private readonly IEnumerable<IQuizQuestionDeserializer> _deserializers;
 
-        public OpenAIService(IOptions<AppSettings> appSettings, IConfiguration configuration, ILogger<OpenAIService> logger) // Injected logger
+        public OpenAIService(
+            IOptions<AppSettings> appSettings,
+            IConfiguration configuration,
+            ILogger<OpenAIService> logger,
+            IEnumerable<IQuizQuestionDeserializer> deserializers)
         {
             _configuration = configuration;
-            _logger = logger; // Assigned logger
+            _logger = logger;
             _settings = appSettings.Value.AzureOpenAI;
-            
+            _deserializers = deserializers;
+
+            InitializeChatClient();
+        }
+
+        private void InitializeChatClient()
+        {
             var endpoint = _settings.Endpoint;
             var apiKey = _settings.ApiKey;
             var deploymentName = _settings.DeploymentName;
@@ -47,6 +58,13 @@ namespace PoFunQuiz.Server.Services
                 throw new ArgumentNullException("Azure OpenAI configuration is missing. Please check appsettings.json.");
             }
 
+            var baseUri = BuildEndpointUri(endpoint, deploymentName);
+            var azureClient = new AzureOpenAIClient(baseUri, new AzureKeyCredential(apiKey));
+            _chatClient = azureClient.GetChatClient(deploymentName);
+        }
+
+        private Uri BuildEndpointUri(string endpoint, string deploymentName)
+        {
             Uri baseUri = new Uri(endpoint);
             _logger.LogInformation("Base URI: {BaseUri}, Host: {Host}", baseUri.ToString(), baseUri.Host);
 
@@ -57,14 +75,49 @@ namespace PoFunQuiz.Server.Services
                 _logger.LogInformation("Modified URI for Cognitive Services: {BaseUri}", baseUri.ToString());
             }
 
-            var azureClient = new AzureOpenAIClient(baseUri, new AzureKeyCredential(apiKey));
-            _chatClient = azureClient.GetChatClient(deploymentName);
+            return baseUri;
         }
         public async Task<List<QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
         {
-            _logger.LogInformation("🔍 OPENAI: GenerateQuizQuestionsAsync called with topic='{Topic}', numberOfQuestions={Count}", topic, numberOfQuestions);
+            _logger.LogInformation("Generating {Count} quiz questions for topic '{Topic}'", numberOfQuestions, topic);
 
-            var messages = new List<ChatMessage>
+            try
+            {
+                var jsonResponse = await FetchOpenAIResponse(topic, numberOfQuestions);
+
+                if (string.IsNullOrEmpty(jsonResponse))
+                {
+                    _logger.LogWarning("OpenAI returned an empty response for topic '{Topic}'", topic);
+                    return new List<QuizQuestion>();
+                }
+
+                return DeserializeQuestions(jsonResponse, topic);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating quiz questions for topic '{Topic}'", topic);
+                return new List<QuizQuestion>();
+            }
+        }
+
+        private async Task<string> FetchOpenAIResponse(string topic, int numberOfQuestions)
+        {
+            var messages = BuildChatMessages(topic, numberOfQuestions);
+            var options = BuildChatOptions();
+
+            _logger.LogInformation("Calling ChatClient.CompleteChatAsync...");
+            ChatCompletion response = await _chatClient.CompleteChatAsync(messages, options);
+            string jsonResponse = response.Content[0].Text;
+
+            _logger.LogInformation("Received response: {Length} characters", jsonResponse?.Length ?? 0);
+            _logger.LogDebug("Raw JSON response: {JsonResponse}", jsonResponse);
+
+            return jsonResponse;
+        }
+
+        private List<ChatMessage> BuildChatMessages(string topic, int numberOfQuestions)
+        {
+            return new List<ChatMessage>
             {
                 new SystemChatMessage($@"You are a helpful assistant designed to output JSON.
                     Generate {numberOfQuestions} multiple-choice quiz questions about {topic}.
@@ -87,8 +140,11 @@ namespace PoFunQuiz.Server.Services
                     }}"),
                 new UserChatMessage($"Generate exactly {numberOfQuestions} questions about {topic}. Return as a JSON array.")
             };
+        }
 
-            var options = new ChatCompletionOptions
+        private ChatCompletionOptions BuildChatOptions()
+        {
+            return new ChatCompletionOptions
             {
                 Temperature = 0.7f,
                 ResponseFormat = ChatResponseFormat.CreateJsonSchemaFormat(
@@ -127,93 +183,23 @@ namespace PoFunQuiz.Server.Services
                         """u8.ToArray()),
                     jsonSchemaIsStrict: true)
             };
+        }
 
-            try
+        private List<QuizQuestion> DeserializeQuestions(string json, string topic)
+        {
+            _logger.LogInformation("Attempting to deserialize questions using Chain of Responsibility pattern");
+
+            foreach (var deserializer in _deserializers)
             {
-                _logger.LogInformation("🔍 OPENAI: Calling ChatClient.CompleteChatAsync...");
-                ChatCompletion response = await _chatClient.CompleteChatAsync(messages, options);
-                string jsonResponse = response.Content[0].Text;
-
-                _logger.LogInformation("🔍 OPENAI: Raw response received, length: {Length} characters", jsonResponse?.Length ?? 0);
-                _logger.LogInformation("🔍 OPENAI: Raw JSON response: {JsonResponse}", jsonResponse);
-
-                if (string.IsNullOrEmpty(jsonResponse))
+                if (deserializer.TryDeserialize(json, out var questions))
                 {
-                    _logger.LogWarning("🚨 OPENAI: OpenAI returned an empty response for topic '{Topic}'", topic);
-                    return new List<QuizQuestion>();
+                    _logger.LogInformation("Successfully deserialized {Count} questions for topic '{Topic}'", questions.Count, topic);
+                    return questions;
                 }
-
-                // Try to deserialize with the new schema structure (questions wrapper)
-                List<QuizQuestion>? questions = null;
-                try
-                {
-                    _logger.LogInformation("🔍 OPENAI: Attempting to deserialize with schema wrapper...");
-                    var schemaResponse = System.Text.Json.JsonSerializer.Deserialize<JsonDocument>(jsonResponse);
-                    if (schemaResponse?.RootElement.TryGetProperty("questions", out var questionsProperty) == true)
-                    {
-                        questions = System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestion>>(questionsProperty.GetRawText(),
-                            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        _logger.LogInformation("🔍 OPENAI: Successfully deserialized schema wrapper with {Count} questions", questions?.Count ?? 0);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("🚨 OPENAI: 'questions' property not found in schema response");
-                    }
-                }
-                catch (System.Text.Json.JsonException ex)
-                {
-                    _logger.LogWarning("🚨 OPENAI: Failed to deserialize with schema wrapper: {Error}", ex.Message);
-
-                    // Fallback: Try to deserialize as a direct array
-                    try
-                    {
-                        _logger.LogInformation("🔍 OPENAI: Attempting fallback to direct array deserialization...");
-                        questions = System.Text.Json.JsonSerializer.Deserialize<List<QuizQuestion>>(jsonResponse, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        _logger.LogInformation("🔍 OPENAI: Successfully deserialized as direct array with {Count} questions", questions?.Count ?? 0);
-                    }
-                    catch (System.Text.Json.JsonException innerEx)
-                    {
-                        // Last resort: Try to deserialize as a single object and wrap in a list
-                        _logger.LogWarning("🚨 OPENAI: Failed to deserialize as direct array: {Error}", innerEx.Message);
-                        _logger.LogInformation("🔍 OPENAI: Attempting to deserialize as single object...");
-                        try
-                        {
-                            var singleQuestion = System.Text.Json.JsonSerializer.Deserialize<QuizQuestion>(jsonResponse, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                            if (singleQuestion != null)
-                            {
-                                questions = new List<QuizQuestion> { singleQuestion };
-                                _logger.LogInformation("🔍 OPENAI: Successfully wrapped single question in array");
-                            }
-                        }
-                        catch (System.Text.Json.JsonException finalEx)
-                        {
-                            _logger.LogError(finalEx, "🚨 OPENAI: All deserialization attempts failed. Raw JSON: {JsonResponse}", jsonResponse);
-                            return new List<QuizQuestion>();
-                        }
-                    }
-                }
-
-                if (questions == null || !questions.Any())
-                {
-                    _logger.LogWarning("🚨 OPENAI: Deserialization resulted in no questions for topic '{Topic}'. Raw JSON: {JsonResponse}", topic, jsonResponse);
-                }
-                else
-                {
-                    _logger.LogInformation("🔍 OPENAI: Returning {Count} questions for topic '{Topic}'", questions.Count, topic);
-                }
-
-                return questions ?? new List<QuizQuestion>();
             }
-            catch (System.Text.Json.JsonException jsonEx)
-            {
-                _logger.LogError(jsonEx, "JSON deserialization error for OpenAI response. Topic: '{Topic}'.", topic);
-                return new List<QuizQuestion>();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error generating quiz questions for topic '{Topic}'", topic);
-                return new List<QuizQuestion>(); // Return empty list on error
-            }
+
+            _logger.LogError("All deserialization attempts failed for topic '{Topic}'. Raw JSON: {Json}", topic, json);
+            return new List<QuizQuestion>();
         }
     }
 }

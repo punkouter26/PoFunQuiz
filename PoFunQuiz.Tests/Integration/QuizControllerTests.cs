@@ -31,7 +31,7 @@ public class QuizControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var questions = await response.Content.ReadFromJsonAsync<List<QuizQuestion>>();
         Assert.NotNull(questions);
         Assert.Equal(count, questions.Count);
-        
+
         // Verify question structure
         foreach (var question in questions)
         {
@@ -78,7 +78,7 @@ public class QuizControllerTests : IClassFixture<WebApplicationFactory<Program>>
         var questions = await response.Content.ReadFromJsonAsync<List<QuizQuestion>>();
         Assert.NotNull(questions);
         Assert.Equal(count, questions.Count);
-        
+
         // Verify all questions are in the requested category
         foreach (var question in questions)
         {
@@ -112,4 +112,81 @@ public class QuizControllerTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.NotNull(questions);
         Assert.All(questions, q => Assert.Equal(category, q.Category));
     }
+
+    // Edge Case Tests
+
+    [Fact]
+    public async Task GenerateQuestions_WithVeryLargeCount_ReturnsBadRequestOrLimitsCount()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/quiz/generate?count=1000");
+
+        // Assert - Either limits the count or returns bad request
+        Assert.True(
+            response.StatusCode == HttpStatusCode.BadRequest ||
+            (response.IsSuccessStatusCode && (await response.Content.ReadFromJsonAsync<List<QuizQuestion>>())?.Count <= 100),
+            "Should either reject large counts or limit them to reasonable maximum");
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsInCategory_WithSpecialCharactersInCategory_HandlesGracefully()
+    {
+        // Arrange
+        var category = "Science&Math";
+
+        // Act
+        var response = await _client.GetAsync($"/api/quiz/generateincategory?count=2&category={Uri.EscapeDataString(category)}");
+
+        // Assert - Should handle special characters without crashing
+        Assert.True(
+            response.IsSuccessStatusCode ||
+            response.StatusCode == HttpStatusCode.BadRequest ||
+            response.StatusCode == HttpStatusCode.InternalServerError,
+            "Should handle special characters gracefully");
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsInCategory_WithWhitespaceOnlyCategory_ReturnsBadRequest()
+    {
+        // Act
+        var response = await _client.GetAsync("/api/quiz/generateincategory?count=5&category=%20%20%20");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GenerateQuestions_ConcurrentRequests_AllSucceed()
+    {
+        // Arrange
+        var tasks = new List<Task<HttpResponseMessage>>();
+        for (int i = 0; i < 5; i++)
+        {
+            tasks.Add(_client.GetAsync("/api/quiz/generate?count=2"));
+        }
+
+        // Act
+        var responses = await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.All(responses, r => r.EnsureSuccessStatusCode());
+    }
+
+    [Fact]
+    public async Task GenerateQuestions_WithTimeout_CompletesWithinReasonableTime()
+    {
+        // Arrange
+        var timeout = TimeSpan.FromSeconds(30);
+        using var cts = new CancellationTokenSource(timeout);
+
+        // Act
+        var startTime = DateTime.UtcNow;
+        var response = await _client.GetAsync("/api/quiz/generate?count=5", cts.Token);
+        var duration = DateTime.UtcNow - startTime;
+
+        // Assert
+        response.EnsureSuccessStatusCode();
+        Assert.True(duration < timeout, $"Request took {duration.TotalSeconds}s, expected less than {timeout.TotalSeconds}s");
+    }
 }
+

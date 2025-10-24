@@ -42,7 +42,7 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
     {
         // Act
         var response = await _client.GetAsync("/api/quiz/generate?count=1");
-        
+
         // Log response details
         _output.WriteLine($"Response Status: {response.StatusCode}");
         var content = await response.Content.ReadAsStringAsync();
@@ -61,7 +61,7 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
         {
             _output.WriteLine($"⚠️ Failed to generate questions. Status: {response.StatusCode}");
             _output.WriteLine($"This may indicate OpenAI endpoint configuration issues");
-            
+
             // Don't fail the test - just log the issue
             Assert.True(true, "OpenAI may not be configured - this is expected in some environments");
         }
@@ -76,7 +76,7 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
 
         // Act
         var response = await _client.GetAsync($"/api/quiz/generateincategory?count={count}&category={category}");
-        
+
         // Log response details
         _output.WriteLine($"Response Status: {response.StatusCode}");
         var content = await response.Content.ReadAsStringAsync();
@@ -88,7 +88,7 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
             var questions = await response.Content.ReadFromJsonAsync<List<QuizQuestion>>();
             Assert.NotNull(questions);
             Assert.Equal(count, questions.Count);
-            
+
             foreach (var question in questions)
             {
                 Assert.Equal(category, question.Category);
@@ -113,23 +113,23 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
         {
             var questions = await response.Content.ReadFromJsonAsync<List<QuizQuestion>>();
             Assert.NotNull(questions);
-            
+
             var question = questions[0];
-            
+
             // Verify question structure
             Assert.NotEmpty(question.Question);
             _output.WriteLine($"Question text: {question.Question}");
-            
+
             Assert.NotEmpty(question.CorrectAnswer);
             _output.WriteLine($"Correct answer: {question.CorrectAnswer}");
-            
+
             Assert.NotEmpty(question.Options);
             Assert.True(question.Options.Count >= 2, "Should have at least 2 options");
             _output.WriteLine($"Number of options: {question.Options.Count}");
-            
+
             Assert.Contains(question.CorrectAnswer, question.Options);
             _output.WriteLine("✅ Correct answer is included in options");
-            
+
             Assert.NotEmpty(question.Category);
             _output.WriteLine($"Category: {question.Category}");
         }
@@ -152,10 +152,10 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
 
         // Assert
         _output.WriteLine($"Request completed in {duration.TotalSeconds:F2} seconds");
-        
+
         if (response.IsSuccessStatusCode)
         {
-            Assert.True(duration.TotalSeconds < 30, 
+            Assert.True(duration.TotalSeconds < 30,
                 $"Question generation should complete within 30 seconds, took {duration.TotalSeconds:F2}s");
             _output.WriteLine("✅ Performance acceptable");
         }
@@ -170,13 +170,13 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
     public async Task Health_OpenAIEndpoint_IsAccessible()
     {
         // This test checks if we can reach the health endpoint which includes OpenAI status
-        
+
         // Act
         var response = await _client.GetAsync("/api/health");
-        
+
         // Assert
         _output.WriteLine($"Health endpoint status: {response.StatusCode}");
-        
+
         if (response.IsSuccessStatusCode)
         {
             var healthStatus = await response.Content.ReadAsStringAsync();

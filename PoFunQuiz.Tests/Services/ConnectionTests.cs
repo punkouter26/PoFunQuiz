@@ -103,7 +103,16 @@ namespace PoFunQuiz.Tests.Services
             {
                 var appSettings = _configuration.GetSection("AppSettings").Get<AppSettings>();
                 var appSettingsOptions = Options.Create(appSettings!);
-                var openAIService = new OpenAIService(appSettingsOptions, _configuration, _logger);
+
+                // Create empty deserializer collection for testing
+                var deserializers = new List<IQuizQuestionDeserializer>
+                {
+                    new SchemaWrapperDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<SchemaWrapperDeserializer>()),
+                    new DirectArrayDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<DirectArrayDeserializer>()),
+                    new SingleObjectDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<SingleObjectDeserializer>())
+                };
+
+                var openAIService = new OpenAIService(appSettingsOptions, _configuration, _logger, deserializers);
                 var questionGeneratorLogger = LoggerFactory.Create(builder =>
                 {
                     builder.AddXUnit(_output);

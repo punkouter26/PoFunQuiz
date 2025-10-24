@@ -19,7 +19,7 @@ namespace PoFunQuiz.Server.Extensions
             return builder.UseSerilog((context, services, configuration) =>
             {
                 var isDevelopment = context.HostingEnvironment.IsDevelopment();
-                
+
                 // Get the solution root directory (one level up from the Web project)
                 var rootDirectory = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..\\..\\..\\.."));
                 var debugDirectory = Path.Combine(rootDirectory, "DEBUG");
@@ -43,7 +43,7 @@ namespace PoFunQuiz.Server.Extensions
                     configuration.WriteTo.ApplicationInsights(
                         appInsightsConnectionString,
                         new TraceTelemetryConverter());
-                    
+
                     Log.Information("Application Insights structured logging enabled");
                 }
                 else
@@ -82,7 +82,7 @@ namespace PoFunQuiz.Server.Extensions
                             path: logFilePath,
                             rollOnFileSizeLimit: false,
                             shared: false);
-                        
+
                         Log.Information("Development file logging enabled at {LogPath}", logFilePath);
                     }
                     catch (Exception ex)

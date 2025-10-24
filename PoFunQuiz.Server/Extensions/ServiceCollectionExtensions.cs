@@ -45,9 +45,6 @@ namespace PoFunQuiz.Server.Extensions
             services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
             services.Configure<OpenAISettings>(configuration.GetSection("AzureOpenAI"));
 
-            // Register configuration service
-            services.AddSingleton<IConfigurationService, ConfigurationService>();
-
             return services;
         }
 
@@ -79,8 +76,16 @@ namespace PoFunQuiz.Server.Extensions
         /// </summary>
         public static IServiceCollection AddBusinessServices(this IServiceCollection services)
         {
+            // Register hosted services
+            services.AddHostedService<TableStorageInitializer>();
+
+            // Register OpenAI question deserializers (Chain of Responsibility pattern)
+            services.AddSingleton<IQuizQuestionDeserializer, SchemaWrapperDeserializer>();
+            services.AddSingleton<IQuizQuestionDeserializer, DirectArrayDeserializer>();
+            services.AddSingleton<IQuizQuestionDeserializer, SingleObjectDeserializer>();
+
             // Register business services
-            services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>(); // Changed to use new service
+            services.AddScoped<IQuestionGeneratorService, QuestionGeneratorService>();
 
             return services;
         }
@@ -94,15 +99,13 @@ namespace PoFunQuiz.Server.Extensions
             // Bind configuration to strongly-typed settings
             services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
 
-            // Register configuration service
-            services.AddSingleton<IConfigurationService, ConfigurationService>();
-
             return services;
         }
 
         public static IServiceCollection AddGlobalErrorHandling(this IServiceCollection services)
         {
-            services.AddTransient<GlobalExceptionMiddleware>();
+            // Exception handling is configured via middleware in Program.cs
+            // No service registration needed
             return services;
         }
     }

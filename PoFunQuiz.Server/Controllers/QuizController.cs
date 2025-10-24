@@ -21,7 +21,7 @@ namespace PoFunQuiz.Server.Controllers
         private readonly TelemetryClient _telemetryClient;
 
         public QuizController(
-            IQuestionGeneratorService questionGeneratorService, 
+            IQuestionGeneratorService questionGeneratorService,
             ILogger<QuizController> logger,
             TelemetryClient telemetryClient)
         {
@@ -30,15 +30,19 @@ namespace PoFunQuiz.Server.Controllers
             _telemetryClient = telemetryClient;
         }
 
-        [HttpGet("generate")]
-        public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestions(int count)
+        [HttpGet("questions")]
+        public async Task<ActionResult<List<QuizQuestion>>> GetQuestions(
+            [FromQuery] int count = 5,
+            [FromQuery] string? category = null)
         {
             var stopwatch = Stopwatch.StartNew();
 
             // Track custom event with properties
             var eventTelemetry = new EventTelemetry("QuizGeneration");
             eventTelemetry.Properties.Add("QuestionCount", count.ToString());
-            eventTelemetry.Properties.Add("Category", "Random");
+            eventTelemetry.Properties.Add("Category", category ?? "General");
+
+            _logger.LogInformation("🔍 API: GetQuestions called with count={Count}, category={Category}", count, category);
 
             if (count <= 0)
             {
@@ -46,95 +50,50 @@ namespace PoFunQuiz.Server.Controllers
                 eventTelemetry.Properties.Add("Success", "false");
                 eventTelemetry.Properties.Add("ErrorReason", "InvalidCount");
                 _telemetryClient.TrackEvent(eventTelemetry);
-                
+
                 return BadRequest("Count must be a positive number.");
             }
 
-            try
-            {
-                var questions = await _questionGeneratorService.GenerateQuestionsAsync(count);
-                
-                stopwatch.Stop();
-                
-                // Track successful generation
-                eventTelemetry.Properties.Add("Success", "true");
-                eventTelemetry.Properties.Add("GeneratedCount", questions.Count.ToString());
-                eventTelemetry.Metrics.Add("GenerationDurationMs", stopwatch.ElapsedMilliseconds);
-                _telemetryClient.TrackEvent(eventTelemetry);
-                
-                // Track metric for question generation performance
-                _telemetryClient.TrackMetric("QuestionGenerationTime", stopwatch.ElapsedMilliseconds);
-                
-                _logger.LogInformation(
-                    "Generated {QuestionCount} questions in {Duration}ms",
-                    questions.Count,
-                    stopwatch.ElapsedMilliseconds);
-                
-                return Ok(questions);
-            }
-            catch (Exception ex)
-            {
-                stopwatch.Stop();
-                
-                eventTelemetry.Properties.Add("Success", "false");
-                eventTelemetry.Properties.Add("ErrorReason", ex.GetType().Name);
-                _telemetryClient.TrackEvent(eventTelemetry);
-                
-                _logger.LogError(ex, "Error generating questions");
-                throw;
-            }
-        }
-
-        [HttpGet("generateincategory")]
-        public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestionsInCategory(int count, string category)
-        {
-            var stopwatch = Stopwatch.StartNew();
-            
-            // Track custom event with properties
-            var eventTelemetry = new EventTelemetry("QuizGenerationInCategory");
-            eventTelemetry.Properties.Add("QuestionCount", count.ToString());
-            eventTelemetry.Properties.Add("Category", category ?? "Unknown");
-
-            _logger.LogInformation("🔍 API: GenerateQuestionsInCategory called with count={Count}, category={Category}", count, category);
-
-            if (count <= 0)
-            {
-                _logger.LogWarning("🚨 API: Invalid count parameter: {Count}", count);
-                eventTelemetry.Properties.Add("Success", "false");
-                eventTelemetry.Properties.Add("ErrorReason", "InvalidCount");
-                _telemetryClient.TrackEvent(eventTelemetry);
-                
-                return BadRequest("Count must be a positive number.");
-            }
-            if (string.IsNullOrWhiteSpace(category))
+            if (!string.IsNullOrWhiteSpace(category) && category.Trim().Length == 0)
             {
                 _logger.LogWarning("🚨 API: Invalid category parameter: {Category}", category);
                 eventTelemetry.Properties.Add("Success", "false");
                 eventTelemetry.Properties.Add("ErrorReason", "InvalidCategory");
                 _telemetryClient.TrackEvent(eventTelemetry);
-                
-                return BadRequest("Category cannot be empty.");
+
+                return BadRequest("Category cannot be empty or whitespace.");
             }
 
             try
             {
-                var questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(count, category);
-                
+                List<QuizQuestion> questions;
+
+                if (string.IsNullOrWhiteSpace(category))
+                {
+                    questions = await _questionGeneratorService.GenerateQuestionsAsync(count);
+                }
+                else
+                {
+                    questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(count, category);
+                }
+
                 stopwatch.Stop();
-                
+
                 // Track successful generation
                 eventTelemetry.Properties.Add("Success", "true");
                 eventTelemetry.Properties.Add("GeneratedCount", questions?.Count.ToString() ?? "0");
                 eventTelemetry.Metrics.Add("GenerationDurationMs", stopwatch.ElapsedMilliseconds);
                 _telemetryClient.TrackEvent(eventTelemetry);
-                
-                // Track metric for category-based generation
-                _telemetryClient.TrackMetric($"QuestionGeneration.{category}", stopwatch.ElapsedMilliseconds);
-                
+
+                // Track metric for question generation performance
+                var metricName = string.IsNullOrWhiteSpace(category)
+                    ? "QuestionGenerationTime"
+                    : $"QuestionGeneration.{category}";
+                _telemetryClient.TrackMetric(metricName, stopwatch.ElapsedMilliseconds);
+
                 _logger.LogInformation(
-                    "🔍 API: Generated {QuestionCount} questions for category {Category} in {Duration}ms", 
-                    questions?.Count ?? 0, 
-                    category,
+                    "Generated {QuestionCount} questions in {Duration}ms",
+                    questions?.Count ?? 0,
                     stopwatch.ElapsedMilliseconds);
 
                 return Ok(questions);
@@ -142,14 +101,29 @@ namespace PoFunQuiz.Server.Controllers
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                
+
                 eventTelemetry.Properties.Add("Success", "false");
                 eventTelemetry.Properties.Add("ErrorReason", ex.GetType().Name);
                 _telemetryClient.TrackEvent(eventTelemetry);
-                
-                _logger.LogError(ex, "Error generating questions for category {Category}", category);
+
+                _logger.LogError(ex, "Error generating questions");
                 throw;
             }
+        }
+
+        // Deprecated endpoints - kept for backward compatibility
+        [HttpGet("generate")]
+        [Obsolete("Use GET /api/quiz/questions instead")]
+        public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestions(int count)
+        {
+            return await GetQuestions(count, null);
+        }
+
+        [HttpGet("generateincategory")]
+        [Obsolete("Use GET /api/quiz/questions?category={category} instead")]
+        public async Task<ActionResult<List<QuizQuestion>>> GenerateQuestionsInCategory(int count, string category)
+        {
+            return await GetQuestions(count, category);
         }
     }
 }

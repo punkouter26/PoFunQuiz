@@ -22,16 +22,7 @@ namespace PoFunQuiz.Tests
         {
             _output = output;
 
-            // Create a service collection for dependency injection
-            var services = new ServiceCollection();
-            services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-
-            // Use the same mock service as the consistency test
-            var mockOpenAIService = new MockOpenAIService();
-            services.AddSingleton<IOpenAIService>(mockOpenAIService);
-            services.AddSingleton<IQuestionGeneratorService, QuestionGeneratorService>();
-
-            var serviceProvider = services.BuildServiceProvider();
+            var serviceProvider = TestServiceHelper.BuildQuestionGeneratorServices();
             _questionGeneratorService = serviceProvider.GetRequiredService<IQuestionGeneratorService>();
         }
 

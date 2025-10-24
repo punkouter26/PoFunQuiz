@@ -15,8 +15,8 @@ namespace PoFunQuiz.Core.Models
         public string Player2Initials { get; set; } = string.Empty; // Added for storage/retrieval
 
         // Questions
-        public List<QuizQuestion> Player1Questions { get; set; } = new List<QuizQuestion>();
-        public List<QuizQuestion> Player2Questions { get; set; } = new List<QuizQuestion>();
+        public List<QuizQuestion> Player1Questions { get; set; } = [];
+        public List<QuizQuestion> Player2Questions { get; set; } = [];
 
         // Game Timing
         public DateTime? StartTime { get; set; }

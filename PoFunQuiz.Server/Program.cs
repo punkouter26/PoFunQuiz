@@ -60,7 +60,7 @@ try
     // Enable Swagger in all environments for API testing (Phase 5 requirement)
     app.MapOpenApi();
     app.MapScalarApiReference();  // Modern Swagger UI at /scalar/v1
-    
+
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Error");

@@ -23,22 +23,12 @@ namespace PoFunQuiz.Infrastructure.Services
         public GameSessionService(
             IPlayerStorageService playerStorageService,
             ILogger<GameSessionService> logger,
-            TableServiceClient tableServiceClient) // Inject TableServiceClient
+            TableServiceClient tableServiceClient)
         {
             _playerStorageService = playerStorageService;
             _logger = logger;
             _tableServiceClient = tableServiceClient;
-            // Ensure table exists (consider moving to startup if preferred)
-            try
-            {
-                _tableServiceClient.CreateTableIfNotExists(TableName);
-                _logger.LogInformation("Ensured Azure Table '{TableName}' exists.", TableName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to ensure Azure Table '{TableName}' exists. Check connection string and permissions.", TableName);
-                // Depending on requirements, might want to throw or handle differently
-            }
+            // Table initialization is now handled by TableStorageInitializer IHostedService
         }
 
         /// <inheritdoc />
@@ -82,49 +72,88 @@ namespace PoFunQuiz.Infrastructure.Services
         /// <inheritdoc />
         public async Task<GameSession> SaveGameResultsAsync(GameSession gameSession)
         {
-            if (gameSession == null)
-                throw new ArgumentNullException(nameof(gameSession));
+            ValidateGameSession(gameSession);
 
             try
             {
-                // Ensure the game is marked as complete
-                if (!gameSession.EndTime.HasValue)
-                {
-                    gameSession.EndTime = DateTime.UtcNow;
-                }
-
-                // Determine winner
-                bool isTie = gameSession.Player1Score == gameSession.Player2Score;
-                bool player1Won = gameSession.Player1Score > gameSession.Player2Score;
-
-                // Update player statistics
-                // Ensure Player objects are not null before updating stats
-                // Note: The GameSession passed might not have full Player objects if retrieved from storage.
-                // Fetch them if necessary, or ensure the calling code provides them.
-                // For now, assume Player1/Player2 objects are present if needed for UpdatePlayerStats.
-                if (gameSession.Player1 != null)
-                    await UpdatePlayerStats(gameSession.Player1, player1Won, gameSession);
-                else
-                    _logger.LogWarning("Player1 object was null when trying to update stats for GameSession {GameId}", gameSession.GameId);
-
-                if (gameSession.Player2 != null)
-                    await UpdatePlayerStats(gameSession.Player2, !isTie && !player1Won, gameSession);
-                else
-                    _logger.LogWarning("Player2 object was null when trying to update stats for GameSession {GameId}", gameSession.GameId);
-
-                // Save/Update the game session entity in Table Storage
-                var tableClient = _tableServiceClient.GetTableClient(TableName);
-                var entity = GameSessionEntity.FromModel(gameSession);
-                await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace); // Use Upsert with Replace mode
-                _logger.LogInformation("Saved/Updated GameSession {GameId} results to table storage.", gameSession.GameId);
+                FinalizeGameSession(gameSession);
+                var gameResult = DetermineGameResult(gameSession);
+                await UpdatePlayerStatistics(gameSession, gameResult);
+                await PersistGameSession(gameSession);
 
                 return gameSession;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving game session results for game {GameId} to table storage", gameSession.GameId);
-                throw; // Rethrow to indicate failure
+                throw;
             }
+        }
+
+        private void ValidateGameSession(GameSession gameSession)
+        {
+            if (gameSession == null)
+                throw new ArgumentNullException(nameof(gameSession));
+        }
+
+        private void FinalizeGameSession(GameSession gameSession)
+        {
+            if (!gameSession.EndTime.HasValue)
+            {
+                gameSession.EndTime = DateTime.UtcNow;
+            }
+        }
+
+        private GameResult DetermineGameResult(GameSession gameSession)
+        {
+            bool isTie = gameSession.Player1Score == gameSession.Player2Score;
+            bool player1Won = gameSession.Player1Score > gameSession.Player2Score;
+
+            return new GameResult
+            {
+                IsTie = isTie,
+                Player1Won = player1Won,
+                Player2Won = !isTie && !player1Won
+            };
+        }
+
+        private async Task UpdatePlayerStatistics(GameSession gameSession, GameResult result)
+        {
+            if (gameSession.Player1 != null)
+            {
+                await UpdatePlayerStats(gameSession.Player1, result.Player1Won, gameSession);
+            }
+            else
+            {
+                _logger.LogWarning("Player1 object was null when trying to update stats for GameSession {GameId}", gameSession.GameId);
+            }
+
+            if (gameSession.Player2 != null)
+            {
+                await UpdatePlayerStats(gameSession.Player2, result.Player2Won, gameSession);
+            }
+            else
+            {
+                _logger.LogWarning("Player2 object was null when trying to update stats for GameSession {GameId}", gameSession.GameId);
+            }
+        }
+
+        private async Task PersistGameSession(GameSession gameSession)
+        {
+            var tableClient = _tableServiceClient.GetTableClient(TableName);
+            var entity = GameSessionEntity.FromModel(gameSession);
+            await tableClient.UpsertEntityAsync(entity, TableUpdateMode.Replace);
+            _logger.LogInformation("Saved/Updated GameSession {GameId} results to table storage.", gameSession.GameId);
+        }
+
+        /// <summary>
+        /// Helper class to encapsulate game result data
+        /// </summary>
+        private class GameResult
+        {
+            public bool IsTie { get; set; }
+            public bool Player1Won { get; set; }
+            public bool Player2Won { get; set; }
         }
 
         /// <inheritdoc />

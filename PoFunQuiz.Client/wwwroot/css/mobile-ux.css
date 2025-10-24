@@ -1,0 +1,640 @@
+/* ================================================================
+   MOBILE UX ENHANCEMENTS - WCAG 2.1 AA Compliant
+   ================================================================ */
+
+/* ============================================
+   1. TOUCH TARGET SIZES (48x48px minimum)
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* All interactive elements */
+    button,
+    .btn,
+    .rz-button,
+    .start-button,
+    .secondary-button,
+    a.button,
+    [role="button"],
+    input[type="button"],
+    input[type="submit"],
+    .option-item,
+    .answer-option,
+    .nav-link {
+        min-height: 48px;
+        min-width: 48px;
+        padding: 12px 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* Answer options in game board */
+    .option-item,
+    .answer-option {
+        min-height: 52px;
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        font-size: 16px;
+        line-height: 1.4;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Form inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+        min-height: 48px;
+        padding: 12px 16px;
+        font-size: 16px; /* Prevents iOS zoom on focus */
+    }
+
+    /* Radzen buttons */
+    .rz-button {
+        min-height: 48px;
+        padding: 12px 24px;
+    }
+
+    .rz-button-sm {
+        min-height: 44px;
+        padding: 10px 20px;
+    }
+}
+
+/* ============================================
+   2. THUMB ZONE OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Move primary actions to bottom 30% of screen */
+    .home-container .start-button,
+    .game-setup-actions,
+    .primary-action-zone {
+        position: sticky;
+        bottom: 80px; /* Above bottom nav */
+        z-index: 100;
+        background: white;
+        padding: 16px;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 12px 12px 0 0;
+    }
+
+    /* Card actions at bottom */
+    .rz-card .action-buttons {
+        position: sticky;
+        bottom: 80px;
+        background: white;
+        padding-top: 16px;
+        margin-top: auto;
+    }
+
+    /* Stack buttons vertically for easier thumb reach */
+    .button-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .button-group button {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   3. SKELETON LOADING STATES
+   ============================================ */
+
+/* Skeleton base */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Skeleton variants */
+.skeleton-text {
+    height: 16px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.skeleton-title {
+    height: 28px;
+    width: 60%;
+    margin-bottom: 16px;
+    border-radius: 6px;
+}
+
+.skeleton-button {
+    height: 48px;
+    width: 100%;
+    margin-bottom: 12px;
+    border-radius: 8px;
+}
+
+.skeleton-card {
+    height: 120px;
+    width: 100%;
+    margin-bottom: 16px;
+    border-radius: 12px;
+}
+
+.skeleton-avatar {
+    height: 48px;
+    width: 48px;
+    border-radius: 50%;
+}
+
+/* Question loading skeleton */
+.question-skeleton {
+    padding: 16px;
+}
+
+.question-skeleton .skeleton-title {
+    width: 90%;
+    margin-bottom: 20px;
+}
+
+.question-skeleton .skeleton-button {
+    margin-bottom: 10px;
+}
+
+.question-skeleton .skeleton-button:nth-child(2) {
+    width: 95%;
+}
+
+.question-skeleton .skeleton-button:nth-child(3) {
+    width: 85%;
+}
+
+.question-skeleton .skeleton-button:nth-child(4) {
+    width: 92%;
+}
+
+/* ============================================
+   4. COLLAPSIBLE TOP NAV (Reduced Height)
+   ============================================ */
+
+@media (max-width: 768px) {
+    .app-bar {
+        height: 56px; /* Reduced from 80-100px */
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        transition: transform 0.3s ease;
+    }
+
+    /* Hide nav on scroll down */
+    .app-bar.hidden {
+        transform: translateY(-100%);
+    }
+
+    .app-title {
+        font-size: 1.25rem;
+        margin: 0;
+    }
+
+    /* Hamburger menu button */
+    .menu-toggle {
+        display: block;
+        min-width: 48px;
+        min-height: 48px;
+        padding: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .menu-toggle-icon {
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: currentColor;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .menu-toggle-icon::before,
+    .menu-toggle-icon::after {
+        content: '';
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: currentColor;
+        position: absolute;
+        transition: all 0.3s ease;
+    }
+
+    .menu-toggle-icon::before {
+        top: -8px;
+    }
+
+    .menu-toggle-icon::after {
+        bottom: -8px;
+    }
+
+    /* Animated hamburger to X */
+    .menu-toggle.active .menu-toggle-icon {
+        background: transparent;
+    }
+
+    .menu-toggle.active .menu-toggle-icon::before {
+        top: 0;
+        transform: rotate(45deg);
+    }
+
+    .menu-toggle.active .menu-toggle-icon::after {
+        bottom: 0;
+        transform: rotate(-45deg);
+    }
+}
+
+/* ============================================
+   5. GAMEBOARD PORTRAIT OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Stack players vertically */
+    .game-board-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .player-board {
+        width: 100%;
+        min-height: auto;
+    }
+
+    /* Swipe gesture indicator */
+    .swipe-indicator {
+        text-align: center;
+        padding: 8px;
+        color: #666;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .swipe-indicator::before {
+        content: '←';
+        font-size: 20px;
+        animation: swipe-hint 2s ease-in-out infinite;
+    }
+
+    .swipe-indicator::after {
+        content: '→';
+        font-size: 20px;
+        animation: swipe-hint 2s ease-in-out infinite reverse;
+    }
+
+    @keyframes swipe-hint {
+        0%, 100% {
+            opacity: 0.3;
+            transform: translateX(0);
+        }
+        50% {
+            opacity: 1;
+            transform: translateX(10px);
+        }
+    }
+
+    /* Single player view with swipe */
+    .player-view-container {
+        position: relative;
+        overflow: hidden;
+        touch-action: pan-y;
+    }
+
+    .player-view {
+        transition: transform 0.3s ease;
+    }
+
+    .player-view.swipe-left {
+        transform: translateX(-100%);
+    }
+
+    .player-view.swipe-right {
+        transform: translateX(100%);
+    }
+
+    /* Compact question display */
+    .question-container {
+        min-height: auto;
+        padding: 12px;
+    }
+
+    .question-text {
+        font-size: 15px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+}
+
+/* ============================================
+   6. BOTTOM SHEET RESULTS
+   ============================================ */
+
+@media (max-width: 768px) {
+    .results-container {
+        position: relative;
+    }
+
+    /* Sticky header */
+    .results-header {
+        position: sticky;
+        top: 56px; /* Below app bar */
+        z-index: 100;
+        background: white;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 0 0 16px 16px;
+    }
+
+    /* Expandable sections */
+    .results-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+
+    .results-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        background: #f5f5f5;
+        cursor: pointer;
+        min-height: 48px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .results-section-header:active {
+        background: #e0e0e0;
+    }
+
+    .results-section-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .results-section.expanded .results-section-content {
+        max-height: 1000px; /* Large enough for content */
+        padding: 16px;
+    }
+
+    .expand-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .results-section.expanded .expand-icon {
+        transform: rotate(180deg);
+    }
+
+    /* Compact results cards */
+    .results-card {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+
+    .score-display {
+        font-size: 2rem;
+        font-weight: bold;
+        text-align: center;
+        padding: 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+}
+
+/* ============================================
+   7. HAPTIC FEEDBACK INDICATORS
+   ============================================ */
+
+/* Visual feedback for haptic events */
+.haptic-pulse {
+    animation: haptic-pulse 0.3s ease;
+}
+
+@keyframes haptic-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Correct answer animation */
+.answer-correct {
+    animation: answer-correct 0.5s ease;
+    background-color: #4caf50 !important;
+    color: white !important;
+}
+
+@keyframes answer-correct {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1) rotate(2deg);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Incorrect answer animation */
+.answer-incorrect {
+    animation: answer-incorrect 0.5s ease;
+    background-color: #f44336 !important;
+    color: white !important;
+}
+
+@keyframes answer-incorrect {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-10px);
+    }
+    75% {
+        transform: translateX(10px);
+    }
+}
+
+/* ============================================
+   8. IMPROVED SPACING & TYPOGRAPHY
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Better readability */
+    body {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    h1 { font-size: 2rem; line-height: 1.2; }
+    h2 { font-size: 1.75rem; line-height: 1.3; }
+    h3 { font-size: 1.5rem; line-height: 1.4; }
+    h4 { font-size: 1.25rem; line-height: 1.4; }
+    h5 { font-size: 1.1rem; line-height: 1.5; }
+    h6 { font-size: 1rem; line-height: 1.5; }
+
+    /* Comfortable padding */
+    .rz-card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .rz-p-4 {
+        padding: 16px !important;
+    }
+
+    /* Better contrast */
+    .text-muted,
+    .rz-text-secondary {
+        color: #666 !important;
+    }
+
+    /* Larger touch-friendly icons */
+    .rz-icon,
+    .material-icons {
+        font-size: 24px;
+    }
+}
+
+/* ============================================
+   9. PERFORMANCE & ANIMATIONS
+   ============================================ */
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .skeleton {
+        animation: none;
+        background: #f0f0f0;
+    }
+}
+
+/* GPU acceleration for smooth animations */
+.animated,
+.transition {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+}
+
+/* ============================================
+   10. ACCESSIBILITY ENHANCEMENTS
+   ============================================ */
+
+/* Focus indicators */
+@media (max-width: 768px) {
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible {
+        outline: 3px solid #1b6ec2;
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        button,
+        .btn {
+            border: 2px solid currentColor;
+        }
+
+        .option-item {
+            border: 2px solid #333;
+        }
+    }
+
+    /* Dark mode optimizations */
+    @media (prefers-color-scheme: dark) {
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                #2a2a2a 25%,
+                #3a3a3a 50%,
+                #2a2a2a 75%
+            );
+        }
+
+        .results-section-header {
+            background: #2a2a2a;
+        }
+
+        .results-section-header:active {
+            background: #3a3a3a;
+        }
+    }
+}
+
+/* ============================================
+   11. SAFE AREAS & NOTCHES
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* iOS safe areas */
+    .safe-area-top {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .safe-area-left {
+        padding-left: env(safe-area-inset-left);
+    }
+
+    .safe-area-right {
+        padding-right: env(safe-area-inset-right);
+    }
+
+    /* Full safe area padding */
+    .safe-area-all {
+        padding-top: env(safe-area-inset-top);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-left: env(safe-area-inset-left);
+    }
+}

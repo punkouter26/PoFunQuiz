@@ -152,3 +152,12 @@ appsettings.Development.json
 appsettings.local.json
 launchSettings.json
 .azure
+
+# Azurite local storage (emulator files)
+__azurite_db*.json
+__blobstorage__/
+__queuestorage__/
+AzuriteConfig/
+
+# IDE settings
+.vscode/

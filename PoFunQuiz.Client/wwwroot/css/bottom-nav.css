@@ -1,0 +1,110 @@
+/* Bottom Navigation Bar - Mobile First Design */
+.bottom-nav {
+    display: none; /* Hidden by default on desktop */
+}
+
+/* Show bottom navigation on mobile/tablet devices */
+@media (max-width: 768px) {
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        background: white;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        padding-bottom: env(safe-area-inset-bottom); /* iOS safe area support */
+    }
+
+    .bottom-nav-item {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        text-decoration: none;
+        color: #666;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .bottom-nav-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .bottom-nav-item.active {
+        color: #1b6ec2;
+        background-color: rgba(27, 110, 194, 0.08);
+    }
+
+    .nav-icon-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-width: 44px; /* Minimum touch target size */
+        min-height: 44px;
+    }
+
+    .bottom-nav-item .material-icons {
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .bottom-nav-item.active .material-icons {
+        font-weight: bold;
+    }
+
+    .nav-label {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    /* Add padding to main content to prevent overlap */
+    .content, .game-page, .rz-p-1, .rz-p-sm-4, .home-container {
+        padding-bottom: 80px !important; /* 64px nav + 16px spacing */
+    }
+
+    /* Adjust for pages with full-height content */
+    .rz-display-flex.rz-flex-column {
+        padding-bottom: 80px;
+    }
+}
+
+/* Extra safe area for devices with home indicators (iPhone X+) */
+@media (max-width: 768px) and (max-height: 812px) {
+    .bottom-nav {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+        height: calc(64px + env(safe-area-inset-bottom));
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .bottom-nav {
+        background: #1a1a1a;
+        box-shadow: 0 -2px 10px rgba(255, 255, 255, 0.1);
+    }
+
+    .bottom-nav-item {
+        color: #ccc;
+    }
+
+    .bottom-nav-item.active {
+        color: #6ab7ff;
+        background-color: rgba(106, 183, 255, 0.15);
+    }
+
+    .bottom-nav-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+}
