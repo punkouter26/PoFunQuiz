@@ -1,95 +1,59 @@
-### **CODE RULES FOR BLAZOR WEBASSEMBLY / .NET **
-
-
-### **1. Guiding Philosophy**
-Our approach is guided by four principles:
-*   **Pragmatic Architecture:** Vertical Slice first, adapting as needed for the complexity of the task.
-*   **Automation-First:** Use the command line (dotnet, az, gh) for reproducible builds and deployments.
-*   **Quality by Design:** Adhere to SOLID principles, apply Test-Driven Development, and practice proactive refactoring.
-*   **Maintained Simplicity:** Keep the codebase clean, concise, and easy to understand.
-
-
-### **2. Architecture**
-*   **Primary Pattern:** Employ **Vertical Slice Architecture** as the primary pattern, organizing features into self-contained slices. Within each slice, apply **Clean Architecture principles** to separate business logic from infrastructure. For simple features where this is overkill, a more direct implementation within the slice is acceptable.
-*   **Inspiration:** Draw inspiration from established patterns found in these repositories:
-    *   `github.com/z3d/Starter-App-Dotnet-0`
-    *   `github.com/ardalis/CleanArchitecture`
-    *   `github.com/fullstackhero/dotnet-starter-kit`
-*   **Code Conciseness:** Uphold the **Single Responsibility Principle.** If a C# or Razor file grows excessively complex (e.g., over 500 lines), it is a strong signal to refactor it into smaller, more focused components. The goal is clarity, not arbitrary line counts.
-*   **Proactive Refactoring:** Regularly remove unused code and files. All deletions must be done through a Pull Request with a clear justification.
-
-
-### **3. Project Setup & Structure**
-*   **Project Organization:** The root directory will be organized as follows:
-    *   `/src`: All source code (Blazor, .NET libraries).
-    *   `/tests`: All test projects (Unit, Integration, Functional).
-    *   `/docs`: All documentation (README.md, PRD.md, architecture diagrams).
-    *   `/scripts`: Automation and utility scripts.
-*   **Project Naming Convention:** All projects must be prefixed with `Po.AppName`, for example, `Po.AppName.Api`.
-*   **Initial Scaffolding:**
-    *   Generate projects using `dotnet new` commands.
-    *   Configure `launchSettings.json` to start only the `Po.AppName.Api` project.
-    *   Enable `dotnet watch` for hot reloading during development.
-
-
-### **4. Backend & API Design**
-*   **API Documentation:** Configure Swagger/OpenAPI from project inception for clear documentation and testing.
-*   **Endpoint Testing:** Ensure API endpoints are testable with tools like `curl` or Postman.
-*   **Global Exception Handling:** Implement global exception handling middleware that uses **Serilog** for detailed logging and returns a standardized **Problem Details (RFC 7807)** response to the client.
-
-
-### **5. Frontend Development (Blazor)**
-*   **Component Strategy:** Begin with built-in Blazor components. For advanced features, use our standard component library, **Radzen.Blazor**.
-*   **Dependencies:** Reference external CSS and JS libraries via CDN to optimize performance.
-*   **Branding:** Dynamically set the HTML `<title>` in the main layout to the application's name.
-*   **React Frontend:** After I create a Blazor front end I may sometimes ask about creating a react front end. I want it to be hosted inside of the .net api project so I can easily switch between the two frontends
-
-
-
-
-
-
-### **6. Data Persistence**
-*   **Default Storage:** Use **Azure Table Storage** for its scalability and cost-effectiveness, with the **Azurite emulator** for local development.
-*   **Alternative Storage:** Obtain tech lead approval for features requiring relational data or complex transactions, where **Azure SQL** or **Cosmos DB** may be more suitable.
-*   **Data Access:** Abstract data operations behind feature-specific interfaces (e.g., `IProductDataService`). Avoid a generic repository pattern to create methods tailored to Table Storage's key structure, preventing inefficient queries.
-*   **Naming Convention:** Azure Storage tables must follow the format `PoAppName[TableName]` (e.g., `PoAppNameProducts`).
-
-
-### **7. Logging & Diagnostics**
-*   **Framework:** Implement **Serilog** with console and rolling file sinks.
-*   **Health Checks:** Implement a `/healthz` API endpoint using .NET Health Check services.
-*   **Diagnostics UI:** Create a `/diag` page in the Blazor UI that calls the `/healthz` endpoint to display the connection status of critical dependencies.
-
-
-### **8. Testing**
-*   **Framework:** Use **xUnit** for all tests.
-*   **Test-Driven Development Cycle:**
-    1.  **Write the Test:** Define the feature's behavior with a failing unit, integration, or functional test.
-    2.  **Implement the Logic:** Write the necessary backend code to make the test pass.
-    3.  **Refactor:** Improve the code's design while ensuring all tests remain green.
-    4.  **Build the UI:** With a tested and functional API, implement the Blazor UI components.
-    5.  **Submit for Review:** A feature is complete when all tests pass and the Pull Request is approved.
-*   **Test Responsibilities:**
-    *   **Unit Tests:** Verify individual components or business logic in isolation.
-    *   **Integration Tests:** Test a complete vertical slice with emulated infrastructure (e.g., Azurite).
-    *   **Functional Tests:** Target the live API endpoint with HTTP requests to validate the entire pipeline.
-
-
-### **9. Configuration and Secrets Management**
-For private repositories where ease of use is prioritized, secrets will be managed directly within configuration files.
-*   **Local Development:** Store development-specific keys and connection strings in `appsettings.Development.json`.
-*   **Production:** Production secrets and keys will be stored in `appsettings.Production.json` or a similar environment-specific file.
-*   **Security:** The GitHub repository **must** be private. The `.gitignore` file must be correctly configured to prevent accidental exposure of any local-only configuration files.
-
-
-### **10. Dependency Management**
-Favor reputable, well-maintained open-source libraries. All dependencies must be approved and documented to ensure security and license compliance. Regularly review and update dependencies to patch vulnerabilities and leverage new features.
-
-
-### **11. Deployment to Azure**
-*   **Tooling:** Use the **Azure Developer CLI (azd)** for all deployments.
-*   **Infrastructure as Code:** Define all Azure resources in **Bicep templates**. The Azure Resource Group name must match the solution name (e.g., `PoAppName`).
-*   **CI/CD:** A **GitHub Action** will automatically build, test, and deploy the application to Azure on every push to the `main` branch.
-
-
+1. Foundation
+Solution Naming: The .sln file name (e.g., PoProject) is the base identifier. It must be used as a prefix for all Azure services/resource groups (e.g., PoProject-rg, PoProject-app, PoProject-storage-prod) and the user-facing HTML <title>.
+.NET Version: All projects must target .NET 10. The global.json file must be locked to a 10.0.xxx SDK version. Use latest C# features.
+Package Management: All NuGet packages must be managed centrally in a Directory.Packages.props file at the repository root.
+Null Safety: Nullable Reference Types (<Nullable>enable</Nullable>) must be enabled in all .csproj files.
+2. Architecture
+Code Organization: The API must use Vertical Slice Architecture. All API logic (endpoints, CQRS handlers) must be co-located by feature in /src/Po.[AppName].Api/Features/.
+Design Philosophy: Apply SOLID principles and standard GoF design patterns. Document their use in code comments or the PRD.
+API Design: Use Minimal APIs for all new endpoints / The API project must host the Blazor WASM project
+Repository Structure: Adhere to the standard root folder structure: /src, /tests, /docs, /infra, and /scripts.
+/src projects must follow the separation of concerns: ...Api, ...Client, and ...Shared.
+The ...Shared project must only contain DTOs, contracts, and shared validation logic (e.g., FluentValidation rules) that are referenced by both the ...Api and ...Client projects. It must not contain any business logic or data access code.
+/docs will contain the README.md, Prd.md, mermaid diagrams, KQL query library, and ADRs.
+/scripts contains helper scripts that the coding LLM creates.
+3. Implementation
+API & Backend
+API Documentation: All API endpoints must have Swagger (OpenAPI) generation enabled. .http files must be maintained for manual verification.
+Health Checks: Implement a health check endpoint at api/health that validates connectivity to all external dependencies.
+Error Handling: All non-successful API responses (4xx, 5xx) must return an IResult that serializes to an RFC 7807 Problem Details JSON object. Use structured ILogger.LogError within all catch blocks.
+Frontend (Blazor)
+UI Framework Principle: Standard Blazor WASM controls and the primary component library. Radzen.Blazor may only be used for complex requirements as needed .
+Responsive Design: The UI must be mobile-first (portrait mode), responsive, fluid, and touch-friendly.
+Development Environment
+Debug Launch: The environment must support a one-step 'F5' debug launch for the API and browser. (Implementation: Commit a launch.json with a serverReadyAction to the repository).
+Local Secrets: Local secrets must be stored using .NET User Secrets (dotnet user-secrets). The Program.cs file must be configured to read from Azure Key Vault only when the ASPNETCORE_ENVIRONMENT is 'Production'.
+Local Storage: Emulate all required Azure Storage (Table, Blob) services locally. (Implementation: Use Azurite for local development and integration testing).
+4. Quality & Testing
+Code Hygiene: All build warnings/errors must be resolved before pushing changes to GitHub. Run dotnet format to ensure style consistency.
+Dependency Hygiene: Regularly check for and apply updates to all packages via Directory.Packages.props.
+Workflow: Apply a TDD workflow (Red -> Green -> Refactor) for all business logic (e.g., MediatR handlers, domain services). For UI and E2E tests, tests must be written contemporaneously with the feature code.
+Test Naming: Test methods must follow the MethodName_StateUnderTest_ExpectedBehavior convention.
+Code Coverage (dotnet-coverage):
+Enforce a minimum 80% line coverage threshold for all new business logic.
+A combined coverage report must be generated in docs/coverage/.
+Unit Tests (xUnit): Must cover all backend business logic (e.g., MediatR handlers) with all external dependencies mocked.
+Component Tests (bUnit): Must cover all new Blazor components (rendering, user interactions, state changes), mocking dependencies like IHttpClientFactory.
+Integration Tests (xUnit): A "happy path" test must be created for every new API endpoint, running against a test host and an in-memory database emulator. Realistic test data should be generated.
+E2E Tests (Playwright):
+Start API before running E2E tests.
+Tests must target Chromium (mobile and desktop views).
+Full-Stack E2E (Default): Runs the entire stack (frontend + API + test database) to validate a true user flow.
+Isolated E2E (By Exception): Uses network mocking only for specific scenarios that are difficult to set up (e.g., simulating a 3rd-party payment provider failure).
+Integrate automated accessibility and visual regression checks.
+5. Operations & Azure
+Provisioning: All Azure infrastructure must be provisioned using Bicep (from the /infra folder) and deployed via Azure Developer CLI (azd).
+CI/CD: The GitHub Actions workflow must use Federated Credentials (OIDC) for secure, secret-less connection to Azure.
+GitHub CI/CD: The YML file must simply build the code and deploy it to the resource group (e.g., PoProject-rg) as an App Service (e.g., PoProject-app).
+Required Services: Bicep scripts must provision, at minimum: Application Insights & Log Analytics, App Service, and Azure Storage to all be in the same resource group.
+Cost Management: A $5 monthly cost budget must be created for the application's resource group. The budget must be configured with an Action Group to send an email alert to the project owner punkouter26@gmail.com when 80% of the threshold is met.
+Logging:
+Use Serilog for all structured logging.
+Configuration must be driven by appsettings.json to write to the Debug Console (in Development) and Application Insights (in Production).
+Telemetry:
+Use modern OpenTelemetry abstractions for all custom telemetry.
+Metrics: Use Meter to create custom metrics for business-critical values.
+Production Diagnostics:
+Enable the Application Insights Snapshot Debugger on the App Service.
+Enable the Application Insights Profiler on the App Service.
+KQL Library: The docs/kql/ folder must be populated with essential queries for monitoring health, performance, and custom business metrics.

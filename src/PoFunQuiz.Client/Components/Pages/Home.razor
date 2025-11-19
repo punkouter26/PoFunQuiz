@@ -1,0 +1,97 @@
+@page "/"
+@using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager NavigationManager
+
+<PageTitle>PoFunQuiz - Home</PageTitle>
+
+<div class="home-container">
+    <RadzenCard class="glass-card rz-p-4">
+        <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center" class="rz-mb-2 rz-color-primary">Welcome to PoFunQuiz!</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" class="rz-mb-4 rz-color-secondary">Enter initials for both players and choose a topic to start the game.</RadzenText>
+
+        <RadzenTemplateForm TItem="GameStartModel" Data=@gameStartModel Submit=@OnSubmit>
+            <RadzenStack Gap="1rem">
+                <RadzenRow>
+                    <RadzenColumn Size="6">
+                        <RadzenFormField Text="Player 1" Variant="Variant.Outlined" Style="width: 100%;">
+                            <RadzenTextBox Name="Player1" @bind-Value=@gameStartModel.Player1Initials MaxLength="3" Style="width: 100%;" />
+                        </RadzenFormField>
+                        <RadzenRequiredValidator Component="Player1" Text="Required" Popup="true" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="6">
+                        <RadzenFormField Text="Player 2" Variant="Variant.Outlined" Style="width: 100%;">
+                            <RadzenTextBox Name="Player2" @bind-Value=@gameStartModel.Player2Initials MaxLength="3" Style="width: 100%;" />
+                        </RadzenFormField>
+                        <RadzenRequiredValidator Component="Player2" Text="Required" Popup="true" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <RadzenFormField Text="Choose a Topic" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDropDown Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics Style="width: 100%;" />
+                </RadzenFormField>
+                <RadzenRequiredValidator Component="Topic" Text="Please select a topic" Popup="true" />
+
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem" class="rz-mt-3">
+                    <RadzenButton ButtonType="ButtonType.Submit" Text="Start Game" Icon="play_arrow" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" />
+                    <RadzenButton Click=@ViewLeaderboard Text="Leaderboard" Icon="emoji_events" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Medium" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenTemplateForm>
+    </RadzenCard>
+</div>
+
+<style>
+    .home-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+        padding: 1rem;
+    }
+
+    .glass-card {
+        max-width: 500px;
+        width: 100%;
+        border-radius: 12px;
+        /* Glassmorphism effect will be applied globally via CSS class, but adding inline for immediate preview if CSS not loaded */
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    }
+</style>
+
+@code {
+    class GameStartModel
+    {
+        public string Player1Initials { get; set; } = "";
+        public string Player2Initials { get; set; } = "";
+        public string SelectedTopic { get; set; } = "";
+    }
+
+    GameStartModel gameStartModel = new GameStartModel();
+
+    List<string> topics = new List<string>
+    {
+        "General Knowledge",
+        "Science",
+        "History",
+        "Sports",
+        "Geography",
+        "Technology",
+        "Entertainment"
+    };
+
+    void OnSubmit(GameStartModel model)
+    {
+        NavigationManager.NavigateTo($"/gamesetup?player1={model.Player1Initials}&player2={model.Player2Initials}&topic={model.SelectedTopic}");
+    }
+
+    void ViewLeaderboard()
+    {
+        NavigationManager.NavigateTo("/leaderboard");
+    }
+}

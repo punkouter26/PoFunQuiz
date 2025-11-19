@@ -6,7 +6,7 @@ metadata:
 
 services:
   PoFunQuiz:
-    project: PoFunQuiz.Server
+    project: src/PoFunQuiz.Api
     host: appservice
     language: dotnet
 

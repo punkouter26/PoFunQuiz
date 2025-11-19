@@ -1,0 +1,306 @@
+@page "/game-board"
+@using PoFunQuiz.Client
+@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Client.Components.Game
+@using System.Timers
+@using System.Diagnostics
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager Navigation
+@inject PoFunQuiz.Client.GameState GameState
+@inject IJSRuntime JS
+@inject ILogger<GameBoard> Logger
+@implements IDisposable
+@rendermode InteractiveWebAssembly
+
+<PageTitle>PoFunQuiz - Game On!</PageTitle>
+
+<div class="game-page">
+    @if (GameState.CurrentGame == null ||
+         GameState.CurrentGame.Player1Questions == null ||
+         GameState.CurrentGame.Player2Questions == null)
+    {
+        <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;">
+            <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4">Game session not ready.</RadzenText>
+            <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/">Return to Main Menu</RadzenButton>
+        </div>
+    }
+    else
+    {
+        <div @onkeydown="HandleKeyDown" tabindex="0" @ref="gameContainer" id="gameContainer" @onclick="FocusGameContainer" class="game-container">
+            <div class="rz-p-2 rz-mt-2">
+                <!-- Game Timer and Score Info -->
+                <RadzenRow>
+                    <RadzenColumn Size="12">
+                        <ScoreBoard Player1Score="@GameState.CurrentGame.Player1Score"
+                                    Player1Streak="@GameState.CurrentGame.Player1Streak"
+                                    Player2Score="@GameState.CurrentGame.Player2Score"
+                                    Player2Streak="@GameState.CurrentGame.Player2Streak">
+                            <GameTimer TimeRemaining="@TimeRemaining" />
+                        </ScoreBoard>
+                    </RadzenColumn>
+                </RadzenRow>
+
+                <!-- Player Boards -->
+                <RadzenRow Gutters="true">
+                    <!-- Player 1 Board -->
+                    <RadzenColumn Size="12" SizeMD="6" class="@(GetPlayerColumnClass(Player1HasFinished) + " rz-mb-3 rz-mb-md-0")">
+                        <PlayerBoard PlayerName="@GameState.CurrentGame.Player1.Initials"
+                                     Streak="@GameState.CurrentGame.Player1Streak"
+                                     CurrentQuestion="@GetCurrentQuestion(1)"
+                                     HasFinished="@Player1HasFinished"
+                                     FeedbackVisible="@Player1FeedbackVisible"
+                                     LastAnswerCorrect="@Player1LastAnswerCorrect"
+                                     SelectedAnswerIndex="@Player1JustSelectedAnswerIndex"
+                                     IsPlayer2="false"
+                                     OnOptionSelected="@(async (index) => await HandlePlayerAnswer(1, index))" />
+                    </RadzenColumn>
+
+                    <!-- Player 2 Board -->
+                    <RadzenColumn Size="12" SizeMD="6" class="@GetPlayerColumnClass(Player2HasFinished)">
+                        <PlayerBoard PlayerName="@GameState.CurrentGame.Player2.Initials"
+                                     Streak="@GameState.CurrentGame.Player2Streak"
+                                     CurrentQuestion="@GetCurrentQuestion(2)"
+                                     HasFinished="@Player2HasFinished"
+                                     FeedbackVisible="@Player2FeedbackVisible"
+                                     LastAnswerCorrect="@Player2LastAnswerCorrect"
+                                     SelectedAnswerIndex="@Player2JustSelectedAnswerIndex"
+                                     IsPlayer2="true"
+                                     OnOptionSelected="@(async (index) => await HandlePlayerAnswer(2, index))" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .game-page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 20px;
+    }
+    
+    .game-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        outline: none;
+    }
+    
+    .opacity-50 { opacity: 0.5; }
+</style>
+
+@code {
+    private ElementReference gameContainer;
+    private Timer? gameTimer;
+    private int TimeRemaining { get; set; } = 60;
+    private Stopwatch answerStopwatch = new();
+
+    private int Player1QuestionIndex { get; set; } = 0;
+    private bool Player1HasFinished { get; set; } = false;
+    private bool Player1FeedbackVisible { get; set; } = false;
+    private bool Player1LastAnswerCorrect { get; set; } = false;
+    private int? Player1JustSelectedAnswerIndex { get; set; } = null;
+
+    private int Player2QuestionIndex { get; set; } = 0;
+    private bool Player2HasFinished { get; set; } = false;
+    private bool Player2FeedbackVisible { get; set; } = false;
+    private bool Player2LastAnswerCorrect { get; set; } = false;
+    private int? Player2JustSelectedAnswerIndex { get; set; } = null;
+
+    private string GetPlayerColumnClass(bool hasFinished) => hasFinished ? "opacity-50 " : "";
+
+    private QuizQuestion? GetCurrentQuestion(int playerNumber)
+    {
+        var questions = playerNumber == 1 ? GameState.CurrentGame?.Player1Questions : GameState.CurrentGame?.Player2Questions;
+        var index = playerNumber == 1 ? Player1QuestionIndex : Player2QuestionIndex;
+        
+        if (questions != null && index < questions.Count)
+        {
+            return questions[index];
+        }
+        return null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (GameState.CurrentGame == null)
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+            await FocusGameContainer();
+            StartGameTimer();
+            answerStopwatch.Start();
+        }
+    }
+
+    private async Task FocusGameContainer()
+    {
+        try { await JS.InvokeVoidAsync("eval", $"document.getElementById('gameContainer').focus()"); } catch { }
+    }
+
+    private void StartGameTimer()
+    {
+        gameTimer?.Dispose(); 
+        gameTimer = new Timer(1000);
+        gameTimer.Elapsed += OnGameTimerElapsed;
+        gameTimer.AutoReset = true;
+        gameTimer.Start();
+    }
+
+    private void OnGameTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            TimeRemaining--;
+            if (TimeRemaining <= 0) EndGame();
+            StateHasChanged();
+        });
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (GameState.CurrentGame == null) return;
+
+        // Player 1 Keys
+        if (!Player1HasFinished && !Player1FeedbackVisible)
+        {
+            if (e.Key == "1") await HandlePlayerAnswer(1, 0);
+            else if (e.Key == "2") await HandlePlayerAnswer(1, 1);
+            else if (e.Key == "3") await HandlePlayerAnswer(1, 2);
+            else if (e.Key == "4") await HandlePlayerAnswer(1, 3);
+        }
+
+        // Player 2 Keys
+        if (!Player2HasFinished && !Player2FeedbackVisible)
+        {
+            if (e.Key == "7") await HandlePlayerAnswer(2, 0);
+            else if (e.Key == "8") await HandlePlayerAnswer(2, 1);
+            else if (e.Key == "9") await HandlePlayerAnswer(2, 2);
+            else if (e.Key == "0") await HandlePlayerAnswer(2, 3);
+        }
+    }
+
+    private async Task HandlePlayerAnswer(int playerNumber, int selectedOptionIndex)
+    {
+        if (GameState.CurrentGame == null) return;
+
+        // Check if player is locked out or finished
+        if (playerNumber == 1 && (Player1FeedbackVisible || Player1HasFinished)) return;
+        if (playerNumber == 2 && (Player2FeedbackVisible || Player2HasFinished)) return;
+
+        var questions = playerNumber == 1 ? GameState.CurrentGame.Player1Questions : GameState.CurrentGame.Player2Questions;
+        var index = playerNumber == 1 ? Player1QuestionIndex : Player2QuestionIndex;
+
+        if (questions == null || index >= questions.Count) return;
+
+        var currentQuestion = questions[index];
+        bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
+        var speedMultiplier = CalculateSpeedMultiplier(answerStopwatch.Elapsed.TotalSeconds);
+
+        // Update State
+        if (playerNumber == 1)
+        {
+            Player1LastAnswerCorrect = isCorrect;
+            Player1FeedbackVisible = true;
+            Player1JustSelectedAnswerIndex = selectedOptionIndex;
+        }
+        else
+        {
+            Player2LastAnswerCorrect = isCorrect;
+            Player2FeedbackVisible = true;
+            Player2JustSelectedAnswerIndex = selectedOptionIndex;
+        }
+
+        GameState.CurrentGame.AddAnswer(playerNumber, isCorrect, currentQuestion.BasePoints, speedMultiplier);
+        
+        // Trigger feedback delay
+        ShowFeedbackThenAdvance(playerNumber);
+        
+        answerStopwatch.Restart();
+        StateHasChanged();
+    }
+
+    private double CalculateSpeedMultiplier(double elapsedSeconds)
+    {
+        return elapsedSeconds switch { <= 2.0 => 2.0, <= 4.0 => 1.5, <= 6.0 => 1.25, _ => 1.0 };
+    }
+
+    private void ShowFeedbackThenAdvance(int playerNumber)
+    {
+        // We use a separate timer for each player to avoid race conditions if they answer simultaneously
+        var timer = new Timer(300);
+        timer.Elapsed += (_, _) =>
+        {
+            InvokeAsync(() =>
+            {
+                if (GameState.CurrentGame == null) return;
+
+                if (playerNumber == 1)
+                {
+                    Player1FeedbackVisible = false;
+                    Player1JustSelectedAnswerIndex = null;
+                    Player1QuestionIndex++;
+                    if (Player1QuestionIndex >= (GameState.CurrentGame.Player1Questions?.Count ?? 0))
+                    {
+                        Player1HasFinished = true;
+                        CalculateTimeBonus(1);
+                    }
+                }
+                else
+                {
+                    Player2FeedbackVisible = false;
+                    Player2JustSelectedAnswerIndex = null;
+                    Player2QuestionIndex++;
+                    if (Player2QuestionIndex >= (GameState.CurrentGame.Player2Questions?.Count ?? 0))
+                    {
+                        Player2HasFinished = true;
+                        CalculateTimeBonus(2);
+                    }
+                }
+
+                if (Player1HasFinished && Player2HasFinished)
+                {
+                    EndGame();
+                }
+                else
+                {
+                    StateHasChanged();
+                }
+                timer.Dispose();
+            });
+        };
+        timer.AutoReset = false;
+        timer.Start();
+    }
+    
+    private void CalculateTimeBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return;
+        int effectiveTimeRemaining = Math.Max(0, TimeRemaining);
+        int bonus = Math.Min(3, (int)Math.Ceiling(effectiveTimeRemaining / 20.0));
+        
+        if (playerNumber == 1) GameState.CurrentGame.Player1TimeBonus = bonus;
+        else GameState.CurrentGame.Player2TimeBonus = bonus;
+    }
+
+    private void EndGame()
+    {
+        gameTimer?.Stop();
+        if (GameState.CurrentGame == null) return;
+        GameState.CurrentGame.EndTime = DateTime.UtcNow;
+        Navigation.NavigateTo("/results");
+    }
+
+    public void Dispose()
+    {
+        gameTimer?.Dispose();
+    }
+}

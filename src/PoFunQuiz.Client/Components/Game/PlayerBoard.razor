@@ -1,0 +1,80 @@
+@using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
+
+<RadzenCard class="rz-p-4" style="position: relative; height: 100%;">
+    <RadzenText TextStyle="TextStyle.H6" class="@HeaderClass">
+        @PlayerName
+        @if (Streak >= 3)
+        {
+            <RadzenIcon Icon="whatshot" class="rz-text-danger rz-ml-1" />
+        }
+    </RadzenText>
+
+    @if (CurrentQuestion != null)
+    {
+        <div class="question-container">
+            <RadzenText class="rz-mb-4">@CurrentQuestion.Question</RadzenText>
+            <div class="options-grid">
+                @for (int i = 0; i < CurrentQuestion.Options.Count; i++)
+                {
+                    var index = i;
+                    var keyNumber = GetKeyNumber(index);
+                    <div class="option-item @GetAnswerItemClass(index)"
+                         @onclick="@(async () => await OnOptionSelected.InvokeAsync(index))">
+                        <span class="option-number">@keyNumber</span>
+                        <span class="option-text">@CurrentQuestion.Options[i]</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (!HasFinished)
+    {
+        <RadzenText>Waiting for questions or game to end...</RadzenText>
+    }
+    else
+    {
+        <RadzenText>@PlayerName has finished!</RadzenText>
+    }
+</RadzenCard>
+
+@if (FeedbackVisible)
+{
+    <div class="feedback-overlay">
+        <span>@(LastAnswerCorrect ? "Correct!" : "Wrong!")</span>
+    </div>
+}
+
+@code {
+    [Parameter] public string PlayerName { get; set; } = "";
+    [Parameter] public int Streak { get; set; }
+    [Parameter] public QuizQuestion? CurrentQuestion { get; set; }
+    [Parameter] public bool HasFinished { get; set; }
+    [Parameter] public bool FeedbackVisible { get; set; }
+    [Parameter] public bool LastAnswerCorrect { get; set; }
+    [Parameter] public int? SelectedAnswerIndex { get; set; }
+    [Parameter] public EventCallback<int> OnOptionSelected { get; set; }
+    [Parameter] public bool IsPlayer2 { get; set; }
+
+    private string HeaderClass => IsPlayer2 ? "rz-text-secondary" : "rz-text-primary";
+
+    private string GetKeyNumber(int index)
+    {
+        if (!IsPlayer2) return (index + 1).ToString();
+        return index == 0 ? "7" : index == 1 ? "8" : index == 2 ? "9" : "0";
+    }
+
+    private string GetAnswerItemClass(int optionIndex)
+    {
+        if (SelectedAnswerIndex == optionIndex)
+        {
+            if (FeedbackVisible)
+            {
+                return LastAnswerCorrect ? "correct-answer-flash" : "incorrect-answer-shake";
+            }
+            return "selected";
+        }
+        return "";
+    }
+}

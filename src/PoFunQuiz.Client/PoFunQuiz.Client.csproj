@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <!-- <DebugType>none</DebugType> -->
+    <!-- <DebugSymbols>false</DebugSymbols> -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    
+    <!-- Trimming disabled to ensure consistent behavior between local and Azure deployments -->
+    <!--<PublishTrimmed>true</PublishTrimmed>-->
+    <!--<TrimMode>link</TrimMode>-->
+    
+    <!-- Optimization: Remove debug symbols and source maps from production builds -->
+    <!-- <WasmStripILAfterAOT>true</WasmStripILAfterAOT> -->
+    
+    <!-- Optimization: Enable compression -->
+    <!-- <BlazorEnableCompression>true</BlazorEnableCompression> -->
+    
+    <!-- Optimization: Don't copy symbols to output -->
+    <!-- <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory> -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Radzen.Blazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Shared\PoFunQuiz.Shared.csproj" />
+  </ItemGroup>
+
+  <!-- Clean up unused files after publish to reduce deployment size -->
+  <Target Name="CleanupUnusedFiles" AfterTargets="Publish">
+    <ItemGroup>
+      <!-- Find all Radzen CSS files except standard-base.css -->
+      <RadzenCssToDelete Include="$(PublishDir)wwwroot\_content\Radzen.Blazor\css\**\*" 
+                         Exclude="$(PublishDir)wwwroot\_content\Radzen.Blazor\css\standard-base.css*" />
+      
+      <!-- Find all source map files -->
+      <SourceMapsToDelete Include="$(PublishDir)wwwroot\_framework\**\*.map" />
+    </ItemGroup>
+    
+    <!-- Delete the files -->
+    <Delete Files="@(RadzenCssToDelete)" />
+    <Delete Files="@(SourceMapsToDelete)" />
+    
+    <Message Text="Deleted @(RadzenCssToDelete->Count()) unused Radzen theme files" Importance="high" />
+    <Message Text="Deleted @(SourceMapsToDelete->Count()) source map files" Importance="high" />
+  </Target>
+
+</Project>

@@ -1,0 +1,105 @@
+@page "/leaderboard"
+@using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
+@inject HttpClient Http
+
+<PageTitle>Leaderboard - PoFunQuiz</PageTitle>
+
+<div class="container mt-4">
+    <RadzenText TextStyle="TextStyle.H3" TextAlign="TextAlign.Center" class="rz-mb-4 rz-color-primary">🏆 Hall of Fame</RadzenText>
+
+    <div class="row mb-4">
+        <div class="col-md-6 offset-md-3">
+             <RadzenCard>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                    <RadzenLabel Text="Category:" />
+                    <RadzenDropDown TValue="string" Value=@currentCategory Data=@categories Change=@OnCategoryChanged Style="width: 100%;" />
+                </RadzenStack>
+            </RadzenCard>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+         <div class="rz-display-flex rz-flex-column rz-align-items-center rz-my-4">
+            <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-2">Loading Leaderboard...</RadzenText>
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 200px; height: 4px;" />
+            
+            <!-- Skeleton Loading UI -->
+            <div style="width: 100%; max-width: 800px; margin-top: 2rem;">
+                @for(int i=0; i<5; i++)
+                {
+                    <div class="rz-display-flex rz-align-items-center rz-mb-3" style="opacity: @(1.0 - (i*0.15))">
+                        <div style="width: 40px; height: 40px; background: var(--rz-base-300); border-radius: 50%; margin-right: 1rem;"></div>
+                        <div style="flex: 1; height: 24px; background: var(--rz-base-300); border-radius: 4px;"></div>
+                        <div style="width: 80px; height: 24px; background: var(--rz-base-300); border-radius: 4px; margin-left: 1rem;"></div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else if (scores == null || !scores.Any())
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter">
+            No scores found for this category yet. Be the first!
+        </RadzenAlert>
+    }
+    else
+    {
+        <RadzenDataGrid Data="@scores" TItem="LeaderboardEntry" AllowSorting="true" AllowPaging="true" PageSize="10" Class="glass-card">
+            <Columns>
+                <RadzenDataGridColumn TItem="LeaderboardEntry" Title="Rank" Width="80px">
+                    <Template Context="data">
+                        @(scores.IndexOf(data) + 1)
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="LeaderboardEntry" Property="PlayerName" Title="Player" />
+                <RadzenDataGridColumn TItem="LeaderboardEntry" Property="Score" Title="Score" SortOrder="SortOrder.Descending" />
+                <RadzenDataGridColumn TItem="LeaderboardEntry" Property="MaxStreak" Title="Max Streak" />
+                <RadzenDataGridColumn TItem="LeaderboardEntry" Property="DatePlayed" Title="Date">
+                    <Template Context="data">
+                        @data.DatePlayed.ToLocalTime().ToString("g")
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    }
+</div>
+
+@code {
+    private List<LeaderboardEntry>? scores;
+    private bool isLoading = true;
+    private string currentCategory = "General";
+    private List<string> categories = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = new List<string> { "General" };
+        categories.AddRange(QuestionCategories.All.Where(c => c != "General"));
+        await LoadScores();
+    }
+
+    private async Task OnCategoryChanged(object value)
+    {
+        currentCategory = value.ToString() ?? "General";
+        await LoadScores();
+    }
+
+    private async Task LoadScores()
+    {
+        isLoading = true;
+        try
+        {
+            scores = await Http.GetFromJsonAsync<List<LeaderboardEntry>>($"api/leaderboard?category={currentCategory}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading leaderboard: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

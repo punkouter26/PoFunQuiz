@@ -1,0 +1,32 @@
+@using Radzen
+@using Radzen.Blazor
+
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+    <RadzenIcon Icon="timer" class="rz-mr-2" />
+    <RadzenText TextStyle="TextStyle.Body1" class="@GetTimerClass()">
+        @TimeRemaining s
+    </RadzenText>
+</RadzenStack>
+
+<style>
+    @@keyframes timerPulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .timer-pulse {
+        animation: timerPulse 1s infinite ease-in-out;
+    }
+</style>
+
+@code {
+    [Parameter] public int TimeRemaining { get; set; }
+
+    private string GetTimerClass()
+    {
+        var classes = new List<string>();
+        if (TimeRemaining <= 5) classes.Add("timer-pulse");
+        if (TimeRemaining <= 10) classes.Add("rz-text-danger");
+        return string.Join(" ", classes);
+    }
+}
