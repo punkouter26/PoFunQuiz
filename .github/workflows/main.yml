@@ -2,7 +2,7 @@ name: Deploy PoFunQuiz to Azure
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -23,33 +23,33 @@ jobs:
         dotnet-version: '9.0.x'
       
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore PoFunQuiz.sln
       
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build PoFunQuiz.sln --no-restore --configuration Release
       
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal --filter "Category!=E2E"
-      continue-on-error: true  # Don't fail build on test failures (some require OpenAI credentials)
+      run: dotnet test PoFunQuiz.sln --no-build --configuration Release --verbosity normal --filter "Category!=E2E"
+      continue-on-error: true
       
     - name: Publish application
-      run: dotnet publish PoFunQuiz.Server/PoFunQuiz.Server.csproj --configuration Release --output ./publish
+      run: dotnet publish src/PoFunQuiz.Api/PoFunQuiz.Api.csproj --configuration Release --output ./publish
       
     - name: Optimize deployment size
       run: |
         # Remove unused Radzen CSS themes (keep only standard-base.css)
-        find ./publish/wwwroot/_content/Radzen.Blazor/css -type f ! -name 'standard-base.css*' -delete
+        # Check if directory exists first to avoid errors
+        if [ -d "./publish/wwwroot/_content/Radzen.Blazor/css" ]; then
+          find ./publish/wwwroot/_content/Radzen.Blazor/css -type f ! -name 'standard-base.css*' -delete
+        fi
         
         # Display optimization results
-        echo "✅ Deployment optimized - removed unused Radzen themes and source maps"
+        echo "✅ Deployment optimized"
       
     - name: Create deployment package
       run: |
         cd publish
-        ORIGINAL_SIZE=$(du -sh . | cut -f1)
         zip -r ../deploy.zip .
-        ZIP_SIZE=$(du -sh ../deploy.zip | cut -f1)
-        echo "📦 Deployment package created: $ZIP_SIZE (uncompressed: $ORIGINAL_SIZE)"
         cd ..
       
     - name: Azure Login (Federated Credentials)
@@ -61,7 +61,6 @@ jobs:
         
     - name: Deploy to Azure App Service
       run: |
-        # Deploy to Azure App Service using zip deployment
         az webapp deployment source config-zip \
           --resource-group PoFunQuiz \
           --name PoFunQuiz \
@@ -69,4 +68,3 @@ jobs:
           --timeout 1800
         
         echo "✅ Deployment completed successfully"
-        echo "🌐 App URL: https://pofunquiz.azurewebsites.net"
