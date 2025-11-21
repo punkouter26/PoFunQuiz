@@ -8,52 +8,23 @@
 <RadzenContextMenu />
 <RadzenTooltip />
 
-<RadzenLayout style="height: 100vh; display: flex; flex-direction: column;">
-    <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
-            <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
-            <RadzenLabel Text="PoFunQuiz" class="rz-ml-3 rz-color-white" Style="font-weight: bold; font-size: 1.2rem; cursor: pointer;" @onclick="@(() => NavigationManager.NavigateTo("/"))" />
-        </RadzenStack>
-    </RadzenHeader>
-    
-    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="z-index: 2;">
-        <RadzenPanelMenu>
-            <RadzenPanelMenuItem Text="Home" Icon="home" Path="/" />
-            <RadzenPanelMenuItem Text="Leaderboard" Icon="emoji_events" Path="/leaderboard" />
-            <RadzenPanelMenuItem Text="Multiplayer" Icon="people" Path="/multiplayer" />
-        </RadzenPanelMenu>
-        
-        <div class="rz-p-4 rz-text-align-center" style="position: absolute; bottom: 0; width: 100%;">
-            <RadzenText TextStyle="TextStyle.Caption" class="rz-color-base-400">v1.0.0</RadzenText>
+<div class="app-layout">
+    <header class="app-header">
+        <div class="header-content">
+            <SectionOutlet SectionName="HeaderContent" />
+            <!-- Default Header Content if Section is empty (Fallback logic would require more complex state, 
+                 so we'll just put the default title in the Home page's SectionContent or use a default here if empty) -->
+             <div class="default-header" style="display: none;"> <!-- Hidden by default, pages should provide content -->
+                <span class="app-title" @onclick="@(() => NavigationManager.NavigateTo("/"))">PoFunQuiz</span>
+             </div>
         </div>
-    </RadzenSidebar>
+    </header>
 
-    <RadzenBody style="flex: 1; overflow: auto; background: var(--rz-base-100);">
-        <div class="rz-p-3 page-transition">
+    <main class="app-main">
+        <div class="page-transition-container">
             @Body
         </div>
-    </RadzenBody>
-</RadzenLayout>
+    </main>
 
-<style>
-    /* Page Transition Animation */
-    .page-transition {
-        animation: slideInUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    }
-
-    @@keyframes slideInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
-
-@code {
-    bool sidebarExpanded = true;
-
-    protected override void OnInitialized()
-    {
-        // Auto-collapse sidebar on mobile
-        // Note: In a real app, we might use JS interop to check screen width
-        base.OnInitialized();
-    }
-}
+    <NavMenu />
+</div>

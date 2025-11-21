@@ -6,61 +6,246 @@
 
 <PageTitle>PoFunQuiz - Home</PageTitle>
 
-<div class="home-container">
-    <RadzenCard class="glass-card rz-p-4">
-        <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center" class="rz-mb-2 rz-color-primary">Welcome to PoFunQuiz!</RadzenText>
-        <RadzenText TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" class="rz-mb-4 rz-color-secondary">Enter initials for both players and choose a topic to start the game.</RadzenText>
+<SectionContent SectionName="HeaderContent">
+    <div class="d-flex align-items-center">
+        <span class="app-title">PoFunQuiz</span>
+    </div>
+</SectionContent>
 
-        <RadzenTemplateForm TItem="GameStartModel" Data=@gameStartModel Submit=@OnSubmit>
-            <RadzenStack Gap="1rem">
-                <RadzenRow>
-                    <RadzenColumn Size="6">
-                        <RadzenFormField Text="Player 1" Variant="Variant.Outlined" Style="width: 100%;">
-                            <RadzenTextBox Name="Player1" @bind-Value=@gameStartModel.Player1Initials MaxLength="3" Style="width: 100%;" />
-                        </RadzenFormField>
-                        <RadzenRequiredValidator Component="Player1" Text="Required" Popup="true" />
-                    </RadzenColumn>
-                    <RadzenColumn Size="6">
-                        <RadzenFormField Text="Player 2" Variant="Variant.Outlined" Style="width: 100%;">
-                            <RadzenTextBox Name="Player2" @bind-Value=@gameStartModel.Player2Initials MaxLength="3" Style="width: 100%;" />
-                        </RadzenFormField>
-                        <RadzenRequiredValidator Component="Player2" Text="Required" Popup="true" />
-                    </RadzenColumn>
-                </RadzenRow>
+<div class="dashboard-container">
+    <!-- Hero Section: Quick Play (Kept as form for E2E compatibility) -->
+    <div class="hero-card">
+        <div class="hero-content">
+            <h2 class="hero-title">Ready to Quiz?</h2>
+            <p class="hero-subtitle">Challenge yourself or a friend!</p>
+            
+            <RadzenTemplateForm TItem="GameStartModel" Data=@gameStartModel Submit=@OnSubmit>
+                <RadzenStack Gap="1rem">
+                    <div class="player-inputs">
+                        <div class="input-group">
+                            <label>Player 1</label>
+                            <input id="player1Initials" @bind="gameStartModel.Player1Initials" maxlength="3" placeholder="P1" class="modern-input" />
+                        </div>
+                        <div class="input-group">
+                            <label>Player 2</label>
+                            <input id="player2Initials" @bind="gameStartModel.Player2Initials" maxlength="3" placeholder="P2" class="modern-input" />
+                        </div>
+                    </div>
 
-                <RadzenFormField Text="Choose a Topic" Variant="Variant.Outlined" Style="width: 100%;">
-                    <RadzenDropDown Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics Style="width: 100%;" />
-                </RadzenFormField>
-                <RadzenRequiredValidator Component="Topic" Text="Please select a topic" Popup="true" />
+                    <div class="topic-select">
+                        <RadzenDropDown id="topic" Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics 
+                                      Style="width: 100%; border-radius: 12px;" Placeholder="Select a topic..." />
+                    </div>
 
-                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="0.5rem" class="rz-mt-3">
-                    <RadzenButton ButtonType="ButtonType.Submit" Text="Start Game" Icon="play_arrow" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" />
-                    <RadzenButton Click=@ViewLeaderboard Text="Leaderboard" Icon="emoji_events" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Size="ButtonSize.Medium" />
+                    <button type="submit" class="play-button">
+                        <span class="material-icons">play_arrow</span> Start Game
+                    </button>
                 </RadzenStack>
-            </RadzenStack>
-        </RadzenTemplateForm>
-    </RadzenCard>
+            </RadzenTemplateForm>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Multiplayer Card -->
+        <div class="dashboard-card multiplayer-card" @onclick="@(() => NavigationManager.NavigateTo("/multiplayer"))">
+            <div class="card-icon"><span class="material-icons">people</span></div>
+            <div class="card-text">
+                <h3>Multiplayer</h3>
+                <span>Join Lobby</span>
+            </div>
+        </div>
+
+        <!-- Leaderboard Card -->
+        <div class="dashboard-card leaderboard-card" @onclick="@(() => NavigationManager.NavigateTo("/leaderboard"))">
+            <div class="card-icon"><span class="material-icons">emoji_events</span></div>
+            <div class="card-text">
+                <h3>Leaderboard</h3>
+                <span>Top Scores</span>
+            </div>
+        </div>
+        
+        <!-- Daily Challenge (Mock) -->
+        <div class="dashboard-card daily-card">
+            <div class="card-icon"><span class="material-icons">today</span></div>
+            <div class="card-text">
+                <h3>Daily Challenge</h3>
+                <span>Coming Soon</span>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-    .home-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 80vh;
+    .dashboard-container {
         padding: 1rem;
+        max-width: 800px;
+        margin: 0 auto;
+        padding-bottom: 80px;
     }
 
-    .glass-card {
-        max-width: 500px;
-        width: 100%;
+    /* Hero Card */
+    .hero-card {
+        background: linear-gradient(135deg, var(--rz-primary) 0%, var(--rz-secondary) 100%);
+        border-radius: 24px;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        margin-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+    }
+
+    .hero-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .hero-subtitle {
+        opacity: 0.9;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Custom Inputs */
+    .player-inputs {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .input-group {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .input-group label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        opacity: 0.9;
+        margin-left: 4px;
+    }
+
+    .modern-input {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
         border-radius: 12px;
-        /* Glassmorphism effect will be applied globally via CSS class, but adding inline for immediate preview if CSS not loaded */
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        padding: 0.75rem;
+        color: white;
+        font-weight: 600;
+        text-align: center;
+        width: 100%;
+        outline: none;
+        transition: all 0.2s;
+    }
+
+    .modern-input:focus {
+        background: rgba(255,255,255,0.3);
+        border-color: white;
+    }
+
+    .modern-input::placeholder {
+        color: rgba(255,255,255,0.6);
+    }
+
+    .play-button {
+        background: white;
+        color: var(--rz-primary);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem;
+        font-weight: 800;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: transform 0.1s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .play-button:active {
+        transform: scale(0.98);
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .dashboard-card {
+        background: white;
+        border-radius: 20px;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .dashboard-card:active {
+        transform: scale(0.96);
+    }
+
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .card-icon .material-icons {
+        font-size: 24px;
+    }
+
+    .multiplayer-card .card-icon { background: #e3f2fd; color: #1976d2; }
+    .leaderboard-card .card-icon { background: #fff3e0; color: #f57c00; }
+    .daily-card .card-icon { background: #e8f5e9; color: #388e3c; }
+
+    .card-text h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+        color: #333;
+    }
+
+    .card-text span {
+        font-size: 0.8rem;
+        color: #888;
+    }
+
+    .daily-card {
+        grid-column: span 2;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .dashboard-card {
+            background: #1e1e1e;
+        }
+        .card-text h3 { color: #fff; }
+        .card-text span { color: #aaa; }
     }
 </style>
 

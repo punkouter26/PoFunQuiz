@@ -36,11 +36,10 @@ export default defineConfig({
   ],
 
   // Only start local server if NOT testing Azure
-  // Disabled webServer to use the manually started API  
-  // webServer: isAzure ? undefined : {
-  //   command: 'dotnet run --project ../../src/PoFunQuiz.Api/PoFunQuiz.Api.csproj --urls http://localhost:5000',
-  //   url: 'http://localhost:5000',
-  //   reuseExistingServer: true, // Always reuse if server is already running
-  //   timeout: 120000,
-  // },
+  webServer: isAzure ? undefined : {
+    command: 'dotnet run --project ../../src/PoFunQuiz.Api/PoFunQuiz.Api.csproj --urls http://localhost:5000',
+    url: 'http://localhost:5000',
+    reuseExistingServer: true, // Always reuse if server is already running
+    timeout: 120000,
+  },
 });

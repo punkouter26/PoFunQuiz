@@ -28,11 +28,18 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
       await expect(player2Input).toHaveValue('P2');
     });
 
-    // Step 2: Select a topic from dropdown
+    // Step 2: Select a topic from dropdown (Radzen component)
     await test.step('Select topic', async () => {
-      const topicSelect = page.locator('#topic');
-      await topicSelect.selectOption('Science');
-      await expect(topicSelect).toHaveValue('Science');
+      // Click the Radzen dropdown to open it
+      const topicDropdown = page.locator('#topic');
+      await topicDropdown.click();
+      
+      // Wait for dropdown options to appear and click Science
+      await page.waitForTimeout(500);
+      await page.locator('.rz-dropdown-item:has-text("Science")').first().click();
+      
+      // Verify selection (Radzen uses aria-label or text content)
+      await expect(topicDropdown).toContainText('Science');
     });
 
     // Step 3: Start the game
@@ -218,11 +225,11 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
     await test.step('Play with only one player', async () => {
       // Enter only first player initials
       await page.locator('#player1Initials').fill('P1');
-      
-      // Select topic
-      await page.locator('#topic').selectOption('Science');
-      
-      // Try to start game
+
+      // Select topic (Radzen dropdown)
+      await page.locator('#topic').click();
+      await page.waitForTimeout(500);
+      await page.locator('.rz-dropdown-item:has-text("Science")').first().click();      // Try to start game
       const startButton = page.locator('button:has-text("Start Game")');
       await startButton.click();
       

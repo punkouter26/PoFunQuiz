@@ -18,14 +18,14 @@
 }
 else
 {
-    <div class="rz-p-sm-4 rz-p-2">
-        <RadzenCard class="rz-p-4 rz-p-sm-6">
-            <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center" class="rz-mb-4">Game Results</RadzenText>
+    <div class="rz-p-sm-6 rz-p-3">
+        <RadzenCard class="rz-p-sm-8 rz-p-4">
+            <RadzenText TextStyle="TextStyle.H3" TextAlign="TextAlign.Center" class="rz-mb-6">Game Results</RadzenText>
 
             @if (WinnerDeclared)
             {
-                <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Radzen.Variant.Filled" Shade="Shade.Lighter" AllowClose="false" class="rz-my-3">
-                    <RadzenText TextStyle="TextStyle.H6">
+                <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Radzen.Variant.Filled" Shade="Shade.Lighter" AllowClose="false" class="rz-my-4">
+                    <RadzenText TextStyle="TextStyle.H5">
                         @if (IsTie)
                         {
                             <span>It's a Tie!</span>
@@ -38,109 +38,109 @@ else
                 </RadzenAlert>
             }
 
-            <RadzenRow Gutters="true" class="rz-mt-3">
+            <RadzenRow Gutters="true" class="rz-mt-5">
                 <!-- Player 1 Results -->
-                <RadzenColumn Size="12" SizeMD="6" class="rz-mb-3 rz-mb-md-0">
-                    <RadzenCard class="rz-p-2 rz-p-sm-4" style="height: 100%;">
-                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-3">
-                            <RadzenAvatar Color="AvatarColor.Primary" class="rz-mr-2" Size="AvatarSize.Small" Text="@(GameState.CurrentGame?.Player1?.Initials ?? "P1")" />
-                            <RadzenText TextStyle="TextStyle.H6">Player 1</RadzenText>
+                <RadzenColumn Size="12" SizeMD="6" class="rz-mb-4 rz-mb-md-0">
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" style="height: 100%;">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-4">
+                            <RadzenAvatar Color="AvatarColor.Primary" class="rz-mr-2" Size="AvatarSize.Medium" Text="@(GameState.CurrentGame?.Player1?.Initials ?? "P1")" />
+                            <RadzenText TextStyle="TextStyle.H5">Player 1</RadzenText>
                         </RadzenStack>
-                        <RadzenStack Gap="0">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                        <RadzenStack Gap="0.75rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="question_answer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(1) of 5</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Questions: @GetQuestionsAnswered(1) of 5</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="check" />
-                                <RadzenText TextStyle="TextStyle.Body2">Correct: @GetCorrectAnswers(1)</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Correct: @GetCorrectAnswers(1)</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="close" />
-                                <RadzenText TextStyle="TextStyle.Body2">Incorrect: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Incorrect: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="speed" />
-                                <RadzenText TextStyle="TextStyle.Body2">Speed Bonus: +@GetSpeedBonus(1) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Speed Bonus: +@GetSpeedBonus(1) points</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="whatshot" />
-                                <RadzenText TextStyle="TextStyle.Body2">Streak Bonus: +@GetStreakBonus(1) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Streak Bonus: +@GetStreakBonus(1) points</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="timer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Time Bonus: +@GetTimeBonus(1) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Time Bonus: +@GetTimeBonus(1) points</RadzenText>
                             </RadzenStack>
-                            <RadzenDivider class="rz-my-2" />
-                            <RadzenText TextStyle="TextStyle.H6">Total Score: @(GameState.CurrentGame?.Player1Score ?? 0) points</RadzenText>
+                            <RadzenDivider class="rz-my-3" />
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-mt-2">Total Score: @(GameState.CurrentGame?.Player1Score ?? 0) points</RadzenText>
                         </RadzenStack>
                     </RadzenCard>
                 </RadzenColumn>
 
                 <!-- Player 2 Results -->
                 <RadzenColumn Size="12" SizeMD="6">
-                    <RadzenCard class="rz-p-2 rz-p-sm-4" style="height: 100%;">
-                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-3">
-                            <RadzenAvatar Color="AvatarColor.Secondary" class="rz-mr-2" Size="AvatarSize.Small" Text="@(GameState.CurrentGame?.Player2?.Initials ?? "P2")" />
-                            <RadzenText TextStyle="TextStyle.H6">Player 2</RadzenText>
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" style="height: 100%;">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-4">
+                            <RadzenAvatar Color="AvatarColor.Secondary" class="rz-mr-2" Size="AvatarSize.Medium" Text="@(GameState.CurrentGame?.Player2?.Initials ?? "P2")" />
+                            <RadzenText TextStyle="TextStyle.H5">Player 2</RadzenText>
                         </RadzenStack>
-                        <RadzenStack Gap="0">
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                        <RadzenStack Gap="0.75rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="question_answer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Questions: @GetQuestionsAnswered(2) of 5</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Questions: @GetQuestionsAnswered(2) of 5</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="check" />
-                                <RadzenText TextStyle="TextStyle.Body2">Correct: @GetCorrectAnswers(2)</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Correct: @GetCorrectAnswers(2)</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="close" />
-                                <RadzenText TextStyle="TextStyle.Body2">Incorrect: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Incorrect: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="speed" />
-                                <RadzenText TextStyle="TextStyle.Body2">Speed Bonus: +@GetSpeedBonus(2) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Speed Bonus: +@GetSpeedBonus(2) points</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="whatshot" />
-                                <RadzenText TextStyle="TextStyle.Body2">Streak Bonus: +@GetStreakBonus(2) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Streak Bonus: +@GetStreakBonus(2) points</RadzenText>
                             </RadzenStack>
-                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1" class="rz-py-1">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
                                 <RadzenIcon Icon="timer" />
-                                <RadzenText TextStyle="TextStyle.Body2">Time Bonus: +@GetTimeBonus(2) points</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Time Bonus: +@GetTimeBonus(2) points</RadzenText>
                             </RadzenStack>
-                            <RadzenDivider class="rz-my-2" />
-                            <RadzenText TextStyle="TextStyle.H6">Total Score: @(GameState.CurrentGame?.Player2Score ?? 0) points</RadzenText>
+                            <RadzenDivider class="rz-my-3" />
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-mt-2">Total Score: @(GameState.CurrentGame?.Player2Score ?? 0) points</RadzenText>
                         </RadzenStack>
                     </RadzenCard>
                 </RadzenColumn>
 
                 <!-- Game Statistics -->
-                <RadzenColumn Size="12" class="rz-mt-3">
-                    <RadzenCard class="rz-p-2 rz-p-sm-4" Variant="Radzen.Variant.Outlined">
-                        <RadzenText TextStyle="TextStyle.Subtitle2">Game Statistics</RadzenText>
+                <RadzenColumn Size="12" class="rz-mt-5">
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" Variant="Radzen.Variant.Outlined">
+                        <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-3">Game Statistics</RadzenText>
                         <RadzenRow Gutters="true">
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Caption">Game Duration: @GetGameDuration()</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Game Duration: @GetGameDuration()</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Caption">Total Questions: 20</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Total Questions: 20</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Caption">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Caption">Game ID: @(GameState.CurrentGame?.GameId?.Substring(0, 8) ?? "N/A")</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Game ID: @(GameState.CurrentGame?.GameId?.Substring(0, 8) ?? "N/A")</RadzenText>
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenCard>
                 </RadzenColumn>
             </RadzenRow>
 
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="2" class="rz-mt-4 rz-flex-wrap">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="2" class="rz-mt-6 rz-flex-wrap">
                 <RadzenButton Variant="Variant.Text"
                               Shade="Shade.Lighter"
-                              Size="ButtonSize.Small"
+                              Size="ButtonSize.Medium"
                               Click="@GoToMainMenu"
                               Text="MAIN MENU" />
             </RadzenStack>
@@ -149,21 +149,13 @@ else
 }
 
 <style>
-    /* Keep responsive styles if needed, adjust for Radzen classes if necessary */
-    @@media (max-width: 600px) {
-        .rz-card { /* Example: if RadzenCard needs specific padding on mobile */
-            padding: 0.5rem !important;
+    @@media (max-width: 768px) {
+        .rz-card {
+            padding: 0.75rem !important;
         }
-        .rz-card .rz-p-2, .rz-card .rz-p-sm-4 { /* More specific if nested cards */
-             padding: 0.5rem !important;
+        .rz-card .rz-p-3, .rz-card .rz-p-sm-5 {
+             padding: 0.75rem !important;
         }
-        /* .rz-list-item was an example, RadzenStack is used instead, so this might not be needed */
-        /* If RadzenList or similar were used, this would be relevant:
-        .rz-list-item { 
-            padding-top: 4px !important;
-            padding-bottom: 4px !important;
-        }
-        */
     }
 </style>
 

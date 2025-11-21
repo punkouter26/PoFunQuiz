@@ -1,77 +1,61 @@
-.page {
-    position: relative;
+.app-layout {
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    background-color: var(--rz-base-100);
+    overflow: hidden; /* Prevent body scroll, handle in app-main */
 }
 
-main {
-    flex: 1;
-}
-
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+.app-header {
+    height: 60px;
+    background-color: var(--rz-primary);
+    color: white;
     display: flex;
     align-items: center;
+    padding: 0 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 100;
+    flex-shrink: 0;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+.header-content {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-    }
+.app-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-    }
+.app-main {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 70px; /* Space for bottom nav */
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
 
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
+.page-transition-container {
+    padding: 1rem;
+    animation: slideInUp 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    min-height: 100%;
+}
 
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+@media (min-width: 768px) {
+    .page-transition-container {
+        padding: 2rem;
+        max-width: 1000px;
+        margin: 0 auto;
     }
 }

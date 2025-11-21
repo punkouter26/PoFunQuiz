@@ -1,0 +1,32 @@
+<div class="skeleton @Class" style="@Style"></div>
+
+<style>
+    .skeleton {
+        background-color: #e0e0e0;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.1) 25%,
+            rgba(255, 255, 255, 0.2) 37%,
+            rgba(255, 255, 255, 0.1) 63%
+        );
+        background-size: 400% 100%;
+        animation: skeleton-loading 1.4s ease infinite;
+        border-radius: 4px;
+        height: 1em;
+        width: 100%;
+    }
+
+    @@keyframes skeleton-loading {
+        0% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0 50%;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+}
