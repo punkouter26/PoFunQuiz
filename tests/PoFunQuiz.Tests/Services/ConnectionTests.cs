@@ -112,7 +112,9 @@ namespace PoFunQuiz.Tests.Services
                     new SingleObjectDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<SingleObjectDeserializer>())
                 };
 
-                var openAIService = new OpenAIService(appSettingsOptions, _configuration, _logger, deserializers);
+                // Create OpenAISettings from AppSettings
+                var openAISettings = Options.Create(appSettingsOptions.Value.AzureOpenAI);
+                var openAIService = new OpenAIService(openAISettings, _configuration, _logger, deserializers);
                 var questionGeneratorLogger = LoggerFactory.Create(builder =>
                 {
                     builder.AddXUnit(_output);

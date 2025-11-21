@@ -1,10 +1,13 @@
 @page "/results"
 @using PoFunQuiz.Client
+@using PoFunQuiz.Client.Services
 @using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
 @using Radzen
 @using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject PoFunQuiz.Client.GameState GameState
+@inject ILeaderboardService LeaderboardService
 @rendermode InteractiveWebAssembly
 
 <PageTitle>PoFunQuiz - Results</PageTitle>
@@ -164,16 +167,61 @@ else
     private bool IsTie => WinnerDeclared && GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
     private int WinnerNumber => (!WinnerDeclared || IsTie) ? 0 : (GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2);
     private Core.Models.Player? Winner => WinnerNumber == 1 ? GameState.CurrentGame?.Player1 : (WinnerNumber == 2 ? GameState.CurrentGame?.Player2 : null);
+    private bool scoresSubmitted = false;
 
-    protected override Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
         if (GameState.CurrentGame == null)
         {
             Navigation.NavigateTo("/");
-            return Task.CompletedTask;
+            return;
         }
+        
         UpdatePlayerStatisticsAsync();
-        return Task.CompletedTask;
+        
+        // Submit scores to leaderboard if not already submitted
+        if (!scoresSubmitted)
+        {
+            await SubmitScoresToLeaderboardAsync();
+            scoresSubmitted = true;
+        }
+    }
+
+    private async Task SubmitScoresToLeaderboardAsync()
+    {
+        if (GameState.CurrentGame == null) return;
+
+        var category = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "General";
+
+        // Submit Player 1 score
+        if (GameState.CurrentGame.Player1 != null && GameState.CurrentGame.Player1Score > 0)
+        {
+            var entry1 = new LeaderboardEntry
+            {
+                PlayerName = GameState.CurrentGame.Player1.Initials,
+                Score = GameState.CurrentGame.Player1Score,
+                MaxStreak = GameState.CurrentGame.Player1MaxStreak,
+                Category = category,
+                DatePlayed = DateTime.UtcNow
+            };
+            
+            await LeaderboardService.SubmitScoreAsync(entry1);
+        }
+
+        // Submit Player 2 score
+        if (GameState.CurrentGame.Player2 != null && GameState.CurrentGame.Player2Score > 0)
+        {
+            var entry2 = new LeaderboardEntry
+            {
+                PlayerName = GameState.CurrentGame.Player2.Initials,
+                Score = GameState.CurrentGame.Player2Score,
+                MaxStreak = GameState.CurrentGame.Player2MaxStreak,
+                Category = category,
+                DatePlayed = DateTime.UtcNow
+            };
+            
+            await LeaderboardService.SubmitScoreAsync(entry2);
+        }
     }
 
     private int GetCorrectAnswers(int playerNumber)
