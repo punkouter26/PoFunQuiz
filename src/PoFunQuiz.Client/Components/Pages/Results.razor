@@ -192,6 +192,10 @@ else
         if (GameState.CurrentGame == null) return;
 
         var category = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "General";
+        
+        // Determine winner
+        bool player1Won = GameState.CurrentGame.Player1Score > GameState.CurrentGame.Player2Score;
+        bool player2Won = GameState.CurrentGame.Player2Score > GameState.CurrentGame.Player1Score;
 
         // Submit Player 1 score
         if (GameState.CurrentGame.Player1 != null && GameState.CurrentGame.Player1Score > 0)
@@ -202,7 +206,9 @@ else
                 Score = GameState.CurrentGame.Player1Score,
                 MaxStreak = GameState.CurrentGame.Player1MaxStreak,
                 Category = category,
-                DatePlayed = DateTime.UtcNow
+                DatePlayed = DateTime.UtcNow,
+                Wins = player1Won ? 1 : 0,
+                Losses = player2Won ? 1 : 0
             };
             
             await LeaderboardService.SubmitScoreAsync(entry1);
@@ -217,7 +223,9 @@ else
                 Score = GameState.CurrentGame.Player2Score,
                 MaxStreak = GameState.CurrentGame.Player2MaxStreak,
                 Category = category,
-                DatePlayed = DateTime.UtcNow
+                DatePlayed = DateTime.UtcNow,
+                Wins = player2Won ? 1 : 0,
+                Losses = player1Won ? 1 : 0
             };
             
             await LeaderboardService.SubmitScoreAsync(entry2);

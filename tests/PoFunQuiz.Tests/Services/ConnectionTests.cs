@@ -113,8 +113,8 @@ namespace PoFunQuiz.Tests.Services
                 };
 
                 // Create OpenAISettings from AppSettings
-                var openAISettings = Options.Create(appSettingsOptions.Value.AzureOpenAI);
-                var openAIService = new OpenAIService(openAISettings, _configuration, _logger, deserializers);
+                var openAISettingsOptions = Options.Create(appSettingsOptions.Value.AzureOpenAI);
+                var openAIService = new OpenAIService(openAISettingsOptions, _configuration, _logger, deserializers);
                 var questionGeneratorLogger = LoggerFactory.Create(builder =>
                 {
                     builder.AddXUnit(_output);

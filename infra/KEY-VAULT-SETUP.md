@@ -35,29 +35,37 @@ The App Service (`PoFunQuiz-app`) uses its **System-Assigned Managed Identity** 
 ## Local Development vs Production
 
 ### Local Development
-- Secrets are loaded from `secrets.json` file (gitignored)
-- Key Vault is **not** accessed
-- Developers maintain their own local secrets file
+- **Key Vault is accessed** via `AZURE_KEY_VAULT_ENDPOINT` environment variable
+- Secrets (API keys, etc.) are retrieved from Key Vault using `DefaultAzureCredential`
+- **Storage connection string is overridden** to use Azurite: `UseDevelopmentStorage=true`
+- Requires Azure CLI authentication: `az login`
 
 ### Production (Azure App Service)
 - Key Vault is automatically configured via `AZURE_KEY_VAULT_ENDPOINT` environment variable
 - Managed identity authentication is used
-- App settings reference Key Vault using the syntax: `@Microsoft.KeyVault(VaultName=...;SecretName=...)`
+- Production storage connection string is used from Key Vault
 
 ## Configuration in Code
 
 ### Program.cs
 ```csharp
-// Add Azure Key Vault configuration (only in Production)
-if (builder.Environment.IsProduction())
+// Add Azure Key Vault configuration for ALL environments when endpoint is provided
+var keyVaultEndpoint = builder.Configuration["AZURE_KEY_VAULT_ENDPOINT"];
+if (!string.IsNullOrWhiteSpace(keyVaultEndpoint))
 {
-    var keyVaultEndpoint = builder.Configuration["AZURE_KEY_VAULT_ENDPOINT"];
-    if (!string.IsNullOrEmpty(keyVaultEndpoint))
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultEndpoint),
+        new Azure.Identity.DefaultAzureCredential());
+    Log.Information("Configured Azure Key Vault: {KeyVaultEndpoint}", keyVaultEndpoint);
+    
+    // Map Key Vault secrets to configuration paths
+    // ... secret mapping code ...
+    
+    // Override storage connection string for local development (use Azurite)
+    if (builder.Environment.IsDevelopment())
     {
-        builder.Configuration.AddAzureKeyVault(
-            new Uri(keyVaultEndpoint),
-            new Azure.Identity.DefaultAzureCredential());
-        Log.Information("Configured Azure Key Vault: {KeyVaultEndpoint}", keyVaultEndpoint);
+        builder.Configuration["AppSettings:Storage:TableStorageConnectionString"] = "UseDevelopmentStorage=true";
+        Log.Information("Development environment detected: Using Azurite for Table Storage");
     }
 }
 ```
@@ -188,7 +196,11 @@ az keyvault secret set --vault-name PoFunQuiz-kv --name MySecret --value "new-va
 
 **Symptom**: Key Vault errors when running locally
 
-**Solution**: Key Vault is only used in Production. Ensure `ASPNETCORE_ENVIRONMENT=Development` and use `secrets.json`.
+**Solutions**:
+1. Ensure `AZURE_KEY_VAULT_ENDPOINT` environment variable is set
+2. Authenticate with Azure: `az login`
+3. Verify your Azure account has **Key Vault Secrets User** role on the Key Vault
+4. Check that Azurite is running for local storage: `azurite --silent --location c:\azurite --debug c:\azurite\debug.log`
 
 ### Secret Not Found
 

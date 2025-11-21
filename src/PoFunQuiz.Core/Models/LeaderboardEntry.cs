@@ -20,5 +20,7 @@ namespace PoFunQuiz.Core.Models
         public int MaxStreak { get; set; }
         public string Category { get; set; } = "General";
         public DateTime DatePlayed { get; set; } = DateTime.UtcNow;
+        public int Wins { get; set; } = 0;
+        public int Losses { get; set; } = 0;
     }
 }

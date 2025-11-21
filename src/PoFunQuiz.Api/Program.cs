@@ -20,19 +20,7 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Load secrets.json for local development
-    var secretsPath = Path.Combine(Directory.GetCurrentDirectory(), "secrets.json");
-    if (File.Exists(secretsPath))
-    {
-        builder.Configuration.AddJsonFile(secretsPath, optional: true, reloadOnChange: true);
-        Log.Information("Loaded secrets.json configuration file");
-    }
-    else
-    {
-        Log.Warning("secrets.json file not found");
-    }
-
-    // Add Azure Key Vault configuration for all environments when endpoint is provided
+    // Add Azure Key Vault configuration for ALL environments when endpoint is provided
     var keyVaultEndpoint = builder.Configuration["AZURE_KEY_VAULT_ENDPOINT"];
     if (!string.IsNullOrWhiteSpace(keyVaultEndpoint))
     {
@@ -41,7 +29,6 @@ try
             new Azure.Identity.DefaultAzureCredential());
         Log.Information("Configured Azure Key Vault: {KeyVaultEndpoint}", keyVaultEndpoint);
         
-        // Override configuration with Key Vault secrets
         // Map Key Vault secrets to configuration paths
         var appSettings = builder.Configuration;
         
@@ -67,6 +54,13 @@ try
         {
             builder.Configuration["ApplicationInsights:ConnectionString"] = appInsightsConn;
             Log.Information("Loaded Application Insights connection string from Key Vault");
+        }
+
+        // Override storage connection string for local development (use Azurite)
+        if (builder.Environment.IsDevelopment())
+        {
+            builder.Configuration["AppSettings:Storage:TableStorageConnectionString"] = "UseDevelopmentStorage=true";
+            Log.Information("Development environment detected: Using Azurite for Table Storage");
         }
     }
     else
