@@ -1,0 +1,107 @@
+<step title="BackgroundTrace" date="2025-10-24T12:39:09.513" instance="c01540" url="/api/zipdeploy" method="POST" >
+  <step title="Updating shutdown sentinel last write time" date="2025-10-24T12:39:09.528" SemaphoreCount="7" /><!-- duration: 0ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-10-24T12:39:09.528" /><!-- duration: 0ms -->
+  <step title="Creating temporary deployment" date="2025-10-24T12:39:09.544" /><!-- duration: 47ms -->
+  <step title="Performing fetch based deployment" date="2025-10-24T12:39:09.607" >
+    <step title="Fetching changes." date="2025-10-24T12:39:09.653" /><!-- duration: 16ms -->
+    <step title="Starting LocalZipHandler" date="2025-10-24T12:39:09.685" /><!-- duration: 0ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\vzt0xbuh.zip (28.06 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-10-24T12:39:09.716" /><!-- duration: 0ms -->
+    <step title="Cleaning up temp folders from previous zip deployments and extracting pushed zip file C:\local\Temp\zipdeploy\vzt0xbuh.zip (28.06 MB) to C:\local\Temp\zipdeploy\extracted" date="2025-10-24T12:39:09.716" >
+      <step title="Extracting 546 entries to C:\local\Temp\zipdeploy\extracted directory" date="2025-10-24T12:39:09.732" >
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Microsoft.Extensions.Configuration.FileExtensions.dll ..." date="2025-10-24T12:39:09.747" /><!-- duration: 16ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Microsoft.Extensions.Primitives.dll ..." date="2025-10-24T12:39:09.763" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\PoFunQuiz.Server.pdb ..." date="2025-10-24T12:39:09.778" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Microsoft.AI.ServerTelemetryChannel.dll ..." date="2025-10-24T12:39:09.794" /><!-- duration: 0ms -->
+        <step title="Extracting to C:\local\Temp\zipdeploy\extracted\Microsoft.Extensions.DependencyInjection.dll ..." date="2025-10-24T12:39:09.794" /><!-- duration: 16ms -->
+        <step title="Omitting extracting file traces ..." date="2025-10-24T12:39:09.810" /><!-- duration: 0ms -->
+      </step><!-- duration: 1109ms -->
+    </step><!-- duration: 1125ms -->
+    <step title="Before sending BuildRequestReceived status to /api/updatedeploystatus" date="2025-10-24T12:39:10.857" /><!-- duration: 0ms -->
+    <step title="DeploymentManager.Deploy(id:411743ff80644fdd9865de6ea82d9f79)" date="2025-10-24T12:39:10.872" >
+      <step title="Collecting changeset information" date="2025-10-24T12:39:10.872" /><!-- duration: 31ms -->
+      <step title="Updating submodules" date="2025-10-24T12:39:10.903" >
+        <step title="Updating submodules." date="2025-10-24T12:39:10.950" /><!-- duration: 0ms -->
+      </step><!-- duration: 47ms -->
+      <step title="Preparing deployment for commit id &apos;411743ff80&apos;." date="2025-10-24T12:39:10.997" /><!-- duration: 0ms -->
+      <step title="Determining deployment builder" date="2025-10-24T12:39:11.028" >
+        <step title="Builder is BasicBuilder" date="2025-10-24T12:39:11.044" /><!-- duration: 0ms -->
+      </step><!-- duration: 16ms -->
+      <step title="Copying SSH keys" date="2025-10-24T12:39:11.075" /><!-- duration: 0ms -->
+      <step title="Building" date="2025-10-24T12:39:11.091" >
+        <step title="Generating deployment script." date="2025-10-24T12:39:11.122" /><!-- duration: 0ms -->
+        <step title="Generating deployment script" date="2025-10-24T12:39:11.138" >
+          <step title="Using cached version of the deployment script for command: -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;" date="2025-10-24T12:39:11.169" /><!-- duration: 16ms -->
+          <step title="Using cached version of deployment script (command: &apos;azure -y --no-dot-deployment -r &quot;C:\local\Temp\zipdeploy\extracted&quot; -o &quot;C:\home\site\deployments\tools&quot; --basic --sitePath &quot;C:\local\Temp\zipdeploy\extracted&quot;&apos;)." date="2025-10-24T12:39:11.185" /><!-- duration: 0ms -->
+        </step><!-- duration: 63ms -->
+        <step title="Running deployment command..." date="2025-10-24T12:39:11.232" /><!-- duration: 16ms -->
+        <step title="Command: &quot;C:\home\site\deployments\tools\deploy.cmd&quot;" date="2025-10-24T12:39:11.263" /><!-- duration: 0ms -->
+        <step title="Executing external process" date="2025-10-24T12:39:11.278" type="process" path="starter.cmd" arguments="&quot;C:\home\site\deployments\tools\deploy.cmd&quot;" >
+          <step title="Handling Basic Web Site deployment." date="2025-10-24T12:39:11.419" /><!-- duration: 16ms -->
+          <step title="Creating app_offline.htm" date="2025-10-24T12:39:11.747" /><!-- duration: 0ms -->
+          <step title="KuduSync.NET from: &apos;C:\local\Temp\zipdeploy\extracted&apos; to: &apos;C:\home\site\wwwroot&apos;" date="2025-10-24T12:39:11.747" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;appsettings.json&apos;" date="2025-10-24T12:39:11.763" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Client.dll&apos;" date="2025-10-24T12:39:11.778" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Core.dll&apos;" date="2025-10-24T12:39:11.778" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Infrastructure.dll&apos;" date="2025-10-24T12:39:11.794" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Infrastructure.pdb&apos;" date="2025-10-24T12:39:11.810" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server&apos;" date="2025-10-24T12:39:11.825" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server.deps.json&apos;" date="2025-10-24T12:39:11.825" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server.dll&apos;" date="2025-10-24T12:39:11.841" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server.pdb&apos;" date="2025-10-24T12:39:11.857" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server.runtimeconfig.json&apos;" date="2025-10-24T12:39:11.872" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;PoFunQuiz.Server.staticwebassets.endpoints.json&apos;" date="2025-10-24T12:39:11.888" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\app.css&apos;" date="2025-10-24T12:39:11.888" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;wwwroot\app.css.br&apos;" date="2025-10-24T12:39:11.903" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\app.css.gz&apos;" date="2025-10-24T12:39:11.919" /><!-- duration: 47ms -->
+          <step title="Copying file: &apos;wwwroot\favicon.png&apos;" date="2025-10-24T12:39:11.966" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\icon-192.png&apos;" date="2025-10-24T12:39:11.982" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\index.html&apos;" date="2025-10-24T12:39:11.982" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;wwwroot\index.html.br&apos;" date="2025-10-24T12:39:11.997" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\index.html.gz&apos;" date="2025-10-24T12:39:12.013" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\PoFunQuiz.Client.styles.css&apos;" date="2025-10-24T12:39:12.028" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\PoFunQuiz.Client.styles.css.br&apos;" date="2025-10-24T12:39:12.060" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\PoFunQuiz.Client.styles.css.gz&apos;" date="2025-10-24T12:39:12.075" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\app.css&apos;" date="2025-10-24T12:39:12.091" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\app.css.br&apos;" date="2025-10-24T12:39:12.107" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\app.css.gz&apos;" date="2025-10-24T12:39:12.107" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\bottom-nav.css&apos;" date="2025-10-24T12:39:12.122" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\bottom-nav.css.br&apos;" date="2025-10-24T12:39:12.138" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\bottom-nav.css.gz&apos;" date="2025-10-24T12:39:12.138" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\gameboard-mobile.css&apos;" date="2025-10-24T12:39:12.153" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\gameboard-mobile.css.br&apos;" date="2025-10-24T12:39:12.153" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;wwwroot\css\gameboard-mobile.css.gz&apos;" date="2025-10-24T12:39:12.169" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;wwwroot\css\mobile-ux.css&apos;" date="2025-10-24T12:39:12.185" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\mobile-ux.css.br&apos;" date="2025-10-24T12:39:12.200" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\css\mobile-ux.css.gz&apos;" date="2025-10-24T12:39:12.200" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\icon-192.png&apos;" date="2025-10-24T12:39:12.216" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\icon-512.png&apos;" date="2025-10-24T12:39:12.232" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\icon-maskable-192.png&apos;" date="2025-10-24T12:39:12.232" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\icon-maskable-512.png&apos;" date="2025-10-24T12:39:12.247" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\placeholder-icons.html&apos;" date="2025-10-24T12:39:12.263" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\placeholder-icons.html.br&apos;" date="2025-10-24T12:39:12.263" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\placeholder-icons.html.gz&apos;" date="2025-10-24T12:39:12.278" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\README.md&apos;" date="2025-10-24T12:39:12.294" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\README.md.br&apos;" date="2025-10-24T12:39:12.310" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\images\README.md.gz&apos;" date="2025-10-24T12:39:12.310" /><!-- duration: 16ms -->
+          <step title="Copying file: &apos;wwwroot\js\app.js&apos;" date="2025-10-24T12:39:12.325" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\js\app.js.br&apos;" date="2025-10-24T12:39:12.341" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\js\app.js.gz&apos;" date="2025-10-24T12:39:12.357" /><!-- duration: 0ms -->
+          <step title="Copying file: &apos;wwwroot\js\gameboard.js&apos;" date="2025-10-24T12:39:12.357" /><!-- duration: 0ms -->
+          <step title="Omitting next output lines..." date="2025-10-24T12:39:12.372" /><!-- duration: 0ms -->
+          <step title="Finished successfully." date="2025-10-24T12:39:14.752" /><!-- duration: 0ms -->
+        </step><!-- duration: 3489ms -->
+        <step title="Running post deployment command(s)..." date="2025-10-24T12:39:14.799" /><!-- duration: 0ms -->
+        <step title="Triggering recycle (preview mode disabled)." date="2025-10-24T12:39:14.846" /><!-- duration: 16ms -->
+        <step title="Ignoring FS watcher based recycle request as this is a classic Windows app." date="2025-10-24T12:39:14.861" /><!-- duration: 0ms -->
+        <step title="Deployment successful. DEPLOYMENTINFO: deploymentPath = ZipDeploy. Extract zip. , deployer = ZipDeploy, os = windows, sku = Free, siteName = PoFunQuiz, siteHostName = pofunquiz.azurewebsites.net, deploymentStatus = Success" date="2025-10-24T12:39:14.908" /><!-- duration: 0ms -->
+        <step title="Purge deployment items" date="2025-10-24T12:39:14.971" >
+          <step title="Remove d887b1b19, Success, received at 10/22/2025 7:10:19 PM" date="2025-10-24T12:39:15.033" /><!-- duration: 0ms -->
+        </step><!-- duration: 63ms -->
+      </step><!-- duration: 3958ms -->
+    </step><!-- duration: 4192ms -->
+    <step title="Cleaning up temp files" date="2025-10-24T12:39:15.065" /><!-- duration: 16ms -->
+    <step title="Skip function trigger and logicapp sync because function is not enabled." date="2025-10-24T12:39:15.080" /><!-- duration: 16ms -->
+  </step><!-- duration: 5505ms -->
+  <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-10-24T12:39:15.111" /><!-- duration: 0ms -->
+  <step title="Deleting shutdown sentinel file" date="2025-10-24T12:39:15.127" SemaphoreCount="8" /><!-- duration: 0ms -->
+</step><!-- duration: 5630ms -->

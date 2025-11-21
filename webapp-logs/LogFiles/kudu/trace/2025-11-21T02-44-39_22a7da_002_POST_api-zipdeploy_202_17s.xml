@@ -1,0 +1,16 @@
+<step title="Incoming Request" date="2025-11-21T02:44:39.322" instance="22a7da" url="/api/zipdeploy?isAsync=true" method="POST" type="request" pid="9292,2,9" Cache-Control="no-cache" Content-Length="48245634" Content-Type="application/octet-stream" Accept="*/*" Accept-Encoding="gzip, deflate" Authorization="Bea..." Host="pofunquiz.scm.azurewebsites.net" User-Agent="AZURECLI/2.79.0 (MSI)" x-ms-client-request-id="02265be7-c684-11f0-b760-e8a72f88f0de" X-ARR-LOG-ID="02265be7-c684-11f0-b760-e8a72f88f0de" CLIENT-IP="73.135.148.163:59642" X-SITE-DEPLOYMENT-ID="PoFunQuiz" WAS-DEFAULT-HOSTNAME="pofunquiz.scm.azurewebsites.net" X-Forwarded-Proto="https" X-AppService-Proto="https" X-Forwarded-TlsVersion="1.3" X-WAWS-Unencoded-URL="/api/zipdeploy?isAsync=true" >
+  <step title="ZipPushDeploy" date="2025-11-21T02:44:39.603" >
+    <step title="ZipDeploy. Extract zip. " date="2025-11-21T02:44:39.635" /><!-- duration: 16ms -->
+    <step title="Starting PushDeployAsync" date="2025-11-21T02:44:39.650" /><!-- duration: 16ms -->
+    <step title="Updating shutdown sentinel last write time" date="2025-11-21T02:44:39.713" SemaphoreCount="7" /><!-- duration: 0ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; acquired" date="2025-11-21T02:44:39.728" /><!-- duration: 0ms -->
+    <step title="Saving request content to C:\local\Temp\zipdeploy\ckavxdcq.zip" date="2025-11-21T02:44:39.744" >
+      <step title="Total 48,245,634 bytes written to C:\local\Temp\zipdeploy\ckavxdcq.zip" date="2025-11-21T02:44:56.544" /><!-- duration: 0ms -->
+    </step><!-- duration: 16800ms -->
+    <step title="LockFile &apos;C:\home\site\locks\deployments.lock&apos; released" date="2025-11-21T02:44:56.559" /><!-- duration: 0ms -->
+    <step title="Deleting shutdown sentinel file" date="2025-11-21T02:44:56.559" SemaphoreCount="8" /><!-- duration: 16ms -->
+    <step title="Starting FetchDeploy" date="2025-11-21T02:44:56.575" /><!-- duration: 0ms -->
+    <step title="Start deployment in the background" date="2025-11-21T02:44:56.591" /><!-- duration: 94ms -->
+  </step><!-- duration: 17097ms -->
+  <step title="Outgoing response" date="2025-11-21T02:44:56.747" type="response" statusCode="202" statusText="Accepted" Server="Microsoft-IIS/10.0" x-ms-request-id="02265be7-c684-11f0-b760-e8a72f88f0de" Retry-After="30" Cache-Control="private" X-AspNet-Version="4.0.30319" Location="https://pofunquiz.scm.azurewebsites.net/api/deployments/latest?deployer=ZipDeploy&amp;time=2025-11-21_02-44-56Z" /><!-- duration: 0ms -->
+</step><!-- duration: 17425ms -->

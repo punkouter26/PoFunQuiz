@@ -30,14 +30,14 @@ namespace PoFunQuiz.Server.Services
         private readonly IEnumerable<IQuizQuestionDeserializer> _deserializers;
 
         public OpenAIService(
-            IOptions<AppSettings> appSettings,
+            IOptions<OpenAISettings> openAISettings,
             IConfiguration configuration,
             ILogger<OpenAIService> logger,
             IEnumerable<IQuizQuestionDeserializer> deserializers)
         {
             _configuration = configuration;
             _logger = logger;
-            _settings = appSettings.Value.AzureOpenAI;
+            _settings = openAISettings.Value;
             _deserializers = deserializers;
 
             _chatClient = InitializeChatClient();
