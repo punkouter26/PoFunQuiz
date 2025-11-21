@@ -40,6 +40,34 @@ try
             new Uri(keyVaultEndpoint),
             new Azure.Identity.DefaultAzureCredential());
         Log.Information("Configured Azure Key Vault: {KeyVaultEndpoint}", keyVaultEndpoint);
+        
+        // Override configuration with Key Vault secrets
+        // Map Key Vault secrets to configuration paths
+        var appSettings = builder.Configuration;
+        
+        // Map AzureOpenAI--ApiKey to AzureOpenAI:ApiKey
+        var openAiKey = appSettings["AzureOpenAI--ApiKey"];
+        if (!string.IsNullOrEmpty(openAiKey))
+        {
+            builder.Configuration["AzureOpenAI:ApiKey"] = openAiKey;
+            Log.Information("Loaded OpenAI API key from Key Vault");
+        }
+        
+        // Map TableStorageConnectionString to AppSettings:Storage:TableStorageConnectionString
+        var tableStorageConn = appSettings["TableStorageConnectionString"];
+        if (!string.IsNullOrEmpty(tableStorageConn))
+        {
+            builder.Configuration["AppSettings:Storage:TableStorageConnectionString"] = tableStorageConn;
+            Log.Information("Loaded Table Storage connection string from Key Vault");
+        }
+        
+        // Map ApplicationInsights--ConnectionString to ApplicationInsights:ConnectionString
+        var appInsightsConn = appSettings["ApplicationInsights--ConnectionString"];
+        if (!string.IsNullOrEmpty(appInsightsConn))
+        {
+            builder.Configuration["ApplicationInsights:ConnectionString"] = appInsightsConn;
+            Log.Information("Loaded Application Insights connection string from Key Vault");
+        }
     }
     else
     {
