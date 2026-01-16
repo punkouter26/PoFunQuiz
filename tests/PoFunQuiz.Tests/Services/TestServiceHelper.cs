@@ -1,7 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PoFunQuiz.Core.Services;
-using PoFunQuiz.Server.Services;
+using PoFunQuiz.Web.Services;
 using System;
 
 namespace PoFunQuiz.Tests

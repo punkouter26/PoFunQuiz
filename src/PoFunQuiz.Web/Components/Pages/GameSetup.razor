@@ -1,0 +1,321 @@
+@page "/gamesetup"
+@using PoFunQuiz.Web
+@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Core.Services
+@using Microsoft.AspNetCore.Components.Web
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager Navigation
+@inject GameState GameState
+@inject IJSRuntime JSRuntime
+@inject IQuestionGeneratorService QuestionGeneratorService // Inject the question generator service
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Game Setup</PageTitle>
+
+@if (GameState.CurrentGame == null)
+{
+    <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;">
+        <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4">Game session not found.</RadzenText>
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/">Return to Main Menu</RadzenButton>
+    </div>
+}
+else
+{
+    <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;" @onkeydown="HandleKeyDown" tabindex="0" @ref="containerElement">
+        <div style="width: 100%; height: 100%; outline: none; text-align: center;">
+            @if (IsLoading)
+            {
+                <div class="rz-display-flex rz-flex-column rz-align-items-center">
+                    <RadzenText TextStyle="TextStyle.H5" class="rz-mb-3">Generating Questions...</RadzenText>
+                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 200px; height: 4px;" class="rz-mb-4" />
+                    
+                    <!-- Skeleton Loading for Game Board Preview -->
+                    <div class="rz-display-flex rz-gap-4">
+                        <div style="width: 300px; height: 400px; background: var(--rz-base-300); border-radius: 16px; opacity: 0.7;"></div>
+                        <div style="width: 300px; height: 400px; background: var(--rz-base-300); border-radius: 16px; opacity: 0.7;"></div>
+                    </div>
+                </div>
+            }
+            else if (IsCountingDown)
+            {
+                <RadzenText TextStyle="TextStyle.H5" class="rz-text-primary">Get Ready!</RadzenText>
+                <RadzenText TextStyle="TextStyle.H1" Style="font-size: 6rem;" class="rz-text-secondary">@CountdownValue</RadzenText>
+            }
+            else if (ErrorMessage != null)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="rz-mb-3">@ErrorMessage</RadzenAlert>
+                <RadzenButton ButtonStyle="ButtonStyle.Primary" Click="RetrySetup" Size="ButtonSize.Small" Text="Retry" />
+                <RadzenButton ButtonStyle="ButtonStyle.Secondary" Path="/" class="rz-mt-2" Size="ButtonSize.Small" Text="Back to Main Menu" />
+            }
+            else
+            {
+                <RadzenRow JustifyContent="JustifyContent.Center">
+                    <RadzenColumn Size="12" class="rz-mb-4 rz-text-align-center">
+                        <RadzenCard class="rz-p-2">
+                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-1">Topic: @(string.Join(", ", GameState.CurrentGame?.SelectedCategories ?? new List<string>()))</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">Difficulty: @(GameState.CurrentGame?.GameDifficulty.ToString() ?? "Medium")</RadzenText>
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn SizeSM="6" SizeXS="12" class="rz-mb-sm-0 rz-mb-3">
+                        <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-text-primary">Player 1</RadzenText>
+                            <div class="player-avatar player-avatar-primary rz-my-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</div>
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 1-4</RadzenText>
+                            @if (!Player1Ready)
+                            {
+                                <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                                              Click="@(() => SetPlayerReady(1))"
+                                              Size="ButtonSize.Small"
+                                              Text="I'm Ready" />
+                            }
+                            else
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Ready!" Icon="check_circle" />
+                            }
+                        </RadzenCard>
+                    </RadzenColumn>
+
+                    <RadzenColumn SizeSM="6" SizeXS="12">
+                        <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-text-secondary">Player 2</RadzenText>
+                            <div class="player-avatar player-avatar-secondary rz-my-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</div>
+                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 7-0</RadzenText>
+                            @if (!Player2Ready)
+                            {
+                                <RadzenButton ButtonStyle="ButtonStyle.Secondary"
+                                              Click="@(() => SetPlayerReady(2))"
+                                              Size="ButtonSize.Small"
+                                              Text="I'm Ready" />
+                            }
+                            else
+                            {
+                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Ready!" Icon="check_circle" />
+                            }
+                        </RadzenCard>
+                    </RadzenColumn>
+                </RadzenRow>
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .player-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .player-avatar-primary {
+        background-color: var(--rz-primary);
+    }
+    
+    .player-avatar-secondary {
+        background-color: var(--rz-secondary);
+    }
+    
+    /* Keep responsive styles if needed, adjust for Radzen classes if necessary */
+    @@media (max-width: 600px) {
+        .rz-card { /* Example: if RadzenCard needs specific padding on mobile */
+            padding: 8px !important;
+        }
+        
+        .rz-text-h5 { /* Example: if RadzenText H5 needs specific font size */
+            font-size: 1.1rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+        
+        .rz-text-h1 { /* Example: if RadzenText H1 needs specific font size */
+            font-size: 5rem !important;
+        }
+        
+        .rz-text-body2 { /* Example: if RadzenText Body2 needs specific font size */
+            font-size: 0.8rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+    }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "player1")]
+    public string? Player1Initials { get; set; }
+
+    [SupplyParameterFromQuery(Name = "player2")]
+    public string? Player2Initials { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Topic { get; set; }
+
+    private bool Player1Ready { get; set; } = false;
+    private bool Player2Ready { get; set; } = false;
+    private bool IsLoading { get; set; } = false;
+    private bool IsCountingDown { get; set; } = false;
+    private int CountdownValue { get; set; } = 3;
+    private string? ErrorMessage { get; set; }
+    private System.Threading.Timer? _countdownTimer;
+    private ElementReference containerElement;
+    private bool _initialized = false;
+
+    protected override void OnParametersSet()
+    {
+        // Only initialize once when we have valid parameters
+        if (_initialized) return;
+
+        if (string.IsNullOrWhiteSpace(Player1Initials) || string.IsNullOrWhiteSpace(Player2Initials) || string.IsNullOrWhiteSpace(Topic))
+        {
+            // Redirect to home if missing required parameters
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _initialized = true;
+
+        // Initialize GameState.CurrentGame with player initials and topic
+        if (GameState.CurrentGame == null)
+        {
+            GameState.CurrentGame = new PoFunQuiz.Core.Models.GameSession
+            {
+                Player1 = new PoFunQuiz.Core.Models.Player { Initials = Player1Initials },
+                Player2 = new PoFunQuiz.Core.Models.Player { Initials = Player2Initials },
+                Player1Initials = Player1Initials,
+                Player2Initials = Player2Initials,
+                SelectedCategories = new List<string> { Topic }
+            };
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && GameState.CurrentGame != null) // Only focus if game is active
+        {
+            await JSRuntime.InvokeVoidAsync("focusElement", containerElement);
+        }
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!Player1Ready && (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4"))
+        {
+            SetPlayerReady(1);
+        }
+
+        if (!Player2Ready && (e.Key == "7" || e.Key == "8" || e.Key == "9" || e.Key == "0"))
+        {
+            SetPlayerReady(2);
+        }
+    }
+
+    private void SetPlayerReady(int playerNumber)
+    {
+        if (playerNumber == 1)
+            Player1Ready = true;
+        else
+            Player2Ready = true;
+
+        if (Player1Ready && Player2Ready)
+        {
+            StartCountdown();
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void StartCountdown()
+    {
+        IsCountingDown = true;
+        CountdownValue = 3; // Reset countdown
+        _countdownTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                CountdownValue--;
+                StateHasChanged();
+
+                if (CountdownValue <= 0)
+                {
+                    _countdownTimer?.Dispose();
+                    _countdownTimer = null;
+                    IsCountingDown = false;
+                    GenerateQuestions();
+                }
+            });
+        }, null, 1000, 1000); // Start after 1 sec, repeat every 1 sec
+    }
+
+    private async void GenerateQuestions() // Changed to async
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            if (GameState.CurrentGame == null)
+            {
+                ErrorMessage = "Game state lost. Please return to the main menu.";
+                IsLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Use the injected service to generate questions
+            var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
+            Console.WriteLine($"🔍 GAMESETUP: Generating questions for topic: {topic}");
+            
+            // FIXED: Generate questions once and assign the same questions to both players for fairness
+            var sharedQuestions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic);
+
+            Console.WriteLine($"🔍 GAMESETUP: Generated {sharedQuestions?.Count ?? 0} shared questions");
+
+            if (sharedQuestions == null || sharedQuestions.Count == 0)
+            {
+                ErrorMessage = "Failed to generate questions. Please try again.";
+                IsLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Assign the SAME questions to both players
+            GameState.CurrentGame.Player1Questions = sharedQuestions;
+            GameState.CurrentGame.Player2Questions = sharedQuestions;
+            
+            Console.WriteLine($"🔍 GAMESETUP: Final assignment - Both players get the same {GameState.CurrentGame.Player1Questions?.Count ?? 0} questions");
+            
+            Navigation.NavigateTo("/game-board");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"An error occurred: {ex.Message}";
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void RetrySetup()
+    {
+        ErrorMessage = null;
+        Player1Ready = false;
+        Player2Ready = false;
+        IsLoading = false;
+        IsCountingDown = false;
+        _countdownTimer?.Dispose();
+        _countdownTimer = null;
+        StateHasChanged();
+         // Re-focus after retry might be needed if focus is lost
+        InvokeAsync(async () => {
+            if (GameState.CurrentGame != null) await JSRuntime.InvokeVoidAsync("focusElement", containerElement);
+        });
+    }
+
+    public void Dispose()
+    {
+        _countdownTimer?.Dispose();
+    }
+}

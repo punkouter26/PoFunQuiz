@@ -1,4 +1,4 @@
-namespace PoFunQuiz.Shared.DTOs
+namespace PoFunQuiz.Shared.Contracts
 {
     public class JoinGameDto
     {

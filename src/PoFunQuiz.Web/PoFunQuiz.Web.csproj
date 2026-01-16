@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <UserSecretsId>5f56cf6a-47e1-48fe-bc26-feadc3f8b58b</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Aspire & Service Discovery -->
+    <PackageReference Include="Aspire.Azure.Data.Tables" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery" />
+
+    <!-- SignalR (for interactive components) -->
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+
+    <!-- Azure -->
+    <PackageReference Include="Azure.AI.OpenAI" />
+    <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" />
+    <PackageReference Include="Azure.Identity" />
+
+    <!-- SignalR -->
+    <PackageReference Include="Microsoft.Azure.SignalR" />
+
+    <!-- Telemetry & Logging -->
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Enrichers.Environment" />
+    <PackageReference Include="Serilog.Enrichers.Thread" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Formatting.Compact" />
+    <PackageReference Include="Serilog.Sinks.ApplicationInsights" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+
+    <!-- API Documentation -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+
+    <!-- UI Components -->
+    <PackageReference Include="Radzen.Blazor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PoFunQuiz.ServiceDefaults\PoFunQuiz.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Infrastructure\PoFunQuiz.Infrastructure.csproj" />
+    <ProjectReference Include="..\PoFunQuiz.Shared\PoFunQuiz.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

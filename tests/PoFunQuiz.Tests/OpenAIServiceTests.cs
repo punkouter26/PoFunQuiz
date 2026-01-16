@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq; // For mocking ILogger
-using PoFunQuiz.Server.Services;
+using PoFunQuiz.Web.Services;
 using System.Linq;
 
 namespace PoFunQuiz.Tests

@@ -1,4 +1,4 @@
-name: Deploy PoFunQuiz to Azure
+name: Deploy PoFunQuiz to Azure Container Apps
 
 on:
   push:
@@ -9,6 +9,13 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  AZURE_CONTAINER_REGISTRY: acrposhared.azurecr.io
+  IMAGE_NAME: pofunquiz/pofunquiz-web
+  CONTAINER_APP_NAME: pofunquiz-web
+  CONTAINER_APP_ENVIRONMENT: cae-poshared
+  RESOURCE_GROUP: PoFunQuiz
+
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
@@ -17,10 +24,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup .NET 9.0
+    - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: '10.0.x'
       
     - name: Restore dependencies
       run: dotnet restore PoFunQuiz.sln
@@ -32,39 +39,29 @@ jobs:
       run: dotnet test PoFunQuiz.sln --no-build --configuration Release --verbosity normal --filter "Category!=E2E"
       continue-on-error: true
       
-    - name: Publish application
-      run: dotnet publish src/PoFunQuiz.Api/PoFunQuiz.Api.csproj --configuration Release --output ./publish
-      
-    - name: Optimize deployment size
-      run: |
-        # Remove unused Radzen CSS themes (keep only standard-base.css)
-        # Check if directory exists first to avoid errors
-        if [ -d "./publish/wwwroot/_content/Radzen.Blazor/css" ]; then
-          find ./publish/wwwroot/_content/Radzen.Blazor/css -type f ! -name 'standard-base.css*' -delete
-        fi
-        
-        # Display optimization results
-        echo "✅ Deployment optimized"
-      
-    - name: Create deployment package
-      run: |
-        cd publish
-        zip -r ../deploy.zip .
-        cd ..
-      
     - name: Azure Login (Federated Credentials)
       uses: azure/login@v2
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        
-    - name: Deploy to Azure App Service
+
+    - name: Login to Azure Container Registry
+      run: az acr login --name acrposhared
+
+    - name: Build and push container image
       run: |
-        az webapp deployment source config-zip \
-          --resource-group PoFunQuiz \
-          --name PoFunQuiz \
-          --src deploy.zip \
-          --timeout 1800
+        docker build -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -t ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+          -f src/PoFunQuiz.Web/Dockerfile .
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        
+    - name: Deploy to Azure Container Apps
+      run: |
+        az containerapp update \
+          --name ${{ env.CONTAINER_APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ env.AZURE_CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         
         echo "✅ Deployment completed successfully"

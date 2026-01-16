@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
@@ -10,15 +9,16 @@ using PoFunQuiz.Core.Services;
 namespace PoFunQuiz.Tests.Integration;
 
 /// <summary>
-/// Integration tests to verify OpenAI Azure resource connectivity and question generation
+/// Integration tests to verify OpenAI service (mocked) and question generation.
+/// Uses MockOpenAIService to avoid live LLM API calls during testing.
 /// </summary>
-public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
     private readonly ITestOutputHelper _output;
 
-    public OpenAIIntegrationTests(WebApplicationFactory<Program> factory, ITestOutputHelper output)
+    public OpenAIIntegrationTests(TestWebApplicationFactory factory, ITestOutputHelper output)
     {
         _factory = factory;
         _client = factory.CreateClient();
@@ -26,7 +26,7 @@ public class OpenAIIntegrationTests : IClassFixture<WebApplicationFactory<Progra
     }
 
     [Fact]
-    public async Task OpenAI_Configuration_IsValid()
+    public void OpenAI_Configuration_IsValid()
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();

@@ -9,7 +9,7 @@ using PoFunQuiz.Core.Configuration;
 using PoFunQuiz.Core.Models;
 using PoFunQuiz.Core.Services;
 using PoFunQuiz.Infrastructure.Services;
-using PoFunQuiz.Server.Services;
+using PoFunQuiz.Web.Services;
 using Xunit;
 using Xunit.Abstractions;
 

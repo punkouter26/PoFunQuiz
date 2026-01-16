@@ -1,17 +1,19 @@
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Xunit;
 using FluentAssertions;
 
 namespace PoFunQuiz.Tests.Integration
 {
-    public class GameHubTests : IClassFixture<WebApplicationFactory<Program>>
+    /// <summary>
+    /// Integration tests for SignalR GameHub using mocked services
+    /// </summary>
+    public class GameHubTests : IClassFixture<TestWebApplicationFactory>
     {
-        private readonly WebApplicationFactory<Program> _factory;
+        private readonly TestWebApplicationFactory _factory;
 
-        public GameHubTests(WebApplicationFactory<Program> factory)
+        public GameHubTests(TestWebApplicationFactory factory)
         {
             _factory = factory;
         }

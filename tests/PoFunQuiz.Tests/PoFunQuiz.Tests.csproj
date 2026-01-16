@@ -2,17 +2,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <!-- Suppress test naming convention warnings - underscores are common in test method names -->
+    <NoWarn>$(NoWarn);CA1707;CA1860</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
     <ProjectReference Include="..\..\src\PoFunQuiz.Infrastructure\PoFunQuiz.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\PoFunQuiz.Api\PoFunQuiz.Api.csproj" />
+    <ProjectReference Include="..\..\src\PoFunQuiz.Web\PoFunQuiz.Web.csproj" />
     <ProjectReference Include="..\..\src\PoFunQuiz.Shared\PoFunQuiz.Shared.csproj" />
   </ItemGroup>
 

@@ -1,5 +1,5 @@
 using Xunit;
-using PoFunQuiz.Api.Features.Multiplayer;
+using PoFunQuiz.Web.Features.Multiplayer;
 using PoFunQuiz.Core.Models;
 using FluentAssertions;
 

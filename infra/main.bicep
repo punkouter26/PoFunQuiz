@@ -2,27 +2,28 @@ targetScope = 'subscription'
 
 @minLength(1)
 @maxLength(64)
-@description('Name of the environment')
+@description('Name of the environment that can be used as part of naming resource convention')
 param environmentName string
 
 @minLength(1)
-@description('Primary location for all resources')
+@description('The location used for all deployed resources')
 param location string
 
 @description('Id of the user or app to assign application roles')
 param principalId string = ''
 
+@description('Resource group name for this application')
+param resourceGroupName string = 'PoFunQuiz'
+
 var tags = {
   'azd-env-name': environmentName
-  'app-name': 'PoFunQuiz'
 }
 
-resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'PoFunQuiz-rg'
+resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
+  name: resourceGroupName
   location: location
   tags: tags
 }
-
 module resources 'resources.bicep' = {
   scope: rg
   name: 'resources'
@@ -33,10 +34,31 @@ module resources 'resources.bicep' = {
   }
 }
 
-output AZURE_LOCATION string = location
-output AZURE_TENANT_ID string = tenant().tenantId
-output AZURE_RESOURCE_GROUP string = rg.name
-output AZURE_RESOURCE_POFUNQUIZ_SERVER_ID string = resources.outputs.AZURE_RESOURCE_POFUNQUIZ_SERVER_ID
-output SERVICE_POFUNQUIZ_ENDPOINT string = resources.outputs.SERVICE_POFUNQUIZ_ENDPOINT
-output AZURE_STORAGE_ACCOUNT_NAME string = resources.outputs.AZURE_STORAGE_ACCOUNT_NAME
-output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.APPLICATIONINSIGHTS_CONNECTION_STRING
+module storage 'storage/storage.module.bicep' = {
+  name: 'storage'
+  scope: rg
+  params: {
+    location: location
+  }
+}
+module storage_roles 'storage-roles/storage-roles.module.bicep' = {
+  name: 'storage-roles'
+  scope: rg
+  params: {
+    location: location
+    principalId: resources.outputs.MANAGED_IDENTITY_PRINCIPAL_ID
+    principalType: 'ServicePrincipal'
+    storage_outputs_name: storage.outputs.name
+  }
+}
+
+output MANAGED_IDENTITY_CLIENT_ID string = resources.outputs.MANAGED_IDENTITY_CLIENT_ID
+output MANAGED_IDENTITY_NAME string = resources.outputs.MANAGED_IDENTITY_NAME
+output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = resources.outputs.AZURE_LOG_ANALYTICS_WORKSPACE_NAME
+output AZURE_CONTAINER_REGISTRY_ENDPOINT string = resources.outputs.AZURE_CONTAINER_REGISTRY_ENDPOINT
+output AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID string = resources.outputs.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID
+output AZURE_CONTAINER_REGISTRY_NAME string = resources.outputs.AZURE_CONTAINER_REGISTRY_NAME
+output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_NAME
+output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_ID
+output AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN
+output STORAGE_TABLEENDPOINT string = storage.outputs.tableEndpoint

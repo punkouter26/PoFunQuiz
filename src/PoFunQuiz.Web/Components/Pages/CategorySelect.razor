@@ -1,0 +1,94 @@
+@page "/category-select"
+@using PoFunQuiz.Web
+@using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager Navigation
+@inject GameState GameState
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Select Category</PageTitle>
+
+<div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="min-height: 85vh;">
+    <RadzenCard class="rz-p-4 rz-p-md-6" style="width: 100%; max-width: 600px;">
+        <RadzenText TextStyle="TextStyle.H4" TextAlign="TextAlign.Center" class="rz-mb-4">Choose Categories</RadzenText>
+        
+        <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-4">
+            Select at least one category and difficulty level for your game.
+        </RadzenText>
+
+        <!-- Difficulty Selection -->
+        <RadzenLabel Text="Difficulty" For="difficultyDropDown" />
+        <RadzenDropDown TValue="QuestionDifficulty" 
+                        Data="@(Enum.GetValues<QuestionDifficulty>())" 
+                        @bind-Value="selectedDifficulty"
+                        TextProperty="ToString()" 
+                        ValueProperty="." 
+                        Placeholder="Select difficulty" 
+                        class="rz-mb-4 rz-width-100" 
+                        Name="difficultyDropDown" />
+
+        <!-- Category Selection -->
+        <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-2">Categories</RadzenText>
+        <div class="rz-display-flex rz-flex-wrap rz-gap-2 rz-mb-6">
+            @foreach (var category in QuestionCategories.All)
+            {
+                <RadzenButton Text="@category"
+                              ButtonStyle="@(selectedCategories.Contains(category) ? ButtonStyle.Primary : ButtonStyle.Light)"
+                              Click="@(() => ToggleCategory(category))"
+                              Size="ButtonSize.Medium" />
+            }
+        </div>
+
+        <!-- Action Buttons -->
+        <RadzenStack Gap="2">
+            <RadzenButton ButtonStyle="ButtonStyle.Primary"
+                          style="width: 100%;"
+                          Disabled="@(!IsValid)"
+                          Click="StartGame"
+                          Text="Start Game" />
+            
+            <RadzenButton ButtonStyle="ButtonStyle.Secondary"
+                          Shade="Shade.Lighter" 
+                          style="width: 100%;"
+                          Path="/"
+                          Text="Back" />
+        </RadzenStack>
+    </RadzenCard>
+</div>
+
+@code {
+    private HashSet<string> selectedCategories = new();
+    private QuestionDifficulty selectedDifficulty = QuestionDifficulty.Medium;
+    
+    private bool IsValid => selectedCategories.Count > 0;
+    
+    protected override void OnInitialized()
+    {
+        if (GameState.CurrentGame == null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+    }
+    
+    private void ToggleCategory(string category)
+    {
+        if (selectedCategories.Contains(category))
+            selectedCategories.Remove(category);
+        else
+            selectedCategories.Add(category);
+        InvokeAsync(StateHasChanged); // Ensure UI updates if selection changes button style
+    }
+    
+    private void StartGame()
+    {
+        if (GameState.CurrentGame == null || !IsValid)
+            return;
+            
+        GameState.CurrentGame.SelectedCategories = selectedCategories.ToList();
+        GameState.CurrentGame.GameDifficulty = selectedDifficulty;
+        
+        Navigation.NavigateTo("/game-setup");
+    }
+}

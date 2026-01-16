@@ -10,34 +10,37 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1, // 1 retry to capture traces
   workers: 1,
-  reporter: 'html',
+  reporter: [['html'], ['list']],
   
   // Increase timeout for Azure (cold start can take 30-60 seconds)
   timeout: isAzure ? 90000 : 30000,
   
   use: {
     baseURL: baseURL,
-    trace: 'on-first-retry',
+    trace: 'on-first-retry', // Capture traces on failure (per PoTestAll requirements)
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     // Longer navigation timeout for Azure
     navigationTimeout: isAzure ? 60000 : 30000,
-    // Uncomment to always see the browser (or use --headed flag)
-    // headless: false,
   },
 
+  // Projects: Chromium and Mobile only (per PoTestAll requirements)
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
   ],
 
   // Only start local server if NOT testing Azure
   webServer: isAzure ? undefined : {
-    command: 'dotnet run --project ../../src/PoFunQuiz.Api/PoFunQuiz.Api.csproj --urls http://localhost:5000',
+    command: 'dotnet run --project ../../src/PoFunQuiz.Web/PoFunQuiz.Web.csproj --urls http://localhost:5000',
     url: 'http://localhost:5000',
     reuseExistingServer: true, // Always reuse if server is already running
     timeout: 120000,

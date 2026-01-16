@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Suppress code analysis warnings that are stylistic rather than functional -->
+    <NoWarn>$(NoWarn);CA1716;CA1805;CA1510;CA1822;CA1710;CA1848;CA2208;CA1816;CA1304;CA1305;CA1311;CA1869;ASPDEPR002</NoWarn>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,368 @@
+@page "/results"
+@using PoFunQuiz.Web
+@using PoFunQuiz.Web.Services
+@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Core.Models
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager Navigation
+@inject GameState GameState
+@inject ILeaderboardService LeaderboardService
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Results</PageTitle>
+
+@if (GameState.CurrentGame == null)
+{
+    <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;">
+        <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4">No game results available.</RadzenText>
+        <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/">Return to Main Menu</RadzenButton>
+    </div>
+}
+else
+{
+    <div class="rz-p-sm-6 rz-p-3">
+        <RadzenCard class="rz-p-sm-8 rz-p-4">
+            <RadzenText TextStyle="TextStyle.H3" TextAlign="TextAlign.Center" class="rz-mb-6">Game Results</RadzenText>
+
+            @if (WinnerDeclared)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Radzen.Variant.Filled" Shade="Shade.Lighter" AllowClose="false" class="rz-my-4">
+                    <RadzenText TextStyle="TextStyle.H5">
+                        @if (IsTie)
+                        {
+                            <span>It's a Tie!</span>
+                        }
+                        else
+                        {
+                            <span>Winner: Player @WinnerNumber (@(Winner?.Initials ?? "???")) - Congratulations!</span>
+                        }
+                    </RadzenText>
+                </RadzenAlert>
+            }
+
+            <RadzenRow Gutters="true" class="rz-mt-5">
+                <!-- Player 1 Results -->
+                <RadzenColumn Size="12" SizeMD="6" class="rz-mb-4 rz-mb-md-0">
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" style="height: 100%;">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-4">
+                            <div class="player-avatar player-avatar-primary rz-mr-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</div>
+                            <RadzenText TextStyle="TextStyle.H5">Player 1</RadzenText>
+                        </RadzenStack>
+                        <RadzenStack Gap="0.75rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="question_answer" />
+                                <RadzenText TextStyle="TextStyle.Body1">Questions: @GetQuestionsAnswered(1) of 5</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="check" />
+                                <RadzenText TextStyle="TextStyle.Body1">Correct: @GetCorrectAnswers(1)</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="close" />
+                                <RadzenText TextStyle="TextStyle.Body1">Incorrect: @(GetQuestionsAnswered(1) - GetCorrectAnswers(1))</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="speed" />
+                                <RadzenText TextStyle="TextStyle.Body1">Speed Bonus: +@GetSpeedBonus(1) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="whatshot" />
+                                <RadzenText TextStyle="TextStyle.Body1">Streak Bonus: +@GetStreakBonus(1) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="timer" />
+                                <RadzenText TextStyle="TextStyle.Body1">Time Bonus: +@GetTimeBonus(1) points</RadzenText>
+                            </RadzenStack>
+                            <hr class="rz-my-3" />
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-mt-2">Total Score: @(GameState.CurrentGame?.Player1Score ?? 0) points</RadzenText>
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+
+                <!-- Player 2 Results -->
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" style="height: 100%;">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" class="rz-mb-4">
+                            <div class="player-avatar player-avatar-secondary rz-mr-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</div>
+                            <RadzenText TextStyle="TextStyle.H5">Player 2</RadzenText>
+                        </RadzenStack>
+                        <RadzenStack Gap="0.75rem">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="question_answer" />
+                                <RadzenText TextStyle="TextStyle.Body1">Questions: @GetQuestionsAnswered(2) of 5</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="check" />
+                                <RadzenText TextStyle="TextStyle.Body1">Correct: @GetCorrectAnswers(2)</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="close" />
+                                <RadzenText TextStyle="TextStyle.Body1">Incorrect: @(GetQuestionsAnswered(2) - GetCorrectAnswers(2))</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="speed" />
+                                <RadzenText TextStyle="TextStyle.Body1">Speed Bonus: +@GetSpeedBonus(2) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="whatshot" />
+                                <RadzenText TextStyle="TextStyle.Body1">Streak Bonus: +@GetStreakBonus(2) points</RadzenText>
+                            </RadzenStack>
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" class="rz-py-1">
+                                <RadzenIcon Icon="timer" />
+                                <RadzenText TextStyle="TextStyle.Body1">Time Bonus: +@GetTimeBonus(2) points</RadzenText>
+                            </RadzenStack>
+                            <hr class="rz-my-3" />
+                            <RadzenText TextStyle="TextStyle.H5" class="rz-mt-2">Total Score: @(GameState.CurrentGame?.Player2Score ?? 0) points</RadzenText>
+                        </RadzenStack>
+                    </RadzenCard>
+                </RadzenColumn>
+
+                <!-- Game Statistics -->
+                <RadzenColumn Size="12" class="rz-mt-5">
+                    <RadzenCard class="rz-p-sm-5 rz-p-3" Variant="Radzen.Variant.Outlined">
+                        <RadzenText TextStyle="TextStyle.Subtitle1" class="rz-mb-3">Game Statistics</RadzenText>
+                        <RadzenRow Gutters="true">
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenText TextStyle="TextStyle.Body1">Game Duration: @GetGameDuration()</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenText TextStyle="TextStyle.Body1">Total Questions: 20</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenText TextStyle="TextStyle.Body1">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="6" SizeMD="3">
+                                <RadzenText TextStyle="TextStyle.Body1">Game ID: @(GameState.CurrentGame?.GameId?.Substring(0, 8) ?? "N/A")</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenCard>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="2" class="rz-mt-6 rz-flex-wrap">
+                <RadzenButton Variant="Variant.Text"
+                              Shade="Shade.Lighter"
+                              Size="ButtonSize.Medium"
+                              Click="@GoToMainMenu"
+                              Text="MAIN MENU" />
+            </RadzenStack>
+        </RadzenCard>
+    </div>
+}
+
+<style>
+    .player-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        color: white;
+    }
+    .player-avatar-primary {
+        background-color: var(--rz-primary);
+    }
+    .player-avatar-secondary {
+        background-color: var(--rz-secondary);
+    }
+    @@media (max-width: 768px) {
+        .rz-card {
+            padding: 0.75rem !important;
+        }
+        .rz-card .rz-p-3, .rz-card .rz-p-sm-5 {
+             padding: 0.75rem !important;
+        }
+    }
+</style>
+
+@code {
+    private bool WinnerDeclared => GameState.CurrentGame?.Player1Score != null && GameState.CurrentGame?.Player2Score != null;
+    private bool IsTie => WinnerDeclared && GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
+    private int WinnerNumber => (!WinnerDeclared || IsTie) ? 0 : (GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2);
+    private Core.Models.Player? Winner => WinnerNumber == 1 ? GameState.CurrentGame?.Player1 : (WinnerNumber == 2 ? GameState.CurrentGame?.Player2 : null);
+    private bool scoresSubmitted = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (GameState.CurrentGame == null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        
+        UpdatePlayerStatisticsAsync();
+        
+        // Submit scores to leaderboard if not already submitted
+        if (!scoresSubmitted)
+        {
+            await SubmitScoresToLeaderboardAsync();
+            scoresSubmitted = true;
+        }
+    }
+
+    private async Task SubmitScoresToLeaderboardAsync()
+    {
+        if (GameState.CurrentGame == null) return;
+
+        var category = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "General";
+        
+        // Determine winner
+        bool player1Won = GameState.CurrentGame.Player1Score > GameState.CurrentGame.Player2Score;
+        bool player2Won = GameState.CurrentGame.Player2Score > GameState.CurrentGame.Player1Score;
+
+        // Submit Player 1 score
+        if (GameState.CurrentGame.Player1 != null && GameState.CurrentGame.Player1Score > 0)
+        {
+            var entry1 = new LeaderboardEntry
+            {
+                PlayerName = GameState.CurrentGame.Player1.Initials,
+                Score = GameState.CurrentGame.Player1Score,
+                MaxStreak = GameState.CurrentGame.Player1MaxStreak,
+                Category = category,
+                DatePlayed = DateTime.UtcNow,
+                Wins = player1Won ? 1 : 0,
+                Losses = player2Won ? 1 : 0
+            };
+            
+            await LeaderboardService.SubmitScoreAsync(entry1);
+        }
+
+        // Submit Player 2 score
+        if (GameState.CurrentGame.Player2 != null && GameState.CurrentGame.Player2Score > 0)
+        {
+            var entry2 = new LeaderboardEntry
+            {
+                PlayerName = GameState.CurrentGame.Player2.Initials,
+                Score = GameState.CurrentGame.Player2Score,
+                MaxStreak = GameState.CurrentGame.Player2MaxStreak,
+                Category = category,
+                DatePlayed = DateTime.UtcNow,
+                Wins = player2Won ? 1 : 0,
+                Losses = player1Won ? 1 : 0
+            };
+            
+            await LeaderboardService.SubmitScoreAsync(entry2);
+        }
+    }
+
+    private int GetCorrectAnswers(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual base score which represents correct answers (1 point each)
+        return playerNumber == 1 
+            ? GameState.CurrentGame.Player1BaseScore 
+            : GameState.CurrentGame.Player2BaseScore;
+    }
+
+    private int GetTimeBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual time bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1TimeBonus
+            : GameState.CurrentGame.Player2TimeBonus;
+    }
+
+    private int GetQuestionsAnswered(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual base score which represents questions answered correctly
+        return playerNumber == 1 
+            ? GameState.CurrentGame.Player1BaseScore 
+            : GameState.CurrentGame.Player2BaseScore;
+    }
+
+    private int GetSpeedBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual speed bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1SpeedBonus
+            : GameState.CurrentGame.Player2SpeedBonus;
+    }
+
+    private int GetStreakBonus(int playerNumber)
+    {
+        if (GameState.CurrentGame == null) return 0;
+        
+        // Return the actual streak bonus calculated during the game
+        return playerNumber == 1
+            ? GameState.CurrentGame.Player1StreakBonus
+            : GameState.CurrentGame.Player2StreakBonus;
+    }
+
+    private string GetGameDuration()
+    {
+        if (GameState.CurrentGame?.StartTime.HasValue == true && GameState.CurrentGame?.EndTime.HasValue == true)
+        {
+            var duration = GameState.CurrentGame.EndTime.Value - GameState.CurrentGame.StartTime.Value;
+            return $"{duration.Minutes:D2}:{duration.Seconds:D2}";
+        }
+        return "00:00";
+    }
+
+    private void GoToMainMenu()
+    {
+        GameState.CurrentGame = null;
+        Navigation.NavigateTo("/", forceLoad: true);
+    }
+
+    private void PlayAgain()
+    {
+        if (GameState.CurrentGame?.Player1 == null || GameState.CurrentGame?.Player2 == null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        var player1 = GameState.CurrentGame.Player1;
+        var player2 = GameState.CurrentGame.Player2;
+        GameState.CurrentGame = new Core.Models.GameSession
+        {
+            Player1 = player1,
+            Player2 = player2,
+            StartTime = DateTime.UtcNow,
+            GameId = Guid.NewGuid().ToString()
+        };
+        Navigation.NavigateTo("/game-setup");
+    }
+
+    private void UpdatePlayerStatisticsAsync()
+    {
+        if (GameState.CurrentGame?.Player1 == null || GameState.CurrentGame?.Player2 == null)
+        {
+            Console.WriteLine($"Error updating player statistics: CurrentGame or Players are null.");
+            return;
+        }
+        try
+        {
+            bool player1IsWinner = WinnerNumber == 1;
+            bool player2IsWinner = WinnerNumber == 2;
+            int player1Score = GameState.CurrentGame.Player1Score;
+            int player2Score = GameState.CurrentGame.Player2Score;
+            UpdatePlayerStats(GameState.CurrentGame.Player1, player1IsWinner, GetCorrectAnswers(1), player1Score);
+            UpdatePlayerStats(GameState.CurrentGame.Player2, player2IsWinner, GetCorrectAnswers(2), player2Score);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating player statistics: {ex.Message}");
+        }
+    }
+
+    private void UpdatePlayerStats(Core.Models.Player? player, bool isWinner, int correctAnswers, int totalScore)
+    {
+        if (player == null) return;
+        player.GamesPlayed++;
+        if (isWinner) player.GamesWon++;
+        player.TotalScore += totalScore;
+        player.TotalCorrectAnswers += correctAnswers;
+        // await PlayerService.UpdatePlayerAsync(player); // Server-side call removed
+    }
+}
