@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  id-token: write
   contents: read
 
 env:
@@ -39,15 +38,9 @@ jobs:
     - name: Publish
       run: dotnet publish src/PoFunQuiz.Web/PoFunQuiz.Web.csproj --configuration Release --output ./publish
 
-    - name: Azure Login (Federated Credentials)
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.APP_NAME }}
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1FC5F7CDBBF84D4FB94469753219C864 }}
         package: ./publish
