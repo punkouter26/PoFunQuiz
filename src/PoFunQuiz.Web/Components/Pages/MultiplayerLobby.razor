@@ -1,6 +1,5 @@
 @page "/multiplayer"
-@using PoFunQuiz.Web.Services
-@using PoFunQuiz.Shared.Contracts
+@using PoFunQuiz.Web.Features.Multiplayer
 @inject GameClientService GameService
 @inject NavigationManager Navigation
 @implements IDisposable
@@ -15,123 +14,330 @@
     </div>
 </SectionContent>
 
-<div class="container mt-4">
-    <h1 class="text-center mb-4">🎮 Multiplayer Arena</h1>
-
+<div class="mp-container">
     @if (currentState == null)
     {
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h3 class="card-title text-center">Join or Create</h3>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Your Name</label>
-                            <input type="text" class="form-control" @bind="playerName" placeholder="Enter your name" />
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary btn-lg" @onclick="CreateGame" disabled="@string.IsNullOrWhiteSpace(playerName)">
-                                Create New Game
-                            </button>
-                            
-                            <div class="input-group mt-3">
-                                <input type="text" class="form-control" @bind="gameIdToJoin" placeholder="Enter Game ID" />
-                                <button class="btn btn-outline-secondary" @onclick="JoinGame" disabled="@(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin))">
-                                    Join Game
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Hero banner -->
+        <div class="mp-hero">
+            <div class="mp-hero-bg"></div>
+            <h2 class="mp-hero-title">Multiplayer Arena</h2>
+            <p class="mp-hero-sub">Challenge a friend in real-time!</p>
         </div>
+
+        <!-- Join / Create form -->
+        <RadzenCard class="mp-form-card">
+            <RadzenStack Gap="1rem">
+                <div class="mp-field">
+                    <label>Your Name</label>
+                    <RadzenTextBox @bind-Value="playerName" Placeholder="Enter your name" Style="width:100%;" />
+                </div>
+
+                <RadzenButton Text="Create New Game" Icon="add_circle" ButtonStyle="ButtonStyle.Primary"
+                              Style="width:100%; border-radius:var(--radius-input); padding:0.875rem; font-weight:600;"
+                              Click="CreateGame" Disabled="@string.IsNullOrWhiteSpace(playerName)" />
+
+                <div class="mp-divider"><span>or join an existing game</span></div>
+
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Style="width:100%;">
+                    <RadzenTextBox @bind-Value="gameIdToJoin" Placeholder="Enter Game ID" Style="flex:1;" />
+                    <RadzenButton Text="Join" Icon="login" ButtonStyle="ButtonStyle.Secondary"
+                                  Style="border-radius:var(--radius-input);"
+                                  Click="JoinGame"
+                                  Disabled="@(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin))" />
+                </RadzenStack>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div style="background:rgba(244,67,54,0.12); color:#d32f2f; padding:0.75rem 1rem; border-radius:var(--radius-input); font-size:0.9rem; display:flex; align-items:center; gap:0.5rem;">
+                        <span class="material-icons" style="font-size:1.1rem;">error_outline</span>
+                        @errorMessage
+                    </div>
+                }
+            </RadzenStack>
+        </RadzenCard>
     }
     else
     {
-        <div class="row">
-            <div class="col-md-12 text-center mb-4">
-                <h2>Game ID: <span class="badge bg-info">@currentState.GameId</span></h2>
-                <p class="text-muted">Share this ID with your friend!</p>
+        <!-- Game ID banner -->
+        <div class="mp-id-banner">
+            <span class="material-icons">share</span>
+            <div>
+                <p class="mp-id-label">Game ID</p>
+                <p class="mp-id-value">@currentState.GameId</p>
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-md-5">
-                <div class="card border-primary mb-3">
-                    <div class="card-header bg-primary text-white">Player 1</div>
-                    <div class="card-body text-center">
-                        <h4>@currentState.Player1Name</h4>
-                        <h1 class="display-4">@currentState.Player1Score</h1>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-2 d-flex align-items-center justify-content-center">
-                <h1>VS</h1>
-            </div>
+        <!-- Versus layout -->
+        <div class="mp-versus">
+            <RadzenCard class="mp-player-card mp-player-primary">
+                <div class="mp-avatar">@SafeInitials(currentState.Player1Name)</div>
+                <h3>@currentState.Player1Name</h3>
+                <p class="mp-score">@currentState.Player1Score</p>
+            </RadzenCard>
 
-            <div class="col-md-5">
-                <div class="card border-danger mb-3">
-                    <div class="card-header bg-danger text-white">Player 2</div>
-                    <div class="card-body text-center">
-                        <h4>@currentState.Player2Name</h4>
-                        <h1 class="display-4">@currentState.Player2Score</h1>
-                    </div>
-                </div>
-            </div>
+            <div class="mp-vs">VS</div>
+
+            <RadzenCard class="mp-player-card mp-player-secondary">
+                <div class="mp-avatar">@(currentState.Player2Name == "Waiting..." ? "?" : SafeInitials(currentState.Player2Name))</div>
+                <h3>@currentState.Player2Name</h3>
+                <p class="mp-score">@currentState.Player2Score</p>
+            </RadzenCard>
         </div>
 
-        <div class="text-center mt-4">
+        <!-- Action area -->
+        <div class="mp-actions">
             @if (!currentState.IsGameStarted)
             {
                 @if (isHost && currentState.Player2Name != "Waiting...")
                 {
-                    <button class="btn btn-success btn-lg px-5" @onclick="StartGame">Start Game</button>
-                }
-                else if (currentState.Player2Name == "Waiting...")
-                {
-                    <div class="alert alert-warning">Waiting for Player 2 to join...</div>
+                    <RadzenButton Text="Start Game" Icon="play_arrow" ButtonStyle="ButtonStyle.Success"
+                                  Style="width:100%; border-radius:var(--radius-input); padding:1rem; font-size:1.1rem; font-weight:700;"
+                                  Click="StartGame" />
                 }
                 else
                 {
-                    <div class="alert alert-info">Waiting for host to start...</div>
+                    <div class="mp-waiting">
+                        <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                                           Style="width:200px; height:4px;" />
+                        <p>@(currentState.Player2Name == "Waiting..." ? "Waiting for Player 2 to join…" : "Waiting for host to start…")</p>
+                    </div>
                 }
             }
             else
             {
-                <div class="alert alert-success">Game in Progress! (Simulation Mode)</div>
-                <button class="btn btn-outline-primary" @onclick="SimulateScore">Simulate Score (+10)</button>
+                <div class="mp-active-banner">
+                    <span class="material-icons">sports_esports</span>
+                    <span>Game in Progress!</span>
+                </div>
+                <RadzenButton Text="Score +10" Icon="add" ButtonStyle="ButtonStyle.Primary"
+                              Style="width:100%; border-radius:var(--radius-input); margin-top:0.75rem;"
+                              Click="SimulateScore" />
             }
         </div>
     }
 </div>
+
+<style>
+    /* Container */
+    .mp-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 1rem;
+        padding-bottom: 80px;
+    }
+
+    /* Hero */
+    .mp-hero {
+        position: relative;
+        background: linear-gradient(135deg, var(--rz-primary) 0%, var(--rz-secondary, #ec4899) 100%);
+        border-radius: var(--radius-card);
+        padding: 2rem 1.5rem;
+        color: #fff;
+        text-align: center;
+        margin-bottom: 1.25rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .mp-hero-bg {
+        position: absolute;
+        top: -40%;
+        right: -15%;
+        width: 220px;
+        height: 220px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .mp-hero-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin: 0 0 0.25rem;
+        position: relative;
+    }
+
+    .mp-hero-sub {
+        opacity: 0.9;
+        margin: 0;
+        font-size: 0.95rem;
+        position: relative;
+    }
+
+    /* Form card */
+    .mp-form-card {
+        border-radius: var(--radius-card) !important;
+        padding: 1.5rem !important;
+    }
+
+    .mp-field label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        opacity: 0.85;
+        margin-bottom: 0.35rem;
+        margin-left: 4px;
+    }
+
+    /* Divider */
+    .mp-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
+
+    .mp-divider::before, .mp-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    /* Game ID banner */
+    .mp-id-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: #fff;
+        border-radius: var(--radius-card);
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        box-shadow: var(--shadow-md);
+    }
+
+    .mp-id-banner .material-icons { font-size: 1.75rem; }
+    .mp-id-label { margin: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+    .mp-id-value { margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.1em; }
+
+    /* Versus layout */
+    .mp-versus {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .mp-player-card {
+        flex: 1;
+        text-align: center;
+        padding: 1.25rem 0.75rem !important;
+        border-radius: var(--radius-card) !important;
+    }
+
+    .mp-player-card h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0.5rem 0 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .mp-player-primary { border-top: 3px solid var(--primary-color); }
+    .mp-player-secondary { border-top: 3px solid var(--secondary-color); }
+
+    .mp-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin: 0 auto;
+        color: #fff;
+    }
+
+    .mp-player-primary .mp-avatar { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+    .mp-player-secondary .mp-avatar { background: linear-gradient(135deg, var(--secondary-color), var(--secondary-dark)); }
+
+    .mp-score {
+        font-size: 2rem;
+        font-weight: 800;
+        margin: 0;
+        color: var(--text-primary);
+    }
+
+    .mp-vs {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+    }
+
+    /* Actions */
+    .mp-actions { text-align: center; }
+
+    .mp-waiting {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.5rem 0;
+    }
+
+    .mp-waiting p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .mp-active-banner {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--success-color);
+        padding: 0.625rem 1.25rem;
+        border-radius: var(--radius-input);
+        font-weight: 600;
+    }
+
+    /* Dark mode */
+    @@media (prefers-color-scheme: dark) {
+        .mp-score { color: var(--text-primary); }
+        .mp-form-card { background: rgba(30,41,59,0.92) !important; }
+    }
+</style>
 
 @code {
     private string playerName = string.Empty;
     private string gameIdToJoin = string.Empty;
     private GameStateDto? currentState;
     private bool isHost = false;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
         await GameService.InitializeAsync();
         GameService.OnGameUpdated += UpdateState;
-        GameService.OnPlayerJoined += (name) => StateHasChanged();
+        GameService.OnPlayerJoined += (_) => InvokeAsync(StateHasChanged);
         GameService.OnGameStarted += UpdateState;
         GameService.OnScoreUpdated += UpdateState;
     }
 
     private void UpdateState(GameStateDto state)
     {
-        currentState = state;
-        StateHasChanged();
+        InvokeAsync(() =>
+        {
+            currentState = state;
+            StateHasChanged();
+        });
     }
 
     private async Task CreateGame()
     {
+        errorMessage = null;
         var gameId = await GameService.CreateGameAsync(playerName);
+        if (string.IsNullOrEmpty(gameId))
+        {
+            errorMessage = "Failed to create game. Please try again.";
+            return;
+        }
         isHost = true;
         currentState = new GameStateDto
         {
@@ -145,15 +351,15 @@
 
     private async Task JoinGame()
     {
+        errorMessage = null;
         var success = await GameService.JoinGameAsync(gameIdToJoin, playerName);
         if (success)
         {
             isHost = false;
-            // State will be updated via SignalR callback
         }
         else
         {
-            // Handle error
+            errorMessage = "Could not join game. Check the Game ID and try again.";
         }
     }
 
@@ -174,6 +380,9 @@
             await GameService.UpdateScoreAsync(currentState.GameId, playerNum, currentScore + 10);
         }
     }
+
+    private static string SafeInitials(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? "?" : name[..Math.Min(2, name.Length)].ToUpperInvariant();
 
     public void Dispose()
     {

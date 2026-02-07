@@ -1,0 +1,59 @@
+### PoFunQuiz API Debugging (.http file)
+### Use with VS Code REST Client extension or Visual Studio .http support
+
+@baseUrl = https://localhost:5001
+
+### Health Check — verify all connections to APIs and databases
+GET {{baseUrl}}/health
+Accept: application/json
+
+###
+
+### Diagnostics — exposes masked connection strings, keys, settings
+GET {{baseUrl}}/diag
+Accept: application/json
+
+###
+
+### Generate Quiz Questions (General Knowledge)
+GET {{baseUrl}}/api/quiz/questions?count=5
+Accept: application/json
+
+###
+
+### Generate Quiz Questions (specific category)
+GET {{baseUrl}}/api/quiz/questions?count=5&category=Science
+Accept: application/json
+
+###
+
+### Get Leaderboard (General category)
+GET {{baseUrl}}/api/leaderboard?category=General
+Accept: application/json
+
+###
+
+### Submit a Leaderboard Score
+POST {{baseUrl}}/api/leaderboard
+Content-Type: application/json
+
+{
+  "playerName": "TST",
+  "score": 42,
+  "maxStreak": 3,
+  "category": "General",
+  "datePlayed": "2026-02-07T00:00:00Z",
+  "wins": 1,
+  "losses": 0
+}
+
+###
+
+### OpenAPI Spec
+GET {{baseUrl}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### Scalar API Reference UI
+GET {{baseUrl}}/scalar/v1

@@ -1,30 +1,22 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PoFunQuiz.Core.Services;
-using PoFunQuiz.Web.Services;
-using System;
+using PoFunQuiz.Web.Features.Quiz;
 
-namespace PoFunQuiz.Tests
+namespace PoFunQuiz.Tests;
+
+/// <summary>
+/// Helper class for building service providers in test classes
+/// </summary>
+public static class TestServiceHelper
 {
     /// <summary>
-    /// Helper class for building service providers in test classes
+    /// Builds a service provider with MockOpenAIService registered as IOpenAIService
     /// </summary>
-    public static class TestServiceHelper
+    public static ServiceProvider BuildQuestionGeneratorServices()
     {
-        /// <summary>
-        /// Builds a service provider with QuestionGeneratorService configured with MockOpenAIService
-        /// </summary>
-        public static ServiceProvider BuildQuestionGeneratorServices()
-        {
-            var services = new ServiceCollection();
-            services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
-
-            // Use mock OpenAI service for deterministic testing
-            var mockOpenAIService = new MockOpenAIService();
-            services.AddSingleton<IOpenAIService>(mockOpenAIService);
-            services.AddSingleton<IQuestionGeneratorService, QuestionGeneratorService>();
-
-            return services.BuildServiceProvider();
-        }
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+        services.AddSingleton<IOpenAIService>(new MockOpenAIService());
+        return services.BuildServiceProvider();
     }
 }

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR;
-using PoFunQuiz.Shared.Contracts;
 
 namespace PoFunQuiz.Web.Features.Multiplayer;
 
@@ -14,14 +13,20 @@ public class GameHub : Hub
 
     public async Task<string> CreateGame(string playerName)
     {
-        var session = _lobbyService.CreateSession(playerName);
+        if (string.IsNullOrWhiteSpace(playerName))
+            throw new HubException("Player name is required.");
+
+        var session = _lobbyService.CreateSession(playerName, Context.ConnectionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, session.GameId);
         return session.GameId;
     }
 
     public async Task<bool> JoinGame(JoinGameDto dto)
     {
-        if (_lobbyService.JoinSession(dto.GameId, dto.PlayerName))
+        if (string.IsNullOrWhiteSpace(dto.PlayerName) || string.IsNullOrWhiteSpace(dto.GameId))
+            return false;
+
+        if (_lobbyService.JoinSession(dto.GameId, dto.PlayerName, Context.ConnectionId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, dto.GameId);
             var session = _lobbyService.GetSession(dto.GameId);
@@ -47,6 +52,8 @@ public class GameHub : Hub
 
     public async Task UpdateScore(string gameId, int playerNumber, int score)
     {
+        if (playerNumber is not (1 or 2)) return;
+
         var session = _lobbyService.GetSession(gameId);
         if (session != null)
         {
@@ -55,5 +62,11 @@ public class GameHub : Hub
 
             await Clients.Group(gameId).SendAsync("ScoreUpdated", _lobbyService.MapToDto(session));
         }
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        _lobbyService.OnDisconnected(Context.ConnectionId);
+        return base.OnDisconnectedAsync(exception);
     }
 }

@@ -4,15 +4,13 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using PoFunQuiz.Core.Models;
-using PoFunQuiz.Core.Services;
-using PoFunQuiz.Web.Services;
+using PoFunQuiz.Web.Models;
+using PoFunQuiz.Web.Features.Quiz;
 
 namespace PoFunQuiz.Tests.Integration;
 
 /// <summary>
 /// Custom WebApplicationFactory that mocks external services (OpenAI) for integration testing.
-/// This follows the PoTestAll requirement: "Prohibit calls to live LLM APIs during testing"
 /// </summary>
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
@@ -27,21 +25,12 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
                 services.Remove(openAIDescriptor);
             }
 
-            // Remove existing IQuestionGeneratorService registration
-            var qgDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(IQuestionGeneratorService));
-            if (qgDescriptor != null)
-            {
-                services.Remove(qgDescriptor);
-            }
-
             // Add mock OpenAI service
             services.AddSingleton<IOpenAIService, MockOpenAIService>();
-            
-            // Add question generator that uses the mock
-            services.AddSingleton<IQuestionGeneratorService, QuestionGeneratorService>();
         });
 
-        builder.UseEnvironment("Testing");
+        // Use Development environment to skip HTTPS redirect in tests
+        builder.UseEnvironment("Development");
     }
 }
 
@@ -67,7 +56,7 @@ public class MockOpenAIService : IOpenAIService
                     $"Mock City C",
                     $"Mock City D"
                 },
-                CorrectOptionIndex = 0, // "Mock City A" is the correct answer
+                CorrectOptionIndex = 0,
                 Difficulty = QuestionDifficulty.Easy,
                 Category = topic ?? "General"
             };

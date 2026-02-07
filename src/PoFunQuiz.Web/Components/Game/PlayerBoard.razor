@@ -1,4 +1,4 @@
-@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Web.Models
 @using Radzen
 @using Radzen.Blazor
 
@@ -41,10 +41,110 @@
 
 @if (FeedbackVisible)
 {
-    <div class="feedback-overlay">
+    <div class="feedback-overlay @(LastAnswerCorrect ? "feedback-correct" : "feedback-wrong")">
+        <span class="material-icons feedback-icon">@(LastAnswerCorrect ? "check_circle" : "cancel")</span>
         <span>@(LastAnswerCorrect ? "Correct!" : "Wrong!")</span>
     </div>
 }
+
+<style>
+    .options-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        margin-top: auto;
+    }
+
+    .option-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-input, 12px);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        background: var(--surface-color, #fff);
+        user-select: none;
+    }
+
+    .option-item:hover {
+        border-color: var(--primary-color, #6366f1);
+        background: rgba(99, 102, 241, 0.04);
+    }
+
+    .option-item:active {
+        transform: scale(0.98);
+    }
+
+    .option-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--surface-alt, #f1f5f9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: var(--text-secondary, #64748b);
+        flex-shrink: 0;
+    }
+
+    .option-text {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .feedback-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--radius-input, 12px);
+        font-weight: 700;
+        font-size: 1.1rem;
+        z-index: 10;
+        animation: feedbackPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        pointer-events: none;
+    }
+
+    .feedback-correct {
+        background: rgba(16, 185, 129, 0.95);
+        color: white;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .feedback-wrong {
+        background: rgba(239, 68, 68, 0.95);
+        color: white;
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    .feedback-icon {
+        font-size: 1.25rem;
+    }
+
+    @@keyframes feedbackPop {
+        0% { transform: translate(-50%, -50%) scale(0.7); opacity: 0; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    @@media (prefers-color-scheme: dark) {
+        .option-item {
+            background: var(--surface-color, #1e293b);
+            border-color: var(--border-color, #334155);
+        }
+        .option-number {
+            background: var(--surface-alt, #334155);
+            color: var(--text-secondary, #94a3b8);
+        }
+    }
+</style>
 
 @code {
     [Parameter] public string PlayerName { get; set; } = "";

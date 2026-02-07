@@ -7,8 +7,8 @@ using Azure.Data.Tables;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
-using PoFunQuiz.Core.Models;
-using PoFunQuiz.Infrastructure.Services;
+using PoFunQuiz.Web.Models;
+using PoFunQuiz.Web.Features.Leaderboard;
 using Xunit;
 
 namespace PoFunQuiz.Tests.Unit

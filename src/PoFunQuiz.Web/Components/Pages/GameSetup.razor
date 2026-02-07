@@ -1,14 +1,14 @@
 @page "/gamesetup"
 @using PoFunQuiz.Web
-@using PoFunQuiz.Core.Models
-@using PoFunQuiz.Core.Services
+@using PoFunQuiz.Web.Models
+@using PoFunQuiz.Web.Features.Quiz
 @using Microsoft.AspNetCore.Components.Web
 @using Radzen
 @using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject GameState GameState
 @inject IJSRuntime JSRuntime
-@inject IQuestionGeneratorService QuestionGeneratorService // Inject the question generator service
+@inject IOpenAIService OpenAIService
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -182,10 +182,10 @@ else
         // Initialize GameState.CurrentGame with player initials and topic
         if (GameState.CurrentGame == null)
         {
-            GameState.CurrentGame = new PoFunQuiz.Core.Models.GameSession
+            GameState.CurrentGame = new GameSession
             {
-                Player1 = new PoFunQuiz.Core.Models.Player { Initials = Player1Initials },
-                Player2 = new PoFunQuiz.Core.Models.Player { Initials = Player2Initials },
+                Player1 = new Player { Initials = Player1Initials },
+                Player2 = new Player { Initials = Player2Initials },
                 Player1Initials = Player1Initials,
                 Player2Initials = Player2Initials,
                 SelectedCategories = new List<string> { Topic }
@@ -244,13 +244,13 @@ else
                     _countdownTimer?.Dispose();
                     _countdownTimer = null;
                     IsCountingDown = false;
-                    GenerateQuestions();
+                    await GenerateQuestionsAsync();
                 }
             });
         }, null, 1000, 1000); // Start after 1 sec, repeat every 1 sec
     }
 
-    private async void GenerateQuestions() // Changed to async
+    private async Task GenerateQuestionsAsync()
     {
         try
         {
@@ -269,8 +269,8 @@ else
             var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
             Console.WriteLine($"🔍 GAMESETUP: Generating questions for topic: {topic}");
             
-            // FIXED: Generate questions once and assign the same questions to both players for fairness
-            var sharedQuestions = await QuestionGeneratorService.GenerateQuestionsInCategoryAsync(5, topic);
+            // Generate questions once and assign the same questions to both players for fairness
+            var sharedQuestions = await OpenAIService.GenerateQuizQuestionsAsync(topic, 5);
 
             Console.WriteLine($"🔍 GAMESETUP: Generated {sharedQuestions?.Count ?? 0} shared questions");
 
@@ -285,6 +285,7 @@ else
             // Assign the SAME questions to both players
             GameState.CurrentGame.Player1Questions = sharedQuestions;
             GameState.CurrentGame.Player2Questions = sharedQuestions;
+            GameState.CurrentGame.StartTime = DateTime.UtcNow;
             
             Console.WriteLine($"🔍 GAMESETUP: Final assignment - Both players get the same {GameState.CurrentGame.Player1Questions?.Count ?? 0} questions");
             

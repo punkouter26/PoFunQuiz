@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
-EXPOSE 8080
+EXPOSE 5000
+EXPOSE 5001
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
@@ -11,10 +12,6 @@ COPY Directory.Packages.props ./
 
 # Copy project files
 COPY src/PoFunQuiz.Web/PoFunQuiz.Web.csproj src/PoFunQuiz.Web/
-COPY src/PoFunQuiz.Core/PoFunQuiz.Core.csproj src/PoFunQuiz.Core/
-COPY src/PoFunQuiz.Infrastructure/PoFunQuiz.Infrastructure.csproj src/PoFunQuiz.Infrastructure/
-COPY src/PoFunQuiz.Shared/PoFunQuiz.Shared.csproj src/PoFunQuiz.Shared/
-COPY src/PoFunQuiz.ServiceDefaults/PoFunQuiz.ServiceDefaults.csproj src/PoFunQuiz.ServiceDefaults/
 
 # Restore dependencies
 RUN dotnet restore src/PoFunQuiz.Web/PoFunQuiz.Web.csproj

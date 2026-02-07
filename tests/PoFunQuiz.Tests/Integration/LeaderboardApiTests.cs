@@ -4,8 +4,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using PoFunQuiz.Core.Interfaces;
-using PoFunQuiz.Core.Models;
+using PoFunQuiz.Web.Features.Leaderboard;
+using PoFunQuiz.Web.Models;
 using Xunit;
 
 namespace PoFunQuiz.Tests.Integration

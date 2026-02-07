@@ -4,14 +4,13 @@ name: PoFunQuiz
 metadata:
   template: PoFunQuiz@1.0.0
 
-# Azure Developer CLI will deploy from the Aspire AppHost
 infra:
   provider: bicep
   path: infra
 
 services:
   pofunquiz-web:
-    project: src/PoFunQuiz.AppHost/PoFunQuiz.AppHost.csproj
-    host: containerapp
+    project: src/PoFunQuiz.Web/PoFunQuiz.Web.csproj
+    host: appservice
     language: dotnet
 

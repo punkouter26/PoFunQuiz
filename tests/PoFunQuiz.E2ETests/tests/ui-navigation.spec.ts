@@ -67,11 +67,11 @@ test.describe('Navigation Tests', () => {
     await page.goto('/');
     
     // Find and click diagnostics link
-    const diagLink = page.locator("a[href='/diag'], a:has-text('Diagnostics')").first();
+    const diagLink = page.locator("a[href='/diagnostics'], a:has-text('Diagnostics'), a:has-text('Diag')").first();
     await diagLink.click();
     
     // Verify navigation and content
-    await expect(page).toHaveURL(/\/diag/i);
+    await expect(page).toHaveURL(/\/diagnostics/i);
     
     const diagnosticsHeading = page.locator("h1:has-text('Diagnostics')");
     await expect(diagnosticsHeading).toBeVisible();
@@ -81,7 +81,7 @@ test.describe('Navigation Tests', () => {
 test.describe.skip('Diagnostics Page Tests', () => {
   // Skip: Diagnostics page not implemented in current version
   test('should display health checks', async ({ page }) => {
-    await page.goto('/diag');
+    await page.goto('/diagnostics');
     
     // Wait for Blazor to render and health checks to load
     await page.waitForTimeout(4000);
@@ -106,7 +106,7 @@ test.describe.skip('Diagnostics Page Tests', () => {
   });
 
   test('should have working refresh button', async ({ page }) => {
-    await page.goto('/diag');
+    await page.goto('/diagnostics');
     await page.waitForTimeout(2000);
     
     // Click refresh button

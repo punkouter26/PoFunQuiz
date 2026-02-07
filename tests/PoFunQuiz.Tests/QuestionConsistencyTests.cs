@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PoFunQuiz.Core.Services;
-using PoFunQuiz.Web.Services;
+using PoFunQuiz.Web.Features.Quiz;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,28 +16,26 @@ namespace PoFunQuiz.Tests
     public class QuestionConsistencyTests
     {
         private readonly ITestOutputHelper _output;
-        private readonly IQuestionGeneratorService _questionGeneratorService;
-        private readonly ILogger<QuestionGeneratorService> _logger;
+        private readonly IOpenAIService _openAIService;
 
         public QuestionConsistencyTests(ITestOutputHelper output)
         {
             _output = output;
 
             var serviceProvider = TestServiceHelper.BuildQuestionGeneratorServices();
-            _questionGeneratorService = serviceProvider.GetRequiredService<IQuestionGeneratorService>();
-            _logger = serviceProvider.GetRequiredService<ILogger<QuestionGeneratorService>>();
+            _openAIService = serviceProvider.GetRequiredService<IOpenAIService>();
         }
 
         [Fact]
-        public async Task GenerateQuestionsInCategoryAsync_ShouldReturnSameQuestionsForBothPlayers_WhenCalledWithSameParameters()
+        public async Task GenerateQuestions_ShouldReturnSameQuestionsForBothPlayers_WhenCalledWithSameParameters()
         {
             // Arrange
             const string category = "Science";
             const int questionCount = 5;
 
-            // Act - Simulate what happens in GameSetup.razor
-            var player1Questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
-            var player2Questions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            // Act
+            var player1Questions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
+            var player2Questions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Assert
             Assert.NotNull(player1Questions);
@@ -82,16 +79,16 @@ namespace PoFunQuiz.Tests
         }
 
         [Fact]
-        public async Task GenerateQuestionsInCategoryAsync_ShouldReturnConsistentResults_WhenCalledMultipleTimes()
+        public async Task GenerateQuestions_ShouldReturnConsistentResults_WhenCalledMultipleTimes()
         {
             // Arrange
             const string category = "History";
             const int questionCount = 3;
 
-            // Act - Call the service multiple times
-            var firstCall = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
-            var secondCall = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
-            var thirdCall = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            // Act
+            var firstCall = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
+            var secondCall = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
+            var thirdCall = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Assert
             Assert.NotNull(firstCall);
@@ -120,24 +117,21 @@ namespace PoFunQuiz.Tests
 
     /// <summary>
     /// Mock implementation of IOpenAIService that returns deterministic questions
-    /// This simulates OpenAI always returning different questions (which is realistic)
     /// </summary>
     public class MockOpenAIService : IOpenAIService
     {
         private readonly Random _random = new();
 
-        public async Task<List<PoFunQuiz.Core.Models.QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
+        public async Task<List<PoFunQuiz.Web.Models.QuizQuestion>> GenerateQuizQuestionsAsync(string topic, int numberOfQuestions)
         {
-            // Simulate async call
             await Task.Delay(50);
 
-            var questions = new List<PoFunQuiz.Core.Models.QuizQuestion>();
+            var questions = new List<PoFunQuiz.Web.Models.QuizQuestion>();
 
             for (int i = 0; i < numberOfQuestions; i++)
             {
-                // Generate unique questions each time to simulate real OpenAI behavior
                 var questionId = _random.Next(1000, 9999);
-                var question = new PoFunQuiz.Core.Models.QuizQuestion
+                var question = new PoFunQuiz.Web.Models.QuizQuestion
                 {
                     Question = $"Mock {topic} question #{questionId} (Call at {DateTime.Now.Ticks})",
                     Options = new List<string>
@@ -148,7 +142,7 @@ namespace PoFunQuiz.Tests
                         $"Option D for Q{questionId}"
                     },
                     CorrectOptionIndex = _random.Next(0, 4),
-                    Difficulty = PoFunQuiz.Core.Models.QuestionDifficulty.Easy
+                    Difficulty = PoFunQuiz.Web.Models.QuestionDifficulty.Easy
                 };
                 questions.Add(question);
             }
@@ -160,14 +154,14 @@ namespace PoFunQuiz.Tests
     public class VerificationTests
     {
         private readonly ITestOutputHelper _output;
-        private readonly IQuestionGeneratorService _questionGeneratorService;
+        private readonly IOpenAIService _openAIService;
 
         public VerificationTests(ITestOutputHelper output)
         {
             _output = output;
 
             var serviceProvider = TestServiceHelper.BuildQuestionGeneratorServices();
-            _questionGeneratorService = serviceProvider.GetRequiredService<IQuestionGeneratorService>();
+            _openAIService = serviceProvider.GetRequiredService<IOpenAIService>();
         }
 
         [Fact]
@@ -178,7 +172,7 @@ namespace PoFunQuiz.Tests
             const int questionCount = 5;
 
             // Act - Simulate the FIXED approach from GameSetup.razor
-            var sharedQuestions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            var sharedQuestions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Assign the SAME questions to both players (simulating the fix)
             var player1Questions = sharedQuestions;
@@ -227,7 +221,7 @@ namespace PoFunQuiz.Tests
             const int questionCount = 3;
 
             // Act - Generate shared questions
-            var sharedQuestions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            var sharedQuestions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Simulate both players getting the same questions
             var player1Questions = sharedQuestions;

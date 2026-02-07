@@ -3,8 +3,8 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using Xunit.Abstractions;
-using PoFunQuiz.Core.Models;
-using PoFunQuiz.Core.Services;
+using PoFunQuiz.Web.Models;
+using PoFunQuiz.Web.Features.Quiz;
 
 namespace PoFunQuiz.Tests.Integration;
 
@@ -30,18 +30,18 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
     {
         // Arrange
         using var scope = _factory.Services.CreateScope();
-        var questionGenerator = scope.ServiceProvider.GetService<IQuestionGeneratorService>();
+        var openAIService = scope.ServiceProvider.GetService<IOpenAIService>();
 
         // Assert
-        Assert.NotNull(questionGenerator);
-        _output.WriteLine("✅ Question generator service is registered");
+        Assert.NotNull(openAIService);
+        _output.WriteLine("✅ OpenAI service is registered");
     }
 
     [Fact]
     public async Task OpenAI_CanGenerateQuestions_SimpleTest()
     {
         // Act
-        var response = await _client.GetAsync("/api/quiz/generate?count=1");
+        var response = await _client.GetAsync("/api/quiz/questions?count=1");
 
         // Log response details
         _output.WriteLine($"Response Status: {response.StatusCode}");
@@ -75,7 +75,7 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var count = 2;
 
         // Act
-        var response = await _client.GetAsync($"/api/quiz/generateincategory?count={count}&category={category}");
+        var response = await _client.GetAsync($"/api/quiz/questions?count={count}&category={category}");
 
         // Log response details
         _output.WriteLine($"Response Status: {response.StatusCode}");
@@ -106,7 +106,7 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
     public async Task OpenAI_GeneratedQuestions_HaveValidStructure()
     {
         // Act
-        var response = await _client.GetAsync("/api/quiz/generate?count=1");
+        var response = await _client.GetAsync("/api/quiz/questions?count=1");
 
         // Assert - if successful, verify structure
         if (response.IsSuccessStatusCode)
@@ -147,7 +147,7 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var startTime = DateTime.UtcNow;
 
         // Act
-        var response = await _client.GetAsync("/api/quiz/generate?count=3");
+        var response = await _client.GetAsync("/api/quiz/questions?count=3");
         var duration = DateTime.UtcNow - startTime;
 
         // Assert
@@ -172,7 +172,7 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
         // This test checks if we can reach the health endpoint which includes OpenAI status
 
         // Act
-        var response = await _client.GetAsync("/api/health");
+        var response = await _client.GetAsync("/health");
 
         // Assert
         _output.WriteLine($"Health endpoint status: {response.StatusCode}");

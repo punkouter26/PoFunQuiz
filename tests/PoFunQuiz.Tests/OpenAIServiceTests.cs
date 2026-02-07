@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq; // For mocking ILogger
-using PoFunQuiz.Web.Services;
+using PoFunQuiz.Web.Features.Quiz;
 using System.Linq;
 
 namespace PoFunQuiz.Tests
@@ -18,8 +18,8 @@ namespace PoFunQuiz.Tests
             // Arrange
             var mockService = new Mock<IOpenAIService>();
             mockService.Setup(s => s.GenerateQuizQuestionsAsync(It.IsAny<string>(), It.IsAny<int>()))
-                .ReturnsAsync(new List<PoFunQuiz.Core.Models.QuizQuestion> {
-                    new PoFunQuiz.Core.Models.QuizQuestion {
+                .ReturnsAsync(new List<PoFunQuiz.Web.Models.QuizQuestion> {
+                    new PoFunQuiz.Web.Models.QuizQuestion {
                         Question = "What is the capital of France?",
                         Options = new List<string> { "Paris", "London", "Berlin", "Rome" },
                         CorrectOptionIndex = 0

@@ -161,3 +161,6 @@ AzuriteConfig/
 
 # IDE settings
 .vscode/
+
+# PoTune state
+.potune-state.json

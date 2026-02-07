@@ -3,7 +3,7 @@
     flex-direction: column;
     height: 100vh;
     background-color: var(--rz-base-100);
-    overflow: hidden; /* Prevent body scroll, handle in app-main */
+    overflow: hidden;
 }
 
 .app-header {
@@ -29,14 +29,15 @@
 
 .app-title {
     font-size: 1.25rem;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
+    letter-spacing: -0.01em;
 }
 
 .app-main {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 70px; /* Space for bottom nav */
+    padding-bottom: 70px;
     -webkit-overflow-scrolling: touch;
     position: relative;
 }
@@ -57,5 +58,16 @@
         padding: 2rem;
         max-width: 1000px;
         margin: 0 auto;
+    }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+    .app-layout {
+        background-color: #0f172a;
+    }
+    .app-header {
+        background-color: #312e81;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 }

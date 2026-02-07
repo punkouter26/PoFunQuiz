@@ -5,11 +5,9 @@ using Azure.Data.Tables;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PoFunQuiz.Core.Configuration;
-using PoFunQuiz.Core.Models;
-using PoFunQuiz.Core.Services;
-using PoFunQuiz.Infrastructure.Services;
-using PoFunQuiz.Web.Services;
+using PoFunQuiz.Web.Configuration;
+using PoFunQuiz.Web.Models;
+using PoFunQuiz.Web.Features.Quiz;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -101,28 +99,11 @@ namespace PoFunQuiz.Tests.Services
             // Only the OpenAI-based generator is supported in production code.
             try
             {
-                var appSettings = _configuration.GetSection("AppSettings").Get<AppSettings>();
-                var appSettingsOptions = Options.Create(appSettings!);
+                var configuredSettings = _configuration.GetSection("AzureOpenAI").Get<OpenAISettings>();
+                var configuredSettingsOptions = Options.Create(configuredSettings!);
+                var openAIService = new OpenAIService(configuredSettingsOptions, _logger);
 
-                // Create empty deserializer collection for testing
-                var deserializers = new List<IQuizQuestionDeserializer>
-                {
-                    new SchemaWrapperDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<SchemaWrapperDeserializer>()),
-                    new DirectArrayDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<DirectArrayDeserializer>()),
-                    new SingleObjectDeserializer(LoggerFactory.Create(b => b.AddXUnit(_output)).CreateLogger<SingleObjectDeserializer>())
-                };
-
-                // Create OpenAISettings from AppSettings
-                var openAISettingsOptions = Options.Create(appSettingsOptions.Value.AzureOpenAI);
-                var openAIService = new OpenAIService(openAISettingsOptions, _configuration, _logger, deserializers);
-                var questionGeneratorLogger = LoggerFactory.Create(builder =>
-                {
-                    builder.AddXUnit(_output);
-                    builder.SetMinimumLevel(LogLevel.Debug);
-                }).CreateLogger<QuestionGeneratorService>();
-
-                var questionGenerator = new QuestionGeneratorService(openAIService, questionGeneratorLogger);
-                var questions = await questionGenerator.GenerateQuestionsAsync(1);
+                var questions = await openAIService.GenerateQuizQuestionsAsync("general knowledge", 1);
                 _output.WriteLine($"OpenAI service generated {questions?.Count ?? 0} question(s)");
             }
             catch (Exception ex)

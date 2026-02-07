@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Xunit;
-using PoFunQuiz.Core.Models;
+using PoFunQuiz.Web.Models;
 
 namespace PoFunQuiz.Tests.Integration;
 

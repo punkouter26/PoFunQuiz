@@ -1,0 +1,42 @@
+@page "/diagnostics"
+@using System.Text.Json
+@inject NavigationManager Navigation
+@inject IHttpClientFactory HttpClientFactory
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Diagnostics</PageTitle>
+
+<div class="container mt-4">
+    <h2 class="mb-4">Diagnostics</h2>
+    <p class="text-muted mb-3">All sensitive values are masked for security (middle characters hidden).</p>
+
+    @if (diagData != null)
+    {
+        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 1.5rem; border-radius: 12px; overflow-x: auto; font-size: 0.85rem;">@diagData</pre>
+    }
+    else
+    {
+        <p>Loading diagnostics...</p>
+    }
+</div>
+
+@code {
+    private string? diagData;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            client.BaseAddress = new Uri(Navigation.BaseUri);
+            var response = await client.GetStringAsync("diag");
+            // Pretty-print the JSON
+            using var doc = JsonDocument.Parse(response);
+            diagData = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
+        }
+        catch (Exception ex)
+        {
+            diagData = $"Error loading diagnostics: {ex.Message}";
+        }
+    }
+}

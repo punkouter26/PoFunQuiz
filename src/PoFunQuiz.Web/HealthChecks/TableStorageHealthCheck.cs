@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Azure.Data.Tables;
 using Microsoft.Extensions.Options;
-using PoFunQuiz.Core.Configuration;
+using PoFunQuiz.Web.Configuration;
 
 namespace PoFunQuiz.Web.HealthChecks;
 

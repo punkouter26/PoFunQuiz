@@ -214,15 +214,16 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
     }
   });
 
-  test('should navigate to gamesetup even without validation', async () => {
-    // Current behavior: Form always navigates to gamesetup, validation happens on that page
-    await test.step('Start game without player initials navigates to gamesetup', async () => {
+  test('should show validation error when starting without initials', async () => {
+    // Current behavior: Validation happens on the home page, blocking navigation
+    await test.step('Start game without player initials shows validation error', async () => {
       // Try to start without entering initials
       const startButton = page.locator('button:has-text("Start Game")');
       await startButton.click();
       
-      // Should navigate to gamesetup (validation happens there)
-      await expect(page).toHaveURL(/\/gamesetup/);
+      // Should stay on the home page and show a validation error
+      await expect(page).toHaveURL('http://localhost:5000/');
+      await expect(page.locator('text=Enter initials for both players')).toBeVisible({ timeout: 3000 });
     });
   });
 

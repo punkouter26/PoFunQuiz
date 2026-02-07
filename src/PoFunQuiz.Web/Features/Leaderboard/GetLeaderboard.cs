@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using PoFunQuiz.Core.Interfaces;
-using PoFunQuiz.Core.Models;
+using PoFunQuiz.Web.Models;
 
 namespace PoFunQuiz.Web.Features.Leaderboard;
 

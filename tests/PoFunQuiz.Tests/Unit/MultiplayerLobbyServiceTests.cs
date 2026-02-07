@@ -1,6 +1,6 @@
 using Xunit;
 using PoFunQuiz.Web.Features.Multiplayer;
-using PoFunQuiz.Core.Models;
+using PoFunQuiz.Web.Models;
 using FluentAssertions;
 
 namespace PoFunQuiz.Tests.Unit
@@ -21,7 +21,7 @@ namespace PoFunQuiz.Tests.Unit
             var player1Name = "PlayerOne";
 
             // Act
-            var session = _sut.CreateSession(player1Name);
+            var session = _sut.CreateSession(player1Name, "conn-1");
 
             // Assert
             session.Should().NotBeNull();
@@ -36,11 +36,11 @@ namespace PoFunQuiz.Tests.Unit
         public void JoinSession_ShouldReturnTrue_WhenGameExistsAndIsNotFull()
         {
             // Arrange
-            var session = _sut.CreateSession("P1");
+            var session = _sut.CreateSession("P1", "conn-1");
             var player2Name = "PlayerTwo";
 
             // Act
-            var result = _sut.JoinSession(session.GameId, player2Name);
+            var result = _sut.JoinSession(session.GameId, player2Name, "conn-2");
 
             // Assert
             result.Should().BeTrue();
@@ -54,7 +54,7 @@ namespace PoFunQuiz.Tests.Unit
         public void JoinSession_ShouldReturnFalse_WhenGameDoesNotExist()
         {
             // Act
-            var result = _sut.JoinSession("INVALID", "P2");
+            var result = _sut.JoinSession("INVALID", "P2", "conn-x");
 
             // Assert
             result.Should().BeFalse();
@@ -64,11 +64,11 @@ namespace PoFunQuiz.Tests.Unit
         public void JoinSession_ShouldReturnFalse_WhenGameIsFull()
         {
             // Arrange
-            var session = _sut.CreateSession("P1");
-            _sut.JoinSession(session.GameId, "P2");
+            var session = _sut.CreateSession("P1", "conn-1");
+            _sut.JoinSession(session.GameId, "P2", "conn-2");
 
             // Act
-            var result = _sut.JoinSession(session.GameId, "P3");
+            var result = _sut.JoinSession(session.GameId, "P3", "conn-3");
 
             // Assert
             result.Should().BeFalse();
@@ -78,7 +78,7 @@ namespace PoFunQuiz.Tests.Unit
         public void RemoveSession_ShouldRemoveSession()
         {
             // Arrange
-            var session = _sut.CreateSession("P1");
+            var session = _sut.CreateSession("P1", "conn-1");
 
             // Act
             _sut.RemoveSession(session.GameId);
@@ -92,8 +92,8 @@ namespace PoFunQuiz.Tests.Unit
         public void MapToDto_ShouldMapCorrectly()
         {
             // Arrange
-            var session = _sut.CreateSession("P1");
-            _sut.JoinSession(session.GameId, "P2");
+            var session = _sut.CreateSession("P1", "conn-1");
+            _sut.JoinSession(session.GameId, "P2", "conn-2");
             session.Player1BaseScore = 10;
             session.Player2BaseScore = 20;
             session.StartTime = System.DateTime.UtcNow;

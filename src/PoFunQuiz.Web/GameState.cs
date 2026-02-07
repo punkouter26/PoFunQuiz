@@ -1,12 +1,12 @@
-using PoFunQuiz.Core.Models;
+using PoFunQuiz.Web.Models;
 
 namespace PoFunQuiz.Web
 {
     /// <summary>
-    /// Service for managing game state between pages
+    /// Service for managing game state between pages.
     /// </summary>
     public class GameState
     {
-        public PoFunQuiz.Core.Models.GameSession? CurrentGame { get; set; }
+        public GameSession? CurrentGame { get; set; }
     }
 }

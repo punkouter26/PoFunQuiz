@@ -1,20 +1,20 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Azure.AI.OpenAI;
 using Microsoft.Extensions.Options;
-using PoFunQuiz.Core.Configuration;
+using PoFunQuiz.Web.Configuration;
 
 namespace PoFunQuiz.Web.HealthChecks;
 
 public class OpenAIHealthCheck : IHealthCheck
 {
-    private readonly IOptions<AppSettings> _appSettings;
+    private readonly IOptions<OpenAISettings> _openAISettings;
     private readonly ILogger<OpenAIHealthCheck> _logger;
 
     public OpenAIHealthCheck(
-        IOptions<AppSettings> appSettings,
+        IOptions<OpenAISettings> openAISettings,
         ILogger<OpenAIHealthCheck> logger)
     {
-        _appSettings = appSettings;
+        _openAISettings = openAISettings;
         _logger = logger;
     }
 
@@ -24,7 +24,7 @@ public class OpenAIHealthCheck : IHealthCheck
     {
         try
         {
-            var settings = _appSettings.Value.AzureOpenAI;
+            var settings = _openAISettings.Value;
 
             // Simple check to verify configuration is complete
             if (string.IsNullOrEmpty(settings.Endpoint) ||

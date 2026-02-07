@@ -1,23 +1,34 @@
 using System.Collections.Concurrent;
-using PoFunQuiz.Core.Models;
-using PoFunQuiz.Shared.Contracts;
+using PoFunQuiz.Web.Models;
 
 namespace PoFunQuiz.Web.Features.Multiplayer;
 
 public class MultiplayerLobbyService
 {
     private readonly ConcurrentDictionary<string, GameSession> _sessions = new();
+    private readonly ConcurrentDictionary<string, string> _connectionToGame = new();
+    private readonly object _joinLock = new();
 
-    public GameSession CreateSession(string player1Name)
+    public GameSession CreateSession(string player1Name, string connectionId)
     {
-        var session = new GameSession
+        if (string.IsNullOrWhiteSpace(player1Name))
+            throw new ArgumentException("Player name is required.", nameof(player1Name));
+
+        string gameId;
+        GameSession session;
+        do
         {
-            Player1 = new Player { Name = player1Name },
-            Player2 = new Player { Name = "Waiting..." },
-            Player1Initials = player1Name.Substring(0, Math.Min(3, player1Name.Length)).ToUpper(),
-            GameId = Guid.NewGuid().ToString().Substring(0, 6).ToUpper()
-        };
-        _sessions.TryAdd(session.GameId, session);
+            gameId = Guid.NewGuid().ToString()[..6].ToUpper();
+            session = new GameSession
+            {
+                Player1 = new Player { Name = player1Name },
+                Player2 = new Player { Name = "Waiting..." },
+                Player1Initials = player1Name[..Math.Min(3, player1Name.Length)].ToUpper(),
+                GameId = gameId
+            };
+        } while (!_sessions.TryAdd(gameId, session));
+
+        _connectionToGame[connectionId] = gameId;
         return session;
     }
 
@@ -27,14 +38,20 @@ public class MultiplayerLobbyService
         return session;
     }
 
-    public bool JoinSession(string gameId, string player2Name)
+    public bool JoinSession(string gameId, string player2Name, string connectionId)
     {
+        if (string.IsNullOrWhiteSpace(player2Name)) return false;
+
         if (_sessions.TryGetValue(gameId, out var session))
         {
-            if (session.Player2.Name != "Waiting...") return false;
+            lock (_joinLock)
+            {
+                if (session.Player2.Name != "Waiting...") return false;
 
-            session.Player2 = new Player { Name = player2Name };
-            session.Player2Initials = player2Name.Substring(0, Math.Min(3, player2Name.Length)).ToUpper();
+                session.Player2 = new Player { Name = player2Name };
+                session.Player2Initials = player2Name[..Math.Min(3, player2Name.Length)].ToUpper();
+            }
+            _connectionToGame[connectionId] = gameId;
             return true;
         }
         return false;
@@ -43,6 +60,18 @@ public class MultiplayerLobbyService
     public void RemoveSession(string gameId)
     {
         _sessions.TryRemove(gameId, out _);
+    }
+
+    public void OnDisconnected(string connectionId)
+    {
+        if (_connectionToGame.TryRemove(connectionId, out var gameId))
+        {
+            // If the game hasn't started, clean it up
+            if (_sessions.TryGetValue(gameId, out var session) && !session.StartTime.HasValue)
+            {
+                _sessions.TryRemove(gameId, out _);
+            }
+        }
     }
 
     public GameStateDto MapToDto(GameSession session)

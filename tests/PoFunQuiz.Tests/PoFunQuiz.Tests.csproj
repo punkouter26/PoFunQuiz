@@ -10,10 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\PoFunQuiz.Core\PoFunQuiz.Core.csproj" />
-    <ProjectReference Include="..\..\src\PoFunQuiz.Infrastructure\PoFunQuiz.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\PoFunQuiz.Web\PoFunQuiz.Web.csproj" />
-    <ProjectReference Include="..\..\src\PoFunQuiz.Shared\PoFunQuiz.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using PoFunQuiz.Core.Services;
-using PoFunQuiz.Web.Services;
+using PoFunQuiz.Web.Features.Quiz;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,14 +15,14 @@ namespace PoFunQuiz.Tests
     public class QuestionConsistencyVerificationTests
     {
         private readonly ITestOutputHelper _output;
-        private readonly IQuestionGeneratorService _questionGeneratorService;
+        private readonly IOpenAIService _openAIService;
 
         public QuestionConsistencyVerificationTests(ITestOutputHelper output)
         {
             _output = output;
 
             var serviceProvider = TestServiceHelper.BuildQuestionGeneratorServices();
-            _questionGeneratorService = serviceProvider.GetRequiredService<IQuestionGeneratorService>();
+            _openAIService = serviceProvider.GetRequiredService<IOpenAIService>();
         }
 
         [Fact]
@@ -34,7 +33,7 @@ namespace PoFunQuiz.Tests
             const int questionCount = 5;
 
             // Act - Simulate the FIXED approach from GameSetup.razor
-            var sharedQuestions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            var sharedQuestions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Assign the SAME questions to both players (simulating the fix)
             var player1Questions = sharedQuestions;
@@ -83,7 +82,7 @@ namespace PoFunQuiz.Tests
             const int questionCount = 3;
 
             // Act - Generate shared questions
-            var sharedQuestions = await _questionGeneratorService.GenerateQuestionsInCategoryAsync(questionCount, category);
+            var sharedQuestions = await _openAIService.GenerateQuizQuestionsAsync(category, questionCount);
 
             // Simulate both players getting the same questions
             var player1Questions = sharedQuestions;

@@ -1,7 +1,7 @@
 @page "/game-board"
 @using PoFunQuiz.Web
-@using PoFunQuiz.Core.Services
-@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Web.Features.Quiz
+@using PoFunQuiz.Web.Models
 @using PoFunQuiz.Web.Components.Game
 @using System.Timers
 @using System.Diagnostics
@@ -99,6 +99,8 @@
     private Timer? gameTimer;
     private int TimeRemaining { get; set; } = 60;
     private Stopwatch answerStopwatch = new();
+    private bool _gameEnded = false;
+    private readonly List<Timer> _feedbackTimers = new();
 
     private int Player1QuestionIndex { get; set; } = 0;
     private bool Player1HasFinished { get; set; } = false;
@@ -159,9 +161,10 @@
     {
         InvokeAsync(() =>
         {
+            if (_gameEnded) return;
             TimeRemaining--;
             if (TimeRemaining <= 0) EndGame();
-            StateHasChanged();
+            else StateHasChanged();
         });
     }
 
@@ -235,13 +238,12 @@
 
     private void ShowFeedbackThenAdvance(int playerNumber)
     {
-        // We use a separate timer for each player to avoid race conditions if they answer simultaneously
         var timer = new Timer(300);
         timer.Elapsed += (_, _) =>
         {
             InvokeAsync(() =>
             {
-                if (GameState.CurrentGame == null) return;
+                if (_gameEnded || GameState.CurrentGame == null) return;
 
                 if (playerNumber == 1)
                 {
@@ -274,10 +276,11 @@
                 {
                     StateHasChanged();
                 }
-                timer.Dispose();
             });
+            timer.Dispose();
         };
         timer.AutoReset = false;
+        lock (_feedbackTimers) { _feedbackTimers.Add(timer); }
         timer.Start();
     }
     
@@ -293,6 +296,8 @@
 
     private void EndGame()
     {
+        if (_gameEnded) return;
+        _gameEnded = true;
         gameTimer?.Stop();
         if (GameState.CurrentGame == null) return;
         GameState.CurrentGame.EndTime = DateTime.UtcNow;
@@ -301,6 +306,13 @@
 
     public void Dispose()
     {
+        _gameEnded = true;
+        gameTimer?.Stop();
         gameTimer?.Dispose();
+        lock (_feedbackTimers)
+        {
+            foreach (var t in _feedbackTimers) t.Dispose();
+            _feedbackTimers.Clear();
+        }
     }
 }

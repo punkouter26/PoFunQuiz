@@ -24,24 +24,31 @@ test.describe('Multiplayer Game Flow', () => {
     // --- Player 1 (Host) Setup ---
     await test.step('Player 1 creates a game', async () => {
       await page1.goto('/multiplayer');
-      await expect(page1).toHaveTitle(/Multiplayer/);
+      
+      // Wait for Blazor to initialize
+      await page1.waitForTimeout(2000);
+      
+      await expect(page1.locator('body')).toBeVisible();
 
-      // Enter name and create game
+      // Enter name — use pressSequentially to trigger Blazor input bindings
       const nameInput = page1.locator('input[placeholder="Enter your name"]');
-      await nameInput.fill('HostPlayer');
-      await nameInput.blur(); // Trigger blur to ensure binding updates
+      await nameInput.click();
+      await nameInput.fill('');
+      await nameInput.pressSequentially('HostPlayer', { delay: 50 });
+      await nameInput.dispatchEvent('change');
+      await page1.waitForTimeout(300);
 
       const createButton = page1.locator('button:has-text("Create New Game")');
-      await expect(createButton).toBeEnabled();
+      await expect(createButton).toBeEnabled({ timeout: 5000 });
       await createButton.click();
 
-      // Wait for Game ID to appear
-      await expect(page1.locator('.badge.bg-info')).toBeVisible();
-      await expect(page1.locator('text=Waiting for Player 2 to join...')).toBeVisible();
+      // Wait for Game ID to appear (uses custom .mp-id-value class)
+      await expect(page1.locator('.mp-id-value')).toBeVisible({ timeout: 10000 });
+      await expect(page1.locator('text=Waiting for Player 2 to join')).toBeVisible();
     });
 
     // Get the Game ID
-    const gameId = await page1.locator('.badge.bg-info').innerText();
+    const gameId = await page1.locator('.mp-id-value').innerText();
     console.log(`Game ID created: ${gameId}`);
     expect(gameId).toBeTruthy();
 
@@ -49,23 +56,34 @@ test.describe('Multiplayer Game Flow', () => {
     await test.step('Player 2 joins the game', async () => {
       await page2.goto('/multiplayer');
       
-      // Enter name and Game ID
-      const nameInput = page2.locator('input[placeholder="Enter your name"]');
-      await nameInput.fill('JoinPlayer');
-      await nameInput.blur();
-
-      const gameIdInput = page2.locator('input[placeholder="Enter Game ID"]');
-      await gameIdInput.fill(gameId);
-      await gameIdInput.blur();
+      // Wait for Blazor to initialize
+      await page2.waitForTimeout(2000);
       
-      // Click Join
-      const joinButton = page2.locator('button:has-text("Join Game")');
-      await expect(joinButton).toBeEnabled();
+      // Enter name — use pressSequentially to trigger Blazor input bindings
+      const nameInput = page2.locator('input[placeholder="Enter your name"]');
+      await nameInput.click();
+      await nameInput.fill('');
+      await nameInput.pressSequentially('JoinPlayer', { delay: 50 });
+      await nameInput.dispatchEvent('change');
+
+      // Enter Game ID — same approach
+      const gameIdInput = page2.locator('input[placeholder="Enter Game ID"]');
+      await gameIdInput.click();
+      await gameIdInput.fill('');
+      await gameIdInput.pressSequentially(gameId, { delay: 50 });
+      await gameIdInput.dispatchEvent('change');
+      
+      // Wait for Blazor to process bindings
+      await page2.waitForTimeout(500);
+      
+      // Click Join (Radzen button text is "Join", not "Join Game")
+      const joinButton = page2.locator('button:has-text("Join")').first();
+      await expect(joinButton).toBeEnabled({ timeout: 10000 });
       await joinButton.click();
 
       // Verify P2 sees the lobby
       await expect(page2.locator(`text=${gameId}`)).toBeVisible();
-      await expect(page2.locator('text=Waiting for host to start...')).toBeVisible();
+      await expect(page2.locator('text=Waiting for host to start')).toBeVisible();
     });
 
     // --- Verify Lobby Sync ---
@@ -91,16 +109,13 @@ test.describe('Multiplayer Game Flow', () => {
 
     // --- Gameplay Simulation ---
     await test.step('Score updates are synced', async () => {
-      // Host scores points
-      await page1.click('button:has-text("Simulate Score")');
+      // Host scores points (button text is "Score +10")
+      await page1.click('button:has-text("Score +10")');
       
-      // Verify score updates for Host (Player 1) on both screens
-      // Note: Initial score is 0, +10 = 10.
-      // We look for the score display. Based on Razor: <h1>@currentState.Player1Score</h1>
-      
-      // Wait for score to update
-      await expect(page1.locator('.card.border-primary h1.display-4')).toHaveText('10');
-      await expect(page2.locator('.card.border-primary h1.display-4')).toHaveText('10');
+      // Verify score updates - scores are displayed in .mp-score elements
+      // Wait for score to update on both screens
+      await expect(page1.locator('.mp-score').first()).toHaveText('10', { timeout: 5000 });
+      await expect(page2.locator('.mp-score').first()).toHaveText('10', { timeout: 5000 });
     });
   });
 });

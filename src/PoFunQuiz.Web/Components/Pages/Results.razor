@@ -1,13 +1,12 @@
 @page "/results"
 @using PoFunQuiz.Web
-@using PoFunQuiz.Web.Services
-@using PoFunQuiz.Core.Services
-@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Web.Features.Leaderboard
+@using PoFunQuiz.Web.Models
 @using Radzen
 @using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject GameState GameState
-@inject ILeaderboardService LeaderboardService
+@inject ILeaderboardRepository LeaderboardRepository
 @rendermode InteractiveServer
 
 <PageTitle>PoFunQuiz - Results</PageTitle>
@@ -127,13 +126,13 @@ else
                                 <RadzenText TextStyle="TextStyle.Body1">Game Duration: @GetGameDuration()</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Body1">Total Questions: 20</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Total Questions: @((GameState.CurrentGame?.Player1Questions?.Count ?? 0) + (GameState.CurrentGame?.Player2Questions?.Count ?? 0))</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
                                 <RadzenText TextStyle="TextStyle.Body1">Total Correct: @(GetCorrectAnswers(1) + GetCorrectAnswers(2))</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="6" SizeMD="3">
-                                <RadzenText TextStyle="TextStyle.Body1">Game ID: @(GameState.CurrentGame?.GameId?.Substring(0, 8) ?? "N/A")</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body1">Game ID: @(GameState.CurrentGame?.GameId is { Length: > 0 } gid ? (gid.Length >= 8 ? gid[..8] : gid) : "N/A")</RadzenText>
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenCard>
@@ -183,7 +182,7 @@ else
     private bool WinnerDeclared => GameState.CurrentGame?.Player1Score != null && GameState.CurrentGame?.Player2Score != null;
     private bool IsTie => WinnerDeclared && GameState.CurrentGame?.Player1Score == GameState.CurrentGame?.Player2Score;
     private int WinnerNumber => (!WinnerDeclared || IsTie) ? 0 : (GameState.CurrentGame?.Player1Score > GameState.CurrentGame?.Player2Score ? 1 : 2);
-    private Core.Models.Player? Winner => WinnerNumber == 1 ? GameState.CurrentGame?.Player1 : (WinnerNumber == 2 ? GameState.CurrentGame?.Player2 : null);
+    private Player? Winner => WinnerNumber == 1 ? GameState.CurrentGame?.Player1 : (WinnerNumber == 2 ? GameState.CurrentGame?.Player2 : null);
     private bool scoresSubmitted = false;
 
     protected override async Task OnInitializedAsync()
@@ -219,6 +218,9 @@ else
         {
             var entry1 = new LeaderboardEntry
             {
+                PartitionKey = category,
+                RowKey = Guid.NewGuid().ToString(),
+                Timestamp = DateTimeOffset.UtcNow,
                 PlayerName = GameState.CurrentGame.Player1.Initials,
                 Score = GameState.CurrentGame.Player1Score,
                 MaxStreak = GameState.CurrentGame.Player1MaxStreak,
@@ -228,7 +230,7 @@ else
                 Losses = player2Won ? 1 : 0
             };
             
-            await LeaderboardService.SubmitScoreAsync(entry1);
+            await LeaderboardRepository.AddScoreAsync(entry1);
         }
 
         // Submit Player 2 score
@@ -236,6 +238,9 @@ else
         {
             var entry2 = new LeaderboardEntry
             {
+                PartitionKey = category,
+                RowKey = Guid.NewGuid().ToString(),
+                Timestamp = DateTimeOffset.UtcNow,
                 PlayerName = GameState.CurrentGame.Player2.Initials,
                 Score = GameState.CurrentGame.Player2Score,
                 MaxStreak = GameState.CurrentGame.Player2MaxStreak,
@@ -245,7 +250,7 @@ else
                 Losses = player1Won ? 1 : 0
             };
             
-            await LeaderboardService.SubmitScoreAsync(entry2);
+            await LeaderboardRepository.AddScoreAsync(entry2);
         }
     }
 
@@ -253,10 +258,9 @@ else
     {
         if (GameState.CurrentGame == null) return 0;
         
-        // Return the actual base score which represents correct answers (1 point each)
         return playerNumber == 1 
-            ? GameState.CurrentGame.Player1BaseScore 
-            : GameState.CurrentGame.Player2BaseScore;
+            ? GameState.CurrentGame.Player1CorrectCount 
+            : GameState.CurrentGame.Player2CorrectCount;
     }
 
     private int GetTimeBonus(int playerNumber)
@@ -273,10 +277,9 @@ else
     {
         if (GameState.CurrentGame == null) return 0;
         
-        // Return the actual base score which represents questions answered correctly
         return playerNumber == 1 
-            ? GameState.CurrentGame.Player1BaseScore 
-            : GameState.CurrentGame.Player2BaseScore;
+            ? GameState.CurrentGame.Player1CorrectCount 
+            : GameState.CurrentGame.Player2CorrectCount;
     }
 
     private int GetSpeedBonus(int playerNumber)
@@ -324,7 +327,7 @@ else
         }
         var player1 = GameState.CurrentGame.Player1;
         var player2 = GameState.CurrentGame.Player2;
-        GameState.CurrentGame = new Core.Models.GameSession
+        GameState.CurrentGame = new GameSession
         {
             Player1 = player1,
             Player2 = player2,
@@ -356,7 +359,7 @@ else
         }
     }
 
-    private void UpdatePlayerStats(Core.Models.Player? player, bool isWinner, int correctAnswers, int totalScore)
+    private void UpdatePlayerStats(Player? player, bool isWinner, int correctAnswers, int totalScore)
     {
         if (player == null) return;
         player.GamesPlayed++;

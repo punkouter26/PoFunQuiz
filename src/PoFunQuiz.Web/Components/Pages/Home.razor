@@ -1,5 +1,5 @@
 @page "/"
-@using PoFunQuiz.Core.Models
+@using PoFunQuiz.Web.Models
 @using Radzen
 @using Radzen.Blazor
 @inject NavigationManager NavigationManager
@@ -34,13 +34,21 @@
                     </div>
 
                     <div class="topic-select">
+                        <label style="font-size: 0.75rem; font-weight: 600; opacity: 0.9; margin-left: 4px;">Topic</label>
                         <RadzenDropDown id="topic" Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics 
-                                      Style="width: 100%; border-radius: 12px;" Placeholder="Select a topic..." />
+                                      Style="width: 100%; border-radius: 12px;" Placeholder="Pick a topic..." />
                     </div>
 
                     <button type="button" class="play-button" @onclick="StartGame">
                         <span class="material-icons">play_arrow</span> Start Game
                     </button>
+
+                    @if (validationError != null)
+                    {
+                        <div style="background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 0.6rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: #fca5a5; text-align: center;">
+                            @validationError
+                        </div>
+                    }
                 </RadzenStack>
             </div>
         </div>
@@ -259,6 +267,7 @@
     }
 
     GameStartModel gameStartModel = new GameStartModel();
+    string? validationError;
 
     List<string> topics = new List<string>
     {
@@ -273,7 +282,21 @@
 
     void StartGame()
     {
-        NavigationManager.NavigateTo($"/gamesetup?player1={gameStartModel.Player1Initials}&player2={gameStartModel.Player2Initials}&topic={gameStartModel.SelectedTopic}");
+        validationError = null;
+
+        if (string.IsNullOrWhiteSpace(gameStartModel.Player1Initials) || string.IsNullOrWhiteSpace(gameStartModel.Player2Initials))
+        {
+            validationError = "Enter initials for both players.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(gameStartModel.SelectedTopic))
+        {
+            validationError = "Pick a topic before starting.";
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/gamesetup?player1={Uri.EscapeDataString(gameStartModel.Player1Initials)}&player2={Uri.EscapeDataString(gameStartModel.Player2Initials)}&topic={Uri.EscapeDataString(gameStartModel.SelectedTopic)}");
     }
 
     void ViewLeaderboard()

@@ -21,11 +21,12 @@ namespace PoFunQuiz.Tests.Integration
         [Fact]
         public async Task CreateGame_ShouldReturnGameId()
         {
-            // Arrange
+            // Arrange — use the test server's handler to avoid port/redirect issues
+            var server = _factory.Server;
             var hubConnection = new HubConnectionBuilder()
-                .WithUrl("http://localhost/gamehub", o =>
+                .WithUrl(new Uri(server.BaseAddress, "/gamehub"), o =>
                 {
-                    o.HttpMessageHandlerFactory = _ => _factory.Server.CreateHandler();
+                    o.HttpMessageHandlerFactory = _ => server.CreateHandler();
                 })
                 .Build();
 
