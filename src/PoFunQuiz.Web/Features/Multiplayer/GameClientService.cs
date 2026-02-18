@@ -47,10 +47,10 @@ public class GameClientService : IAsyncDisposable
         return await _hubConnection.InvokeAsync<string>("CreateGame", playerName);
     }
 
-    public async Task<bool> JoinGameAsync(string gameId, string playerName)
+    public async Task<JoinGameResult> JoinGameAsync(string gameId, string playerName)
     {
-        if (_hubConnection is null) return false;
-        return await _hubConnection.InvokeAsync<bool>("JoinGame", new JoinGameDto { GameId = gameId, PlayerName = playerName });
+        if (_hubConnection is null) return new JoinGameResult { Success = false, FailReason = "not_found" };
+        return await _hubConnection.InvokeAsync<JoinGameResult>("JoinGame", new JoinGameDto { GameId = gameId, PlayerName = playerName });
     }
 
     public async Task StartGameAsync(string gameId)
@@ -71,5 +71,6 @@ public class GameClientService : IAsyncDisposable
         {
             await _hubConnection.DisposeAsync();
         }
+        GC.SuppressFinalize(this);
     }
 }

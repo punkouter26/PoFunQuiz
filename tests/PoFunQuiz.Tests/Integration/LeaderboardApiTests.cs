@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -10,28 +9,37 @@ using Xunit;
 
 namespace PoFunQuiz.Tests.Integration
 {
-    public class LeaderboardApiTests : IClassFixture<WebApplicationFactory<Program>>
+    /// <summary>
+    /// Uses TestWebApplicationFactory (with MockOpenAIService) so this class shares the
+    /// same in-proc test host isolation as all other integration suites — no raw
+    /// WebApplicationFactory&lt;Program&gt; which would spin up a second host with live Azure deps.
+    /// </summary>
+    public class LeaderboardApiTests : IClassFixture<TestWebApplicationFactory>
     {
-        private readonly WebApplicationFactory<Program> _factory;
+        private readonly TestWebApplicationFactory _baseFactory;
         private readonly Mock<ILeaderboardRepository> _mockRepo;
+        private readonly HttpClient _client;
 
-        public LeaderboardApiTests(WebApplicationFactory<Program> factory)
+        public LeaderboardApiTests(TestWebApplicationFactory factory)
         {
             _mockRepo = new Mock<ILeaderboardRepository>();
-            _factory = factory.WithWebHostBuilder(builder =>
+            _baseFactory = factory;
+            // Layer an additional WithWebHostBuilder on top of the shared factory so the
+            // mock repo is scoped to this test class only, without polluting others.
+            var scopedFactory = factory.WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddScoped(_ => _mockRepo.Object);
                 });
             });
+            _client = scopedFactory.CreateClient();
         }
 
         [Fact]
         public async Task GetLeaderboard_ReturnsOkAndList()
         {
             // Arrange
-            var client = _factory.CreateClient();
             _mockRepo.Setup(r => r.GetTopScoresAsync(It.IsAny<string>(), It.IsAny<int>()))
                 .ReturnsAsync(new List<LeaderboardEntry>
                 {
@@ -39,7 +47,7 @@ namespace PoFunQuiz.Tests.Integration
                 });
 
             // Act
-            var response = await client.GetAsync("/api/leaderboard");
+            var response = await _client.GetAsync("/api/leaderboard");
 
             // Assert
             response.EnsureSuccessStatusCode();
@@ -53,13 +61,12 @@ namespace PoFunQuiz.Tests.Integration
         public async Task SubmitScore_ReturnsOk()
         {
             // Arrange
-            var client = _factory.CreateClient();
             var entry = new LeaderboardEntry { PlayerName = "Test", Score = 100 };
             _mockRepo.Setup(r => r.AddScoreAsync(It.IsAny<LeaderboardEntry>()))
                 .Returns(Task.CompletedTask);
 
             // Act
-            var response = await client.PostAsJsonAsync("/api/leaderboard", entry);
+            var response = await _client.PostAsJsonAsync("/api/leaderboard", entry);
 
             // Assert
             response.EnsureSuccessStatusCode();

@@ -92,14 +92,37 @@
     }
     
     .opacity-50 { opacity: 0.5; }
+
+    /* L5: keyboard legend — only shown on md+ screens */
+    .keyboard-legend {
+        font-size: 0.78rem;
+        opacity: 0.75;
+        user-select: none;
+    }
+    .legend-label { margin-right: 0.4rem; font-weight: 600; }
+    .legend-keys { display: inline-flex; gap: 0.25rem; }
+    kbd {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        border: 1px solid var(--rz-text-disabled-color, #aaa);
+        border-bottom-width: 2px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        font-family: monospace;
+        background: var(--rz-base-background-color, #f8f9fa);
+    }
 </style>
 
 @code {
     private ElementReference gameContainer;
     private Timer? gameTimer;
     private int TimeRemaining { get; set; } = 60;
-    private Stopwatch answerStopwatch = new();
+    // L1 FIX: separate stopwatches per player so P1's answer doesn't reset P2's speed clock
+    private Stopwatch _player1Stopwatch = new();
+    private Stopwatch _player2Stopwatch = new();
     private bool _gameEnded = false;
+    // L2 FIX: lock ensures EndGame is entered by exactly one caller (timer vs last-question path)
+    private readonly Lock _endGameLock = new();
     private readonly List<Timer> _feedbackTimers = new();
 
     private int Player1QuestionIndex { get; set; } = 0;
@@ -139,7 +162,9 @@
             }
             await FocusGameContainer();
             StartGameTimer();
-            answerStopwatch.Start();
+            // L1 FIX: start independent stopwatches for each player
+            _player1Stopwatch.Start();
+            _player2Stopwatch.Start();
         }
     }
 
@@ -206,7 +231,10 @@
 
         var currentQuestion = questions[index];
         bool isCorrect = selectedOptionIndex == currentQuestion.CorrectOptionIndex;
-        var speedMultiplier = CalculateSpeedMultiplier(answerStopwatch.Elapsed.TotalSeconds);
+        // L1 FIX: read and restart only this player's stopwatch
+        var stopwatch = playerNumber == 1 ? _player1Stopwatch : _player2Stopwatch;
+        var speedMultiplier = CalculateSpeedMultiplier(stopwatch.Elapsed.TotalSeconds);
+        stopwatch.Restart();
 
         // Update State
         if (playerNumber == 1)
@@ -227,7 +255,6 @@
         // Trigger feedback delay
         ShowFeedbackThenAdvance(playerNumber);
         
-        answerStopwatch.Restart();
         StateHasChanged();
     }
 
@@ -241,6 +268,10 @@
         var timer = new Timer(300);
         timer.Elapsed += (_, _) =>
         {
+            // R2 FIX: remove this timer from the tracking list as soon as it fires
+            lock (_feedbackTimers) { _feedbackTimers.Remove(timer); }
+            timer.Dispose();
+
             InvokeAsync(() =>
             {
                 if (_gameEnded || GameState.CurrentGame == null) return;
@@ -277,7 +308,6 @@
                     StateHasChanged();
                 }
             });
-            timer.Dispose();
         };
         timer.AutoReset = false;
         lock (_feedbackTimers) { _feedbackTimers.Add(timer); }
@@ -296,8 +326,13 @@
 
     private void EndGame()
     {
-        if (_gameEnded) return;
-        _gameEnded = true;
+        // L2 FIX: lock prevents the 1-second timer thread and the feedback-advance path
+        // from both passing the _gameEnded check before either sets it to true.
+        lock (_endGameLock)
+        {
+            if (_gameEnded) return;
+            _gameEnded = true;
+        }
         gameTimer?.Stop();
         if (GameState.CurrentGame == null) return;
         GameState.CurrentGame.EndTime = DateTime.UtcNow;
@@ -309,6 +344,8 @@
         _gameEnded = true;
         gameTimer?.Stop();
         gameTimer?.Dispose();
+        _player1Stopwatch.Stop();
+        _player2Stopwatch.Stop();
         lock (_feedbackTimers)
         {
             foreach (var t in _feedbackTimers) t.Dispose();

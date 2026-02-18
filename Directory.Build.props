@@ -7,6 +7,9 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Suppress code analysis warnings that are stylistic rather than functional -->
-    <NoWarn>$(NoWarn);CA1716;CA1805;CA1510;CA1822;CA1710;CA1848;CA2208;CA1816;CA1304;CA1305;CA1311;CA1869;ASPDEPR002</NoWarn>
+    <!-- CA1816 (correctness: GC.SuppressFinalize) is enforced — do NOT add it back here.
+         CA1848/CA1873 are perf/style rules (LoggerMessage delegate pattern); suppressed as tech debt.
+         TODO: Migrate logger calls to [LoggerMessage] source-generated delegates to resolve CA1848/CA1873. -->
+    <NoWarn>$(NoWarn);CA1716;CA1805;CA1510;CA1822;CA1710;CA1848;CA1873;CA2208;CA1304;CA1305;CA1311;CA1869;ASPDEPR002</NoWarn>
   </PropertyGroup>
 </Project>

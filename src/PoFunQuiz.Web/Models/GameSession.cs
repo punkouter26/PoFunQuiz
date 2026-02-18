@@ -13,8 +13,6 @@ public class GameSession
 
     public required Player Player1 { get; set; }
     public required Player Player2 { get; set; }
-    public string Player1Initials { get; set; } = string.Empty;
-    public string Player2Initials { get; set; } = string.Empty;
 
     public List<QuizQuestion> Player1Questions { get; set; } = [];
     public List<QuizQuestion> Player2Questions { get; set; } = [];

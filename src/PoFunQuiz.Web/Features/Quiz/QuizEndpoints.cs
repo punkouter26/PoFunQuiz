@@ -1,5 +1,3 @@
-using Microsoft.ApplicationInsights;
-using Microsoft.ApplicationInsights.DataContracts;
 using PoFunQuiz.Web.Models;
 using System.Diagnostics;
 
@@ -10,86 +8,50 @@ namespace PoFunQuiz.Web.Features.Quiz;
 /// </summary>
 public static class QuizEndpoints
 {
+    private static readonly ActivitySource ActivitySource = new("PoFunQuiz");
+
     public static void MapQuizEndpoints(this IEndpointRouteBuilder app)
     {
+        // Output-cached: 60 s, keyed on count + category — avoids redundant OpenAI calls.
+        // Cache is busted server-side via the "quiz" tag if questions are invalidated.
         app.MapGet("/api/quiz/questions", async (
             int count,
             string? category,
             IOpenAIService openAIService,
-            ILogger<Program> logger,
-            TelemetryClient telemetryClient) =>
+            ILogger<Program> logger) =>
         {
-            var stopwatch = Stopwatch.StartNew();
-
-            var eventTelemetry = new EventTelemetry("QuizGeneration");
-            eventTelemetry.Properties.Add("QuestionCount", count.ToString());
-            eventTelemetry.Properties.Add("Category", category ?? "General");
-
             logger.LogInformation("API: GetQuestions called with count={Count}, category={Category}", count, category);
 
             if (count <= 0)
             {
                 logger.LogWarning("Invalid question count requested: {Count}", count);
-                eventTelemetry.Properties.Add("Success", "false");
-                eventTelemetry.Properties.Add("ErrorReason", "InvalidCount");
-                telemetryClient.TrackEvent(eventTelemetry);
-
                 return Results.Problem(
                     detail: "Count must be a positive number.",
                     statusCode: 400,
                     title: "Invalid Request");
             }
 
-            if (!string.IsNullOrWhiteSpace(category) && category.Trim().Length == 0)
-            {
-                logger.LogWarning("API: Invalid category parameter: {Category}", category);
-                eventTelemetry.Properties.Add("Success", "false");
-                eventTelemetry.Properties.Add("ErrorReason", "InvalidCategory");
-                telemetryClient.TrackEvent(eventTelemetry);
+            using var activity = ActivitySource.StartActivity("QuizGeneration");
+            activity?.SetTag("quiz.question_count", count);
+            activity?.SetTag("quiz.category", category ?? "General");
 
-                return Results.Problem(
-                    detail: "Category cannot be empty or whitespace.",
-                    statusCode: 400,
-                    title: "Invalid Request");
-            }
+            var sw = Stopwatch.StartNew();
+            var questions = await openAIService.GenerateQuizQuestionsAsync(
+                string.IsNullOrWhiteSpace(category) ? "general knowledge" : category, count);
+            sw.Stop();
 
-            try
-            {
-                var questions = await openAIService.GenerateQuizQuestionsAsync(
-                    string.IsNullOrWhiteSpace(category) ? "general knowledge" : category, count);
+            activity?.SetTag("quiz.generated_count", questions.Count);
+            activity?.SetTag("quiz.duration_ms", sw.ElapsedMilliseconds);
 
-                stopwatch.Stop();
+            logger.LogInformation(
+                "Generated {QuestionCount} questions in {Duration}ms",
+                questions.Count,
+                sw.ElapsedMilliseconds);
 
-                eventTelemetry.Properties.Add("Success", "true");
-                eventTelemetry.Properties.Add("GeneratedCount", questions.Count.ToString());
-                eventTelemetry.Metrics.Add("GenerationDurationMs", stopwatch.ElapsedMilliseconds);
-                telemetryClient.TrackEvent(eventTelemetry);
-
-                var metricName = string.IsNullOrWhiteSpace(category)
-                    ? "QuestionGenerationTime"
-                    : $"QuestionGeneration.{category}";
-                telemetryClient.TrackMetric(metricName, stopwatch.ElapsedMilliseconds);
-
-                logger.LogInformation(
-                    "Generated {QuestionCount} questions in {Duration}ms",
-                    questions.Count,
-                    stopwatch.ElapsedMilliseconds);
-
-                return Results.Ok(questions);
-            }
-            catch (Exception ex)
-            {
-                stopwatch.Stop();
-
-                eventTelemetry.Properties.Add("Success", "false");
-                eventTelemetry.Properties.Add("ErrorReason", ex.GetType().Name);
-                telemetryClient.TrackEvent(eventTelemetry);
-
-                logger.LogError(ex, "Error generating questions");
-                throw;
-            }
+            return Results.Ok(questions);
         })
         .WithName("GetQuizQuestions")
-        .WithOpenApi();
+        .WithOpenApi()
+        .CacheOutput("QuizQuestions");
     }
 }

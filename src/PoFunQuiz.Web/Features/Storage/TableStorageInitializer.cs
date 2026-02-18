@@ -24,9 +24,6 @@ public class TableStorageInitializer : IHostedService
         {
             _logger.LogInformation("Initializing Azure Table Storage tables...");
 
-            await _tableServiceClient.CreateTableIfNotExistsAsync("GameSessions", cancellationToken);
-            _logger.LogInformation("Ensured 'GameSessions' table exists");
-
             await _tableServiceClient.CreateTableIfNotExistsAsync("PoFunQuizPlayers", cancellationToken);
             _logger.LogInformation("Ensured 'PoFunQuizPlayers' table exists");
 

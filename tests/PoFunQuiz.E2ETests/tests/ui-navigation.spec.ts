@@ -62,62 +62,53 @@ test.describe('Navigation Tests', () => {
     console.log(`Navigated to: ${page.url()}`);
   });
 
-  test.skip('should navigate to diagnostics page', async ({ page }) => {
-    // Skip: Diagnostics page not implemented in current version
+  test('should navigate to diagnostics page', async ({ page }) => {
+    // Activate with FULL_STACK=1 — the /diag endpoint requires Azure Table Storage + OpenAI configured.
+    // When FULL_STACK is not set, mark as fixme (shows in report but doesn't block CI).
+    if (!process.env.FULL_STACK) {
+      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics navigation tests');
+      return;
+    }
     await page.goto('/');
     
-    // Find and click diagnostics link
-    const diagLink = page.locator("a[href='/diagnostics'], a:has-text('Diagnostics'), a:has-text('Diag')").first();
+    // The diag endpoint is at /diag (registered in Program.cs, linked in the nav bar)
+    const diagLink = page.locator("a[href='/diag'], a:has-text('Diag')").first();
     await diagLink.click();
     
-    // Verify navigation and content
-    await expect(page).toHaveURL(/\/diagnostics/i);
-    
-    const diagnosticsHeading = page.locator("h1:has-text('Diagnostics')");
-    await expect(diagnosticsHeading).toBeVisible();
+    // /diag renders JSON, not a Blazor page — just verify URL changed and body is non-empty
+    await expect(page).toHaveURL(/\/diag/i);
+    const body = await page.locator('body').textContent();
+    expect(body).toContain('environment');
   });
 });
 
-test.describe.skip('Diagnostics Page Tests', () => {
-  // Skip: Diagnostics page not implemented in current version
+test.describe('Diagnostics Page Tests', () => {
+  // Activated when FULL_STACK=1 — /diag returns JSON from the live app
   test('should display health checks', async ({ page }) => {
-    await page.goto('/diagnostics');
-    
-    // Wait for Blazor to render and health checks to load
-    await page.waitForTimeout(4000);
-    
-    // Verify health check cards are present - use a more flexible selector
-    const cards = page.locator('.rz-card, .card, [class*="card"]');
-    const cardCount = await cards.count();
-    
-    if (cardCount >= 3) {
-      // Verify expected health checks
-      const pageContent = await page.content();
-      expect(pageContent.toLowerCase()).toContain('table storage');
-      expect(pageContent.toLowerCase()).toContain('openai');
-      expect(pageContent.toLowerCase()).toContain('internet');
-      console.log(`Found ${cardCount} health check cards`);
-    } else {
-      // Fallback: just verify the page loaded and has diagnostic content
-      const pageContent = await page.content();
-      expect(pageContent.toLowerCase()).toContain('diagnostic');
-      console.log(`Diagnostics page loaded, found ${cardCount} card elements`);
+    if (!process.env.FULL_STACK) {
+      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics page tests');
+      return;
     }
+    await page.goto('/diag');
+    const body = await page.locator('body').textContent();
+    expect(body).toBeTruthy();
+    // /diag exposes environment, connections, azureOpenAI, settings
+    expect(body).toContain('connections');
+    expect(body).toContain('azureOpenAI');
+    console.log('✅ /diag endpoint returned connection info');
   });
 
   test('should have working refresh button', async ({ page }) => {
-    await page.goto('/diagnostics');
-    await page.waitForTimeout(2000);
-    
-    // Click refresh button
-    const refreshButton = page.locator("button:has-text('Refresh')").first();
-    await expect(refreshButton).toBeVisible();
-    await refreshButton.click();
-    
-    await page.waitForTimeout(2000);
-    
-    // Button should still be present after refresh
-    await expect(refreshButton).toBeVisible();
+    if (!process.env.FULL_STACK) {
+      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics page tests');
+      return;
+    }
+    // /diag is a JSON endpoint — re-request proves it stays responsive
+    const r1 = await page.request.get('/diag');
+    expect(r1.ok()).toBeTruthy();
+    const r2 = await page.request.get('/diag');
+    expect(r2.ok()).toBeTruthy();
+    console.log('✅ /diag responds consistently on repeated requests');
   });
 });
 

@@ -31,6 +31,8 @@ module resources 'resources.bicep' = {
     location: location
     tags: tags
     principalId: principalId
+    keyVaultEndpoint: 'https://kv-poshared.vault.azure.net/'
+    storageTableEndpoint: storage.outputs.tableEndpoint
   }
 }
 
@@ -55,10 +57,6 @@ module storage_roles 'storage-roles/storage-roles.module.bicep' = {
 output MANAGED_IDENTITY_CLIENT_ID string = resources.outputs.MANAGED_IDENTITY_CLIENT_ID
 output MANAGED_IDENTITY_NAME string = resources.outputs.MANAGED_IDENTITY_NAME
 output AZURE_LOG_ANALYTICS_WORKSPACE_NAME string = resources.outputs.AZURE_LOG_ANALYTICS_WORKSPACE_NAME
-output AZURE_CONTAINER_REGISTRY_ENDPOINT string = resources.outputs.AZURE_CONTAINER_REGISTRY_ENDPOINT
-output AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID string = resources.outputs.AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID
-output AZURE_CONTAINER_REGISTRY_NAME string = resources.outputs.AZURE_CONTAINER_REGISTRY_NAME
-output AZURE_CONTAINER_APPS_ENVIRONMENT_NAME string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_NAME
-output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_ID
-output AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN
+output AZURE_APP_SERVICE_NAME string = resources.outputs.AZURE_APP_SERVICE_NAME
+output AZURE_APP_SERVICE_URL string = resources.outputs.AZURE_APP_SERVICE_URL
 output STORAGE_TABLEENDPOINT string = storage.outputs.tableEndpoint

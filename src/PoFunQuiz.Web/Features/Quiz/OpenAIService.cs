@@ -20,7 +20,8 @@ public interface IOpenAIService
 /// </summary>
 public class OpenAIService : IOpenAIService
 {
-    private ChatClient? _chatClient;
+    // Lazy<T> guarantees thread-safe, single-initialization semantics across concurrent Blazor Server requests.
+    private readonly Lazy<ChatClient> _chatClient;
     private readonly ILogger<OpenAIService> _logger;
     private readonly OpenAISettings _settings;
 
@@ -30,15 +31,15 @@ public class OpenAIService : IOpenAIService
     {
         _logger = logger;
         _settings = openAISettings.Value;
+        // LazyThreadSafetyMode.ExecutionAndPublication ensures only one thread runs the factory,
+        // others block until the value is available — no duplicate API connections.
+        _chatClient = new Lazy<ChatClient>(InitializeChatClient, LazyThreadSafetyMode.ExecutionAndPublication);
     }
 
     /// <summary>
-    /// Returns the lazily-initialized ChatClient, creating it on first access.
+    /// Returns the lazily-initialized ChatClient, thread-safe on first access.
     /// </summary>
-    private ChatClient GetChatClient()
-    {
-        return _chatClient ??= InitializeChatClient();
-    }
+    private ChatClient GetChatClient() => _chatClient.Value;
 
     private ChatClient InitializeChatClient()
     {

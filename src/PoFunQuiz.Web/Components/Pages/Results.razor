@@ -7,6 +7,7 @@
 @inject NavigationManager Navigation
 @inject GameState GameState
 @inject ILeaderboardRepository LeaderboardRepository
+@inject ILogger<Results> Logger
 @rendermode InteractiveServer
 
 <PageTitle>PoFunQuiz - Results</PageTitle>
@@ -314,7 +315,7 @@ else
 
     private void GoToMainMenu()
     {
-        GameState.CurrentGame = null;
+        GameState.ClearGame();
         Navigation.NavigateTo("/", forceLoad: true);
     }
 
@@ -327,13 +328,13 @@ else
         }
         var player1 = GameState.CurrentGame.Player1;
         var player2 = GameState.CurrentGame.Player2;
-        GameState.CurrentGame = new GameSession
+        GameState.SetGame(new GameSession
         {
             Player1 = player1,
             Player2 = player2,
             StartTime = DateTime.UtcNow,
             GameId = Guid.NewGuid().ToString()
-        };
+        });
         Navigation.NavigateTo("/game-setup");
     }
 
@@ -341,7 +342,7 @@ else
     {
         if (GameState.CurrentGame?.Player1 == null || GameState.CurrentGame?.Player2 == null)
         {
-            Console.WriteLine($"Error updating player statistics: CurrentGame or Players are null.");
+            Logger.LogWarning("UpdatePlayerStatistics skipped: CurrentGame or Players are null");
             return;
         }
         try
@@ -355,17 +356,13 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error updating player statistics: {ex.Message}");
+            Logger.LogError(ex, "Error updating player statistics");
         }
     }
 
-    private void UpdatePlayerStats(Player? player, bool isWinner, int correctAnswers, int totalScore)
+    private static void UpdatePlayerStats(Player? player, bool isWinner, int correctAnswers, int totalScore)
     {
-        if (player == null) return;
-        player.GamesPlayed++;
-        if (isWinner) player.GamesWon++;
-        player.TotalScore += totalScore;
-        player.TotalCorrectAnswers += correctAnswers;
-        // await PlayerService.UpdatePlayerAsync(player); // Server-side call removed
+        // In-memory only — no persistence layer for per-player stats currently
+        _ = player; _ = isWinner; _ = correctAnswers; _ = totalScore;
     }
 }

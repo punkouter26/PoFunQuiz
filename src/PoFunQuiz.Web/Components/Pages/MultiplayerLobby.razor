@@ -24,7 +24,7 @@
             <p class="mp-hero-sub">Challenge a friend in real-time!</p>
         </div>
 
-        <!-- Join / Create form -->
+        <!-- Name field (shared between both tabs) -->
         <RadzenCard class="mp-form-card">
             <RadzenStack Gap="1rem">
                 <div class="mp-field">
@@ -32,23 +32,49 @@
                     <RadzenTextBox @bind-Value="playerName" Placeholder="Enter your name" Style="width:100%;" />
                 </div>
 
-                <RadzenButton Text="Create New Game" Icon="add_circle" ButtonStyle="ButtonStyle.Primary"
-                              Style="width:100%; border-radius:var(--radius-input); padding:0.875rem; font-weight:600;"
-                              Click="CreateGame" Disabled="@string.IsNullOrWhiteSpace(playerName)" />
+                <!-- Two-tab layout -->
+                <div class="mp-tabs">
+                    <button class="mp-tab @(activeTab == "create" ? "mp-tab-active" : "")"
+                            @onclick='@(() => activeTab = "create")'>
+                        <span class="material-icons">add_circle</span>
+                        Create Game
+                    </button>
+                    <button class="mp-tab @(activeTab == "join" ? "mp-tab-active" : "")"
+                            @onclick='@(() => activeTab = "join")'>
+                        <span class="material-icons">login</span>
+                        Join Game
+                    </button>
+                </div>
 
-                <div class="mp-divider"><span>or join an existing game</span></div>
-
-                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Style="width:100%;">
-                    <RadzenTextBox @bind-Value="gameIdToJoin" Placeholder="Enter Game ID" Style="flex:1;" />
-                    <RadzenButton Text="Join" Icon="login" ButtonStyle="ButtonStyle.Secondary"
-                                  Style="border-radius:var(--radius-input);"
-                                  Click="JoinGame"
-                                  Disabled="@(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin))" />
-                </RadzenStack>
+                @if (activeTab == "create")
+                {
+                    <div class="mp-tab-panel">
+                        <p class="mp-tab-hint">Create a new room and share the Game ID with a friend.</p>
+                        <button class="mp-action-btn mp-btn-primary @(string.IsNullOrWhiteSpace(playerName) ? "mp-btn-disabled" : "")"
+                                @onclick="CreateGame" disabled="@string.IsNullOrWhiteSpace(playerName)">
+                            <span class="material-icons">add_circle</span>
+                            Create New Game
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="mp-tab-panel">
+                        <p class="mp-tab-hint">Enter the Game ID shared by your friend.</p>
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Style="width:100%;">
+                            <RadzenTextBox @bind-Value="gameIdToJoin" Placeholder="Enter Game ID" Style="flex:1;" />
+                            <button class="mp-action-btn mp-btn-secondary @(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin) ? "mp-btn-disabled" : "")"
+                                    @onclick="JoinGame"
+                                    disabled="@(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin))">
+                                Join
+                            </button>
+                        </RadzenStack>
+                    </div>
+                }
 
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    <div style="background:rgba(244,67,54,0.12); color:#d32f2f; padding:0.75rem 1rem; border-radius:var(--radius-input); font-size:0.9rem; display:flex; align-items:center; gap:0.5rem;">
+                    <div class="mp-error-banner">
                         <span class="material-icons" style="font-size:1.1rem;">error_outline</span>
                         @errorMessage
                     </div>
@@ -151,16 +177,16 @@
     }
 
     .mp-hero-title {
-        font-size: 1.6rem;
-        font-weight: 800;
+        font-size: var(--text-2xl, 1.5rem);
+        font-weight: 900;
         margin: 0 0 0.25rem;
         position: relative;
     }
 
     .mp-hero-sub {
-        opacity: 0.9;
+        opacity: 0.85;
         margin: 0;
-        font-size: 0.95rem;
+        font-size: var(--text-sm, 0.875rem);
         position: relative;
     }
 
@@ -172,26 +198,114 @@
 
     .mp-field label {
         display: block;
-        font-size: 0.75rem;
+        font-size: var(--text-xs, 0.75rem);
         font-weight: 600;
         opacity: 0.85;
         margin-bottom: 0.35rem;
         margin-left: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
-    /* Divider */
-    .mp-divider {
+    /* Two-tab selector */
+    .mp-tabs {
+        display: flex;
+        border-radius: var(--radius-input);
+        background: var(--surface-alt, #f1f5f9);
+        padding: 3px;
+        gap: 3px;
+    }
+
+    .mp-tab {
+        flex: 1;
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.6rem 0.5rem;
+        border: none;
+        background: transparent;
         color: var(--text-secondary);
-        font-size: 0.8rem;
+        font-size: var(--text-sm, 0.875rem);
+        font-weight: 600;
+        border-radius: calc(var(--radius-input) - 3px);
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
 
-    .mp-divider::before, .mp-divider::after {
-        content: '';
-        flex: 1;
-        height: 1px;
+    .mp-tab .material-icons { font-size: 1.1rem; }
+
+    .mp-tab-active {
+        background: var(--primary-color, #6366f1);
+        color: white !important;
+        box-shadow: var(--shadow-md);
+    }
+
+    .mp-tab-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .mp-tab-hint {
+        font-size: var(--text-sm, 0.875rem);
+        color: var(--text-secondary);
+        margin: 0;
+        text-align: center;
+    }
+
+    /* Action buttons */
+    .mp-action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: none;
+        border-radius: var(--radius-input);
+        font-size: var(--text-base, 1rem);
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+    }
+
+    .mp-btn-primary {
+        background: var(--primary-color, #6366f1);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .mp-btn-primary:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .mp-btn-secondary {
+        background: var(--primary-color, #6366f1);
+        color: white;
+        border-radius: var(--radius-input);
+        padding: 0.5rem 1.25rem;
+        width: auto;
+    }
+
+    .mp-btn-disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Error banner */
+    .mp-error-banner {
+        background: rgba(244,67,54,0.12);
+        color: #d32f2f;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-input);
+        font-size: var(--text-sm, 0.9rem);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(244,67,54,0.25);
+    }
         background: var(--border-color);
     }
 
@@ -307,6 +421,7 @@
 @code {
     private string playerName = string.Empty;
     private string gameIdToJoin = string.Empty;
+    private string activeTab = "create";
     private GameStateDto? currentState;
     private bool isHost = false;
     private string? errorMessage;
@@ -352,14 +467,19 @@
     private async Task JoinGame()
     {
         errorMessage = null;
-        var success = await GameService.JoinGameAsync(gameIdToJoin, playerName);
-        if (success)
+        var result = await GameService.JoinGameAsync(gameIdToJoin, playerName);
+        if (result.Success)
         {
             isHost = false;
         }
         else
         {
-            errorMessage = "Could not join game. Check the Game ID and try again.";
+            errorMessage = result.FailReason switch
+            {
+                "already_started" => "That game has already started. You can't join mid-game.",
+                "already_full"    => "That game already has two players.",
+                _                 => $"Game \"{gameIdToJoin.ToUpperInvariant()}\" not found. Check the ID and try again."
+            };
         }
     }
 

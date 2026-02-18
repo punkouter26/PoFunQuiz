@@ -3,22 +3,27 @@ import { test, expect, Page } from '@playwright/test';
 /**
  * E2E Test: Verifies the first question appears after entering 2 initials and clicking Start Game.
  * Covers the critical path: Home → GameSetup → GameBoard (first question visible).
+ *
+ * NOTE: This test may start the dev server (up to 120s) if not already running.
+ * The test timeout is set to 90s to accommodate cold-start + question generation.
  */
 
 test.describe('Game Start - First Question Appears', () => {
   let page: Page;
 
+  // Allow 90s: up to 120s webServer timeout is handled at config level, but each
+  // test only gets 30s by default — raise to 90s for this cold-start scenario.
+  test.setTimeout(90000);
+
   test.beforeEach(async ({ page: testPage }) => {
     page = testPage;
     await page.goto('/');
-    await expect(page).toHaveTitle(/PoFunQuiz/);
+    await expect(page).toHaveTitle(/PoFunQuiz/, { timeout: 60000 });
 
-    // Wait for Blazor SignalR connection to be established (InteractiveServer mode)
-    await page.waitForFunction(() => {
-      const blazor = (window as any).Blazor;
-      return blazor && blazor._internal && blazor._internal.navigationManager;
-    }, { timeout: 10000 }).catch(() => {
-      console.log('Blazor connection check timed out, waiting extra time');
+    // Wait for Blazor interactive circuit — look for the first visible heading/button
+    // which only renders after the InteractiveServer SignalR circuit connects.
+    await page.locator('h1, h2, button').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {
+      console.log('Blazor root selector not found — continuing with short buffer');
     });
     await page.waitForTimeout(500);
   });
@@ -39,45 +44,36 @@ test.describe('Game Start - First Question Appears', () => {
       await expect(player2Input).toHaveValue('CD');
     });
 
-    // Step 2: Select a topic
+    // Step 2: Select a topic using the Radzen dropdown
     await test.step('Select topic', async () => {
       const topicDropdown = page.locator('#topic');
+      await expect(topicDropdown).toBeVisible({ timeout: 5000 });
       await topicDropdown.click();
-      await page.waitForTimeout(500);
+      // Wait for dropdown panel to open before selecting
+      await page.locator('.rz-dropdown-item').first().waitFor({ state: 'visible', timeout: 5000 });
       await page.locator('.rz-dropdown-item').first().click();
+      // Wait for dropdown to close (selection confirmed)
+      await page.locator('.rz-dropdown-item').first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
     });
 
-    // Step 3: Click Start Game and navigate to game setup
-    await test.step('Click Start Game', async () => {
+    // Step 3: Click Start Game → app navigates to /gamesetup, generates questions, then redirects to /game-board
+    // NOTE: GameSetup.razor has NO "I'm Ready" button — it auto-generates questions and navigates directly to /game-board.
+    await test.step('Click Start Game and wait for gamesetup navigation', async () => {
       const startButton = page.locator('button:has-text("Start Game")');
-      await expect(startButton).toBeVisible();
+      await expect(startButton).toBeVisible({ timeout: 5000 });
       await startButton.click();
 
-      // Should navigate to /gamesetup with query params
-      await expect(page).toHaveURL(/\/gamesetup/, { timeout: 10000 });
-    });
-
-    // Step 4: Both players click "I'm Ready"
-    await test.step('Both players ready up', async () => {
-      // Wait for the ready buttons to appear
-      const readyButtons = page.locator('button:has-text("I\'m Ready")');
-      await readyButtons.first().waitFor({ timeout: 10000 });
-
-      // Player 1 clicks ready
-      await readyButtons.first().click();
+      // Small buffer to let Blazor router commit the navigation (SignalR keeps connection open so networkidle never fires)
       await page.waitForTimeout(500);
 
-      // Player 2 clicks ready (after P1 is ready, the remaining button is P2's)
-      const remainingReady = page.locator('button:has-text("I\'m Ready")');
-      if (await remainingReady.count() > 0) {
-        await remainingReady.first().click();
-      }
+      // Confirm we landed on /gamesetup (may be brief before auto-redirect to /game-board)
+      await expect(page).toHaveURL(/\/gamesetup|\/game-board/, { timeout: 15000 });
     });
 
-    // Step 5: Wait through countdown (3 seconds) and question generation
-    await test.step('Wait for countdown and question generation', async () => {
-      // Countdown takes ~3 seconds, then questions are generated
-      // Wait for either the game board with questions, or an error state
+    // Step 4: Wait for question generation (GameSetup auto-generates and redirects to /game-board)
+    await test.step('Wait for question generation and game board', async () => {
+      // GameSetup auto-generates questions then navigates to /game-board.
+      // Wait for either the game board questions, or an error/retry UI (when OpenAI is not configured).
       const questionVisible = page.locator('.option-item').first();
       const errorAlert = page.locator('button:has-text("Retry")');
       const failedMessage = page.locator('text="Failed to generate questions"');

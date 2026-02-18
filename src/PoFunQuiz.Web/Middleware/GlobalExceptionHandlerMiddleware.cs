@@ -28,6 +28,17 @@ namespace PoFunQuiz.Web.Middleware
             {
                 await _next(context);
             }
+            catch (FileNotFoundException ex)
+            {
+                // Static asset files not found should return 404, not 500.
+                // This happens when static web assets (Radzen CSS/JS, Blazor framework)
+                // are requested but the file doesn't physically exist on disk.
+                _logger.LogWarning(ex, "Static asset not found: {Path}", context.Request.Path);
+                if (!context.Response.HasStarted)
+                {
+                    context.Response.StatusCode = (int)System.Net.HttpStatusCode.NotFound;
+                }
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unhandled exception occurred");

@@ -35,12 +35,21 @@ public class LeaderboardRepository : ILeaderboardRepository
         {
             // Sanitize category to prevent OData filter injection (escape single quotes)
             var safeCategory = category.Replace("'", "''", StringComparison.Ordinal);
-            var query = _tableClient.QueryAsync<LeaderboardEntry>(filter: $"PartitionKey eq '{safeCategory}'");
-            var results = new List<LeaderboardEntry>();
+
+            // Use maxPerPage to cap server-side rows read per page; collect only until we have
+            // enough candidates to produce `count` sorted results without streaming the whole partition.
+            // We request count * 3 candidates to sort accurately with minimal over-read.
+            int candidateLimit = count * 3;
+            var query = _tableClient.QueryAsync<LeaderboardEntry>(
+                filter: $"PartitionKey eq '{safeCategory}'",
+                maxPerPage: candidateLimit);
+            var results = new List<LeaderboardEntry>(candidateLimit);
 
             await foreach (var page in query.AsPages())
             {
                 results.AddRange(page.Values);
+                // Stop reading additional pages once we have sufficient candidates
+                if (results.Count >= candidateLimit) break;
             }
 
             return results

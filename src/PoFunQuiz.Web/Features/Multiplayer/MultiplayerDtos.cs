@@ -6,6 +6,13 @@ public class JoinGameDto
     public string GameId { get; set; } = string.Empty;
 }
 
+public class JoinGameResult
+{
+    public bool Success { get; set; }
+    /// <summary>Empty on success. "not_found" | "already_started" | "already_full" on failure.</summary>
+    public string FailReason { get; set; } = string.Empty;
+}
+
 public class GameStateDto
 {
     public string GameId { get; set; } = string.Empty;

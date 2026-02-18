@@ -2,146 +2,225 @@
 @using PoFunQuiz.Web
 @using PoFunQuiz.Web.Models
 @using PoFunQuiz.Web.Features.Quiz
-@using Microsoft.AspNetCore.Components.Web
 @using Radzen
 @using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject GameState GameState
-@inject IJSRuntime JSRuntime
 @inject IOpenAIService OpenAIService
-@implements IDisposable
+@inject ILogger<GameSetup> Logger
 @rendermode InteractiveServer
 
 <PageTitle>PoFunQuiz - Game Setup</PageTitle>
 
-@if (GameState.CurrentGame == null)
-{
-    <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;">
-        <RadzenText TextStyle="TextStyle.H4" class="rz-mb-4">Game session not found.</RadzenText>
-        <RadzenButton ButtonStyle="ButtonStyle.Primary" Path="/">Return to Main Menu</RadzenButton>
-    </div>
-}
-else
-{
-    <div class="rz-display-flex rz-flex-column rz-align-items-center rz-justify-content-center" style="height: 85vh;" @onkeydown="HandleKeyDown" tabindex="0" @ref="containerElement">
-        <div style="width: 100%; height: 100%; outline: none; text-align: center;">
-            @if (IsLoading)
-            {
-                <div class="rz-display-flex rz-flex-column rz-align-items-center">
-                    <RadzenText TextStyle="TextStyle.H5" class="rz-mb-3">Generating Questions...</RadzenText>
-                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 200px; height: 4px;" class="rz-mb-4" />
-                    
-                    <!-- Skeleton Loading for Game Board Preview -->
-                    <div class="rz-display-flex rz-gap-4">
-                        <div style="width: 300px; height: 400px; background: var(--rz-base-300); border-radius: 16px; opacity: 0.7;"></div>
-                        <div style="width: 300px; height: 400px; background: var(--rz-base-300); border-radius: 16px; opacity: 0.7;"></div>
-                    </div>
-                </div>
-            }
-            else if (IsCountingDown)
-            {
-                <RadzenText TextStyle="TextStyle.H5" class="rz-text-primary">Get Ready!</RadzenText>
-                <RadzenText TextStyle="TextStyle.H1" Style="font-size: 6rem;" class="rz-text-secondary">@CountdownValue</RadzenText>
-            }
-            else if (ErrorMessage != null)
-            {
-                <RadzenAlert AlertStyle="AlertStyle.Danger" Variant="Radzen.Variant.Flat" Shade="Shade.Lighter" AllowClose="false" class="rz-mb-3">@ErrorMessage</RadzenAlert>
-                <RadzenButton ButtonStyle="ButtonStyle.Primary" Click="RetrySetup" Size="ButtonSize.Small" Text="Retry" />
-                <RadzenButton ButtonStyle="ButtonStyle.Secondary" Path="/" class="rz-mt-2" Size="ButtonSize.Small" Text="Back to Main Menu" />
-            }
-            else
-            {
-                <RadzenRow JustifyContent="JustifyContent.Center">
-                    <RadzenColumn Size="12" class="rz-mb-4 rz-text-align-center">
-                        <RadzenCard class="rz-p-2">
-                            <RadzenText TextStyle="TextStyle.H6" class="rz-mb-1">Topic: @(string.Join(", ", GameState.CurrentGame?.SelectedCategories ?? new List<string>()))</RadzenText>
-                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-0">Difficulty: @(GameState.CurrentGame?.GameDifficulty.ToString() ?? "Medium")</RadzenText>
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn SizeSM="6" SizeXS="12" class="rz-mb-sm-0 rz-mb-3">
-                        <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
-                            <RadzenText TextStyle="TextStyle.H5" class="rz-text-primary">Player 1</RadzenText>
-                            <div class="player-avatar player-avatar-primary rz-my-2">@(GameState.CurrentGame?.Player1?.Initials ?? "P1")</div>
-                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 1-4</RadzenText>
-                            @if (!Player1Ready)
-                            {
-                                <RadzenButton ButtonStyle="ButtonStyle.Primary"
-                                              Click="@(() => SetPlayerReady(1))"
-                                              Size="ButtonSize.Small"
-                                              Text="I'm Ready" />
-                            }
-                            else
-                            {
-                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Ready!" Icon="check_circle" />
-                            }
-                        </RadzenCard>
-                    </RadzenColumn>
-
-                    <RadzenColumn SizeSM="6" SizeXS="12">
-                        <RadzenCard class="rz-p-2 rz-display-flex rz-flex-column rz-align-items-center">
-                            <RadzenText TextStyle="TextStyle.H5" class="rz-text-secondary">Player 2</RadzenText>
-                            <div class="player-avatar player-avatar-secondary rz-my-2">@(GameState.CurrentGame?.Player2?.Initials ?? "P2")</div>
-                            <RadzenText TextStyle="TextStyle.Body2" class="rz-mb-2">Use keys 7-0</RadzenText>
-                            @if (!Player2Ready)
-                            {
-                                <RadzenButton ButtonStyle="ButtonStyle.Secondary"
-                                              Click="@(() => SetPlayerReady(2))"
-                                              Size="ButtonSize.Small"
-                                              Text="I'm Ready" />
-                            }
-                            else
-                            {
-                                <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Ready!" Icon="check_circle" />
-                            }
-                        </RadzenCard>
-                    </RadzenColumn>
-                </RadzenRow>
-            }
+<div class="setup-page">
+    @if (IsLoading)
+    {
+        <div class="setup-loading">
+            <div class="setup-spinner-wrap">
+                <span class="material-icons setup-spinner-icon">auto_awesome</span>
+            </div>
+            <h2 class="setup-loading-title">Generating Questions…</h2>
+            <p class="setup-loading-sub">Hang tight while we craft your quiz!</p>
+            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                               Style="width: 200px; height: 5px; border-radius: 999px;" class="rz-mb-4" />
+            <div class="setup-skeleton-boards">
+                <div class="setup-skeleton-board"></div>
+                <div class="setup-skeleton-board"></div>
+            </div>
         </div>
-    </div>
-}
+    }
+    else if (ErrorMessage != null)
+    {
+        <div class="setup-error-card">
+            <div class="setup-error-icon-wrap">
+                <span class="material-icons setup-error-icon">sentiment_dissatisfied</span>
+            </div>
+            <h2 class="setup-error-title">Oops, something went wrong</h2>
+            <p class="setup-error-msg">@ErrorMessage</p>
+            <div class="setup-error-actions">
+                <button class="setup-btn setup-btn-secondary" @onclick="@(() => Navigation.NavigateTo("/"))">
+                    <span class="material-icons">home</span>
+                    Main Menu
+                </button>
+                <button class="setup-btn setup-btn-primary" @onclick="RetrySetup">
+                    <span class="material-icons">refresh</span>
+                    Try Again
+                </button>
+            </div>
+        </div>
+    }
+</div>
 
 <style>
-    .player-avatar {
-        width: 64px;
-        height: 64px;
+    .setup-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        padding: 1rem;
+        padding-bottom: 90px;
+        text-align: center;
+    }
+
+    /* Loading state */
+    .setup-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .setup-spinner-wrap {
+        width: 72px;
+        height: 72px;
+        background: linear-gradient(135deg, var(--primary-color, #6366f1), var(--primary-light, #818cf8));
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        font-size: 1.5rem;
+        animation: spinnerPulse 2s ease-in-out infinite;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 0 0 0 rgba(99,102,241,0.4);
+    }
+
+    @@keyframes spinnerPulse {
+        0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.45); }
+        70%  { box-shadow: 0 0 0 16px rgba(99,102,241,0); }
+        100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+    }
+
+    .setup-spinner-icon {
+        font-size: 2rem;
         color: white;
+        animation: spin 3s linear infinite;
     }
-    
-    .player-avatar-primary {
-        background-color: var(--rz-primary);
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
     }
-    
-    .player-avatar-secondary {
-        background-color: var(--rz-secondary);
+
+    .setup-loading-title {
+        font-size: var(--text-xl, 1.25rem);
+        font-weight: 800;
+        color: white;
+        margin: 0;
     }
-    
-    /* Keep responsive styles if needed, adjust for Radzen classes if necessary */
-    @@media (max-width: 600px) {
-        .rz-card { /* Example: if RadzenCard needs specific padding on mobile */
-            padding: 8px !important;
-        }
-        
-        .rz-text-h5 { /* Example: if RadzenText H5 needs specific font size */
-            font-size: 1.1rem !important;
-            margin-bottom: 0.25rem !important;
-        }
-        
-        .rz-text-h1 { /* Example: if RadzenText H1 needs specific font size */
-            font-size: 5rem !important;
-        }
-        
-        .rz-text-body2 { /* Example: if RadzenText Body2 needs specific font size */
-            font-size: 0.8rem !important;
-            margin-bottom: 0.25rem !important;
-        }
+
+    .setup-loading-sub {
+        color: rgba(255,255,255,0.75);
+        font-size: var(--text-sm, 0.875rem);
+        margin: 0 0 0.5rem;
+    }
+
+    .setup-skeleton-boards {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .setup-skeleton-board {
+        width: 260px;
+        height: 360px;
+        background: rgba(255,255,255,0.12);
+        border-radius: 20px;
+        animation: skeletonShimmer 1.5s ease-in-out infinite alternate;
+    }
+
+    .setup-skeleton-board:last-child { animation-delay: 0.4s; }
+
+    @@keyframes skeletonShimmer {
+        from { opacity: 0.5; }
+        to   { opacity: 0.85; }
+    }
+
+    /* Error state */
+    .setup-error-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 2.5rem 2rem 2rem;
+        max-width: 400px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .setup-error-icon-wrap {
+        width: 68px;
+        height: 68px;
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.25rem;
+    }
+
+    .setup-error-icon {
+        font-size: 2.25rem;
+        color: var(--danger-color, #ef4444);
+    }
+
+    .setup-error-title {
+        font-size: var(--text-xl, 1.25rem);
+        font-weight: 900;
+        color: var(--text-primary, #1e293b);
+        margin: 0;
+    }
+
+    .setup-error-msg {
+        font-size: var(--text-sm, 0.875rem);
+        color: var(--text-secondary, #64748b);
+        margin: 0 0 0.5rem;
+        max-width: 300px;
+        line-height: 1.5;
+    }
+
+    .setup-error-actions {
+        display: flex;
+        gap: 0.75rem;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    .setup-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0.8rem 1rem;
+        border: none;
+        border-radius: var(--radius-input, 12px);
+        font-size: var(--text-sm, 0.875rem);
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .setup-btn-primary {
+        background: var(--primary-color, #6366f1);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .setup-btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+    .setup-btn-primary:active { transform: scale(0.98); }
+
+    .setup-btn-secondary {
+        background: var(--surface-alt, #f1f5f9);
+        color: var(--text-primary, #1e293b);
+    }
+
+    .setup-btn-secondary:hover { background: var(--border-color, #e2e8f0); }
+
+    @@media (max-width: 480px) {
+        .setup-skeleton-boards { display: none; }
+        .setup-error-card { padding: 2rem 1.25rem 1.5rem; border-radius: 20px; }
     }
 </style>
 
@@ -155,99 +234,32 @@ else
     [SupplyParameterFromQuery]
     public string? Topic { get; set; }
 
-    private bool Player1Ready { get; set; } = false;
-    private bool Player2Ready { get; set; } = false;
-    private bool IsLoading { get; set; } = false;
-    private bool IsCountingDown { get; set; } = false;
-    private int CountdownValue { get; set; } = 3;
+    private bool IsLoading { get; set; } = true;
     private string? ErrorMessage { get; set; }
-    private System.Threading.Timer? _countdownTimer;
-    private ElementReference containerElement;
-    private bool _initialized = false;
 
-    protected override void OnParametersSet()
+    protected override async Task OnInitializedAsync()
     {
-        // Only initialize once when we have valid parameters
-        if (_initialized) return;
-
         if (string.IsNullOrWhiteSpace(Player1Initials) || string.IsNullOrWhiteSpace(Player2Initials) || string.IsNullOrWhiteSpace(Topic))
         {
-            // Redirect to home if missing required parameters
             Navigation.NavigateTo("/");
             return;
         }
 
-        _initialized = true;
-
-        // Initialize GameState.CurrentGame with player initials and topic
-        if (GameState.CurrentGame == null)
+        GameState.SetGame(new GameSession
         {
-            GameState.CurrentGame = new GameSession
-            {
-                Player1 = new Player { Initials = Player1Initials },
-                Player2 = new Player { Initials = Player2Initials },
-                Player1Initials = Player1Initials,
-                Player2Initials = Player2Initials,
-                SelectedCategories = new List<string> { Topic }
-            };
-        }
+            Player1 = new Player { Initials = Player1Initials },
+            Player2 = new Player { Initials = Player2Initials },
+            SelectedCategories = [Topic]
+        });
+
+        await GenerateQuestionsAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    private async Task RetrySetup()
     {
-        if (firstRender && GameState.CurrentGame != null) // Only focus if game is active
-        {
-            await JSRuntime.InvokeVoidAsync("focusElement", containerElement);
-        }
-    }
-
-    private void HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (!Player1Ready && (e.Key == "1" || e.Key == "2" || e.Key == "3" || e.Key == "4"))
-        {
-            SetPlayerReady(1);
-        }
-
-        if (!Player2Ready && (e.Key == "7" || e.Key == "8" || e.Key == "9" || e.Key == "0"))
-        {
-            SetPlayerReady(2);
-        }
-    }
-
-    private void SetPlayerReady(int playerNumber)
-    {
-        if (playerNumber == 1)
-            Player1Ready = true;
-        else
-            Player2Ready = true;
-
-        if (Player1Ready && Player2Ready)
-        {
-            StartCountdown();
-        }
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void StartCountdown()
-    {
-        IsCountingDown = true;
-        CountdownValue = 3; // Reset countdown
-        _countdownTimer = new System.Threading.Timer(async _ =>
-        {
-            await InvokeAsync(async () =>
-            {
-                CountdownValue--;
-                StateHasChanged();
-
-                if (CountdownValue <= 0)
-                {
-                    _countdownTimer?.Dispose();
-                    _countdownTimer = null;
-                    IsCountingDown = false;
-                    await GenerateQuestionsAsync();
-                }
-            });
-        }, null, 1000, 1000); // Start after 1 sec, repeat every 1 sec
+        ErrorMessage = null;
+        IsLoading = true;
+        await GenerateQuestionsAsync();
     }
 
     private async Task GenerateQuestionsAsync()
@@ -261,62 +273,34 @@ else
             {
                 ErrorMessage = "Game state lost. Please return to the main menu.";
                 IsLoading = false;
-                StateHasChanged();
                 return;
             }
 
-            // Use the injected service to generate questions
             var topic = GameState.CurrentGame.SelectedCategories?.FirstOrDefault() ?? "general knowledge";
-            Console.WriteLine($"🔍 GAMESETUP: Generating questions for topic: {topic}");
-            
-            // Generate questions once and assign the same questions to both players for fairness
-            var sharedQuestions = await OpenAIService.GenerateQuizQuestionsAsync(topic, 5);
+            Logger.LogDebug("Generating questions for topic: {Topic}", topic);
 
-            Console.WriteLine($"🔍 GAMESETUP: Generated {sharedQuestions?.Count ?? 0} shared questions");
+            var sharedQuestions = await OpenAIService.GenerateQuizQuestionsAsync(topic, 5);
+            Logger.LogDebug("Generated {Count} shared questions", sharedQuestions?.Count ?? 0);
 
             if (sharedQuestions == null || sharedQuestions.Count == 0)
             {
                 ErrorMessage = "Failed to generate questions. Please try again.";
                 IsLoading = false;
-                StateHasChanged();
                 return;
             }
 
-            // Assign the SAME questions to both players
+            // Assign the SAME questions to both players for fairness
             GameState.CurrentGame.Player1Questions = sharedQuestions;
             GameState.CurrentGame.Player2Questions = sharedQuestions;
             GameState.CurrentGame.StartTime = DateTime.UtcNow;
-            
-            Console.WriteLine($"🔍 GAMESETUP: Final assignment - Both players get the same {GameState.CurrentGame.Player1Questions?.Count ?? 0} questions");
-            
+
             Navigation.NavigateTo("/game-board");
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error generating quiz questions");
             ErrorMessage = $"An error occurred: {ex.Message}";
             IsLoading = false;
-            StateHasChanged();
         }
-    }
-
-    private void RetrySetup()
-    {
-        ErrorMessage = null;
-        Player1Ready = false;
-        Player2Ready = false;
-        IsLoading = false;
-        IsCountingDown = false;
-        _countdownTimer?.Dispose();
-        _countdownTimer = null;
-        StateHasChanged();
-         // Re-focus after retry might be needed if focus is lost
-        InvokeAsync(async () => {
-            if (GameState.CurrentGame != null) await JSRuntime.InvokeVoidAsync("focusElement", containerElement);
-        });
-    }
-
-    public void Dispose()
-    {
-        _countdownTimer?.Dispose();
     }
 }

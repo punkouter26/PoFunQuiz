@@ -1,8 +1,9 @@
 using PoFunQuiz.Web.Extensions;
 using PoFunQuiz.Web.Middleware;
 using PoFunQuiz.Web.Features.Quiz;
+using PoFunQuiz.Web.Logging;
 using Serilog;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Azure.Monitor.OpenTelemetry.AspNetCore;
 using System.Text.Json;
 using Scalar.AspNetCore;
 using Radzen;
@@ -33,6 +34,11 @@ try
         builder.WebHost.UseUrls("http://0.0.0.0:5000", "https://0.0.0.0:5001");
     }
 
+    // Load static web assets from NuGet packages (Radzen CSS/JS, Blazor framework, scoped CSS).
+    // Needed when running via 'dotnet run' outside of the published output so that
+    // /_content/**, /_framework/**, and fingerprinted app CSS are served correctly.
+    builder.WebHost.UseStaticWebAssets();
+
     // ============================================================
     // Azure Key Vault configuration (Managed Identity / DefaultAzureCredential)
     // ============================================================
@@ -44,8 +50,22 @@ try
             new Azure.Identity.DefaultAzureCredential());
         Log.Information("Configured Azure Key Vault: {KeyVaultEndpoint}", keyVaultEndpoint);
 
-        // Map Key Vault secrets (hyphens) to configuration paths (colons)
-        MapKeyVaultSecrets(builder.Configuration);
+        // Map Key Vault secret names (hyphens) to ASP.NET config paths (colons)
+        var cfg = builder.Configuration;
+        void MapSecret(string secretName, params string[] paths)
+        {
+            var value = cfg[secretName];
+            if (string.IsNullOrEmpty(value)) return;
+            foreach (var path in paths) cfg[path] = value;
+            Log.Information("Mapped Key Vault secret {SecretName}", secretName);
+        }
+
+        MapSecret("AzureOpenAI-ApiKey",              "AzureOpenAI:ApiKey");
+        MapSecret("AzureOpenAI-Endpoint",            "AzureOpenAI:Endpoint");
+        MapSecret("AzureOpenAI-DeploymentName",      "AzureOpenAI:DeploymentName");
+        MapSecret("ApplicationInsights-ConnectionString", "ApplicationInsights:ConnectionString");
+        MapSecret("PoFunQuiz-TableStorageConnectionString", "ConnectionStrings:tables");
+        MapSecret("PoFunQuiz-SignalRConnectionString", "Azure:SignalR:ConnectionString");
     }
     else
     {
@@ -57,6 +77,12 @@ try
     // ============================================================
     builder.Host.UseSerilog((context, services, configuration) =>
     {
+        // UserContextEnricher adds UserId, SessionId, EnvironmentName to ALL log events
+        // (not just HTTP request logs), including SignalR, background services, and startup.
+        var enricher = new UserContextEnricher(
+            services.GetRequiredService<IHttpContextAccessor>(),
+            services.GetRequiredService<IWebHostEnvironment>());
+
         configuration
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
@@ -66,6 +92,7 @@ try
             .Enrich.WithMachineName()
             .Enrich.WithEnvironmentName()
             .Enrich.WithCorrelationId()
+            .Enrich.With(enricher)
             .Enrich.WithProperty("Application", "PoFunQuiz")
             .Destructure.ToMaximumDepth(5)
             .Destructure.ToMaximumStringLength(1024)
@@ -80,13 +107,7 @@ try
                 fileSizeLimitBytes: 50_000_000,
                 rollOnFileSizeLimit: true);
 
-        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
-        if (!string.IsNullOrEmpty(appInsightsConnectionString))
-        {
-            configuration.WriteTo.ApplicationInsights(
-                appInsightsConnectionString,
-                new Serilog.Sinks.ApplicationInsights.TelemetryConverters.TraceTelemetryConverter());
-        }
+
     });
 
     // ============================================================
@@ -98,7 +119,7 @@ try
         logging.IncludeScopes = true;
     });
 
-    builder.Services.AddOpenTelemetry()
+    var otelBuilder = builder.Services.AddOpenTelemetry()
         .WithMetrics(metrics =>
         {
             metrics
@@ -118,13 +139,24 @@ try
     var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
     if (!string.IsNullOrWhiteSpace(otlpEndpoint))
     {
-        builder.Services.AddOpenTelemetry()
+        otelBuilder
             .WithMetrics(m => m.AddOtlpExporter())
             .WithTracing(t => t.AddOtlpExporter());
     }
 
-    // Application Insights SDK (for TelemetryClient usage in controllers)
-    builder.Services.AddApplicationInsightsTelemetry();
+    // Azure Monitor OpenTelemetry exporter — aggregates OTel traces, metrics, and logs to Application Insights
+    // This is the recommended approach per Microsoft docs; the legacy SDK is kept only for TelemetryClient injection.
+    var appInsightsConnStr = builder.Configuration["ApplicationInsights:ConnectionString"]
+        ?? builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+    if (!string.IsNullOrWhiteSpace(appInsightsConnStr))
+    {
+        otelBuilder.UseAzureMonitor(options => options.ConnectionString = appInsightsConnStr);
+        Log.Information("Configured Azure Monitor OpenTelemetry exporter");
+    }
+    else
+    {
+        Log.Warning("ApplicationInsights:ConnectionString not set; Azure Monitor OTel exporter skipped");
+    }
 
     // ============================================================
     // OpenAPI / Scalar API documentation
@@ -138,6 +170,19 @@ try
     builder.Services.AddAuthorization();
     builder.Services.AddHttpClient();
 
+    // IHttpContextAccessor — required by UserContextEnricher to access ambient HTTP context
+    builder.Services.AddHttpContextAccessor();
+
+    // Output caching — reduces Azure OpenAI calls for identical quiz topic+count requests
+    builder.Services.AddOutputCache(options =>
+    {
+        // Quiz questions: cache 60 s, vary by count and category query params
+        options.AddPolicy("QuizQuestions", policy =>
+            policy.Expire(TimeSpan.FromSeconds(60))
+                  .SetVaryByQuery("count", "category")
+                  .Tag("quiz"));
+    });
+
     // Blazor Interactive Server components
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
@@ -150,8 +195,7 @@ try
     // ============================================================
     builder.Services.AddHealthChecks()
         .AddCheck<PoFunQuiz.Web.HealthChecks.TableStorageHealthCheck>("table_storage")
-        .AddCheck<PoFunQuiz.Web.HealthChecks.OpenAIHealthCheck>("openai")
-        .AddCheck<PoFunQuiz.Web.HealthChecks.InternetConnectivityHealthCheck>("internet");
+        .AddCheck<PoFunQuiz.Web.HealthChecks.OpenAIHealthCheck>("openai");
 
     // ============================================================
     // SignalR (local or Azure SignalR Service)
@@ -211,6 +255,10 @@ try
         app.UseHttpsRedirection();
     }
 
+    app.UseContentSecurityPolicy(app.Environment.IsDevelopment());
+
+    app.UseOutputCache();
+
     app.UseAntiforgery();
     app.MapStaticAssets();
 
@@ -221,30 +269,8 @@ try
     // Vertical Slice API Endpoints (Quiz questions)
     app.MapQuizEndpoints();
 
-    // ============================================================
     // /health endpoint — JSON response with all check statuses
-    // ============================================================
-    app.MapHealthChecks("/health", new HealthCheckOptions
-    {
-        ResponseWriter = async (context, report) =>
-        {
-            context.Response.ContentType = "application/json";
-            var result = JsonSerializer.Serialize(new
-            {
-                status = report.Status.ToString(),
-                timestamp = DateTime.UtcNow,
-                checks = report.Entries.Select(e => new
-                {
-                    name = e.Key,
-                    status = e.Value.Status.ToString(),
-                    description = e.Value.Description,
-                    duration = e.Value.Duration.TotalMilliseconds,
-                    exception = e.Value.Exception?.Message
-                })
-            });
-            await context.Response.WriteAsync(result);
-        }
-    });
+    app.MapJsonHealthChecks();
 
     // ============================================================
     // /diag endpoint — exposes connection info with masked secrets
@@ -305,25 +331,7 @@ try
     app.MapRazorComponents<PoFunQuiz.Web.Components.App>()
         .AddInteractiveServerRenderMode();
 
-    // ============================================================
-    // Application lifecycle logging
-    // ============================================================
-    var lifetime = app.Lifetime;
-    lifetime.ApplicationStarted.Register(() =>
-    {
-        var addresses = app.Services.GetService<Microsoft.AspNetCore.Hosting.Server.IServer>()
-            ?.Features.Get<Microsoft.AspNetCore.Hosting.Server.Features.IServerAddressesFeature>()?.Addresses;
-        if (addresses != null)
-        {
-            foreach (var address in addresses)
-            {
-                Log.Information("Now listening on: {Address}", address);
-            }
-        }
-        Log.Information("Application started");
-    });
-    lifetime.ApplicationStopping.Register(() => Log.Information("Application is stopping"));
-    lifetime.ApplicationStopped.Register(() => Log.Information("Application stopped"));
+    app.UseLifetimeLogging();
 
     app.Run();
 }
@@ -334,38 +342,6 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
-}
-
-// ============================================================
-// Helper: Map Key Vault secret names (hyphens) to config paths (colons)
-// ============================================================
-static void MapKeyVaultSecrets(IConfigurationManager config)
-{
-    var mappings = new Dictionary<string, string[]>
-    {
-        // Shared secrets (used by multiple apps) — no app prefix
-        ["AzureOpenAI-ApiKey"] = ["AzureOpenAI:ApiKey", "AppSettings:AzureOpenAI:ApiKey"],
-        ["AzureOpenAI-Endpoint"] = ["AzureOpenAI:Endpoint", "AppSettings:AzureOpenAI:Endpoint"],
-        ["AzureOpenAI-DeploymentName"] = ["AzureOpenAI:DeploymentName", "AppSettings:AzureOpenAI:DeploymentName"],
-        ["ApplicationInsights-ConnectionString"] = ["ApplicationInsights:ConnectionString"],
-
-        // Non-shared secrets (app-specific) — prefixed with PoFunQuiz
-        ["PoFunQuiz-TableStorageConnectionString"] = ["ConnectionStrings:tables", "AppSettings:Storage:TableStorageConnectionString"],
-        ["PoFunQuiz-SignalRConnectionString"] = ["Azure:SignalR:ConnectionString"],
-    };
-
-    foreach (var (secretName, configPaths) in mappings)
-    {
-        var value = config[secretName];
-        if (!string.IsNullOrEmpty(value))
-        {
-            foreach (var path in configPaths)
-            {
-                config[path] = value;
-            }
-            Log.Information("Mapped Key Vault secret {SecretName}", secretName);
-        }
-    }
 }
 
 // Make the Program class accessible to integration tests

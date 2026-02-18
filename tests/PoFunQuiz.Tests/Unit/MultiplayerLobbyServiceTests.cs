@@ -28,7 +28,7 @@ namespace PoFunQuiz.Tests.Unit
             session.GameId.Should().NotBeNullOrEmpty();
             session.GameId.Length.Should().Be(6);
             session.Player1.Name.Should().Be(player1Name);
-            session.Player1Initials.Should().Be("PLA"); // First 3 chars upper
+            session.Player1.Initials.Should().Be("PLA"); // First 3 chars upper
             session.Player2.Name.Should().Be("Waiting...");
         }
 
@@ -47,7 +47,7 @@ namespace PoFunQuiz.Tests.Unit
             var updatedSession = _sut.GetSession(session.GameId);
             updatedSession.Should().NotBeNull();
             updatedSession!.Player2.Name.Should().Be(player2Name);
-            updatedSession.Player2Initials.Should().Be("PLA");
+            updatedSession.Player2.Initials.Should().Be("PLA");
         }
 
         [Fact]

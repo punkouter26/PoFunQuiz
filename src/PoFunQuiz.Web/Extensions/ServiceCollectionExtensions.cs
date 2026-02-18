@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using PoFunQuiz.Web.Configuration;
 using PoFunQuiz.Web.Features.Quiz;
 using PoFunQuiz.Web.Features.Leaderboard;
@@ -16,7 +15,6 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         // Configuration (Options pattern)
-        services.Configure<AppSettings>(configuration.GetSection("AppSettings"));
         services.Configure<OpenAISettings>(configuration.GetSection("AzureOpenAI"));
 
         // Storage
@@ -31,6 +29,7 @@ public static class ServiceCollectionExtensions
         // Business services
         services.AddScoped<IOpenAIService, OpenAIService>();
         services.AddSingleton<MultiplayerLobbyService>();
+        services.AddHostedService<SessionReaperService>();
         services.AddScoped<GameClientService>();
 
         return services;

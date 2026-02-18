@@ -167,25 +167,25 @@ public class OpenAIIntegrationTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Health_OpenAIEndpoint_IsAccessible()
+    public async Task Health_ReturnsHealthyStatus_WithMockedServices()
     {
-        // This test checks if we can reach the health endpoint which includes OpenAI status
-
-        // Act
+        // Verifies the /health endpoint returns a valid JSON status using in-proc TestServer only.
+        // Previously this test made a live outbound call to https://www.microsoft.com —
+        // that is now replaced with an in-proc check so no external network is required.
         var response = await _client.GetAsync("/health");
 
-        // Assert
         _output.WriteLine($"Health endpoint status: {response.StatusCode}");
 
-        if (response.IsSuccessStatusCode)
-        {
-            var healthStatus = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"Health status: {healthStatus}");
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        }
-        else
-        {
-            _output.WriteLine("⚠️ Health endpoint returned non-success status");
-        }
+        // Accept both 200 (Healthy) and 503 (Degraded) — either is a valid structured response
+        Assert.True(
+            response.StatusCode == System.Net.HttpStatusCode.OK ||
+            response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable,
+            $"Expected 200 or 503, got {response.StatusCode}");
+
+        var healthJson = await response.Content.ReadAsStringAsync();
+        _output.WriteLine($"Health payload: {healthJson}");
+
+        // Payload must be JSON with a "status" field
+        Assert.Contains("status", healthJson, StringComparison.OrdinalIgnoreCase);
     }
 }
