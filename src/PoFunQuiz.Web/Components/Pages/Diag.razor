@@ -29,7 +29,7 @@
         {
             var client = HttpClientFactory.CreateClient();
             client.BaseAddress = new Uri(Navigation.BaseUri);
-            var response = await client.GetStringAsync("diag");
+            var response = await client.GetStringAsync("api/diag");
             // Pretty-print the JSON
             using var doc = JsonDocument.Parse(response);
             diagData = JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });

@@ -275,7 +275,7 @@ try
     // ============================================================
     // /diag endpoint — exposes connection info with masked secrets
     // ============================================================
-    app.MapGet("/diag", (IConfiguration config) =>
+    app.MapGet("/api/diag", (IConfiguration config) =>
     {
         // Helper to mask the middle of sensitive values for security
         static string Mask(string? value)

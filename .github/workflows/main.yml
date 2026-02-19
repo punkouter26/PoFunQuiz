@@ -51,7 +51,10 @@ jobs:
         cd ./publish
         zip -r ../app.zip .
         cd ..
-        az webapp deploy --name ${{ env.APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }} --src-path app.zip --type zip
+        az webapp deployment source config-zip \
+          --name ${{ env.APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --src app.zip
 
     - name: Health check gate
       run: |
