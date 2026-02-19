@@ -46,11 +46,22 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+    - name: Stop App Service before deploy
+      run: az webapp stop --name ${{ env.APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
+
     - name: Deploy to Azure App Service
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.APP_NAME }}
-        package: './publish'
+      run: |
+        cd ./publish
+        zip -r ../app.zip .
+        cd ..
+        az webapp deployment source config-zip \
+          --name ${{ env.APP_NAME }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --src app.zip
+
+    - name: Start App Service after deploy
+      if: always()
+      run: az webapp start --name ${{ env.APP_NAME }} --resource-group ${{ env.RESOURCE_GROUP }}
 
     - name: Health check gate
       run: |
