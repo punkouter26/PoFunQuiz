@@ -47,14 +47,10 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
     - name: Deploy to Azure App Service
-      run: |
-        cd ./publish
-        zip -r ../app.zip .
-        cd ..
-        az webapp deployment source config-zip \
-          --name ${{ env.APP_NAME }} \
-          --resource-group ${{ env.RESOURCE_GROUP }} \
-          --src app.zip
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: ${{ env.APP_NAME }}
+        package: './publish'
 
     - name: Health check gate
       run: |
