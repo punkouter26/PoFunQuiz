@@ -26,6 +26,14 @@ jobs:
       with:
         dotnet-version: '10.0.x'
       
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('Directory.Packages.props') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
     - name: Restore dependencies
       run: dotnet restore PoFunQuiz.sln
       
@@ -46,13 +54,13 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Deploy to Azure App Service (Run-From-Package)
+    - name: Deploy to Azure App Service (Run-From-Package via Managed Identity)
       run: |
         # Build zip
         cd ./publish
         zip -r ../app.zip .
         cd ..
-        # Upload to blob storage
+        # Upload zip to blob storage (CI uses account key for upload only)
         STORAGE_ACCOUNT="stpofunquiz26"
         CONTAINER="deployments"
         BLOB_NAME="app-$(date +%Y%m%d%H%M%S).zip"
@@ -63,18 +71,10 @@ jobs:
           --name $BLOB_NAME \
           --file app.zip \
           --account-key $STORAGE_KEY
-        # Generate SAS URL valid for 1 year
-        EXPIRY=$(date -u -d "+1 year" '+%Y-%m-%dT%H:%M:%SZ')
-        SAS=$(az storage blob generate-sas \
-          --account-name $STORAGE_ACCOUNT \
-          --container-name $CONTAINER \
-          --name $BLOB_NAME \
-          --permissions r \
-          --expiry $EXPIRY \
-          --account-key $STORAGE_KEY \
-          --https-only -o tsv)
-        BLOB_URL="https://${STORAGE_ACCOUNT}.blob.core.windows.net/${CONTAINER}/${BLOB_NAME}?${SAS}"
-        # Set WEBSITE_RUN_FROM_PACKAGE to blob URL and restart
+        # Set WEBSITE_RUN_FROM_PACKAGE to plain blob URL — no SAS needed.
+        # The App Service's System-assigned Managed Identity has Storage Blob Data Reader
+        # on stpofunquiz26, so Azure fetches the package using MI auth (no long-lived secrets).
+        BLOB_URL="https://${STORAGE_ACCOUNT}.blob.core.windows.net/${CONTAINER}/${BLOB_NAME}"
         az webapp config appsettings set \
           --name ${{ env.APP_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
