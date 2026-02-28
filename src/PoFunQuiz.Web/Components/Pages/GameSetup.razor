@@ -296,6 +296,12 @@
 
             Navigation.NavigateTo("/game-board");
         }
+        catch (Microsoft.AspNetCore.Components.NavigationException)
+        {
+            // NavigationException is thrown by Blazor Server when NavigateTo() is called during
+            // an async render — this is expected and must not be treated as an error.
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error generating quiz questions");

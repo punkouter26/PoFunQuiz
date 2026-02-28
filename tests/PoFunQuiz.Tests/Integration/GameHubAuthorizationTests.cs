@@ -49,7 +49,7 @@ public class GameHubAuthorizationTests : IClassFixture<TestWebApplicationFactory
             new JoinGameDto { GameId = gameId, PlayerName = "Guest" });
 
         // Non-host attempting StartGame should throw HubException
-        var act = async () => await guestConn.InvokeAsync("StartGame", gameId);
+        var act = async () => await guestConn.InvokeAsync("StartGame", gameId, "General Knowledge");
         await act.Should().ThrowAsync<HubException>();
 
         await hostConn.StopAsync();
@@ -70,7 +70,7 @@ public class GameHubAuthorizationTests : IClassFixture<TestWebApplicationFactory
             new JoinGameDto { GameId = gameId, PlayerName = "Guest2" });
 
         // Host should be able to start without exception
-        var act = async () => await hostConn.InvokeAsync("StartGame", gameId);
+        var act = async () => await hostConn.InvokeAsync("StartGame", gameId, "General Knowledge");
         await act.Should().NotThrowAsync();
 
         await hostConn.StopAsync();

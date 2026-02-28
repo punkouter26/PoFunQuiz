@@ -12,6 +12,8 @@ public class MultiplayerLobbyService
     private readonly ConcurrentDictionary<string, string> _connectionToGame = new();
     // Maps gameId → host connectionId for authorization checks
     private readonly ConcurrentDictionary<string, string> _hostConnections = new();
+    // Maps gameId → set of player numbers (1/2) that have finished
+    private readonly ConcurrentDictionary<string, HashSet<int>> _finishedPlayers = new();
     private readonly object _joinLock = new();
 
     public GameSession CreateSession(string player1Name, string connectionId)
@@ -78,6 +80,7 @@ public class MultiplayerLobbyService
     {
         _sessions.TryRemove(gameId, out _);
         _hostConnections.TryRemove(gameId, out _);
+        _finishedPlayers.TryRemove(gameId, out _);
     }
 
     public void OnDisconnected(string connectionId)
@@ -91,6 +94,15 @@ public class MultiplayerLobbyService
                 _hostConnections.TryRemove(gameId, out _);
             }
         }
+    }
+
+    /// <summary>Returns all sessions that are still waiting for a second player to join.</summary>
+    public IReadOnlyList<OpenGameInfo> GetOpenGames()
+    {
+        return _sessions.Values
+            .Where(s => !s.StartTime.HasValue && s.Player2.Name == "Waiting...")
+            .Select(s => new OpenGameInfo { GameId = s.GameId, HostName = s.Player1.Name })
+            .ToList();
     }
 
     /// <summary>Removes sessions that have been complete or idle for longer than <paramref name="maxAge"/>.</summary>
@@ -119,7 +131,23 @@ public class MultiplayerLobbyService
             Player1Score = session.Player1Score,
             Player2Score = session.Player2Score,
             IsGameStarted = session.StartTime.HasValue,
-            IsGameOver = session.IsComplete
+            IsGameOver = session.IsComplete,
+            Questions = session.Player1Questions.Count > 0 ? session.Player1Questions : null,
+            StartTime = session.StartTime
         };
+    }
+
+    /// <summary>Records that a player has finished all questions.</summary>
+    public void MarkPlayerFinished(string gameId, int playerNumber)
+    {
+        var set = _finishedPlayers.GetOrAdd(gameId, _ => []);
+        lock (set) { set.Add(playerNumber); }
+    }
+
+    /// <summary>Returns true once both player 1 and player 2 have finished.</summary>
+    public bool AreBothPlayersFinished(string gameId)
+    {
+        if (!_finishedPlayers.TryGetValue(gameId, out var set)) return false;
+        lock (set) { return set.Contains(1) && set.Contains(2); }
     }
 }

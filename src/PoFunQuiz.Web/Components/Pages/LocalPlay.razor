@@ -1,0 +1,263 @@
+@page "/local"
+@using PoFunQuiz.Web.Models
+@using Radzen
+@using Radzen.Blazor
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>PoFunQuiz - Local Play</PageTitle>
+
+<SectionContent SectionName="HeaderContent">
+    <div class="d-flex align-items-center gap-2">
+        <button class="back-btn" @onclick="@(() => NavigationManager.NavigateTo("/"))">
+            <span class="material-icons">arrow_back</span>
+        </button>
+        <span class="app-title">Local Play</span>
+    </div>
+</SectionContent>
+
+<div class="local-container">
+    <div class="hero-card">
+        <div class="hero-content">
+            <div class="hero-mode-badge"><span class="material-icons" style="font-size:0.9rem;">devices</span> Same Device</div>
+            <h2 class="hero-title">Same Device?</h2>
+            <p class="hero-subtitle">Two players, one screen — enter initials and go!</p>
+
+            <div>
+                <RadzenStack Gap="1rem">
+                    <div class="player-inputs">
+                        <div class="float-input-group">
+                            <input id="player1Initials" @bind="gameStartModel.Player1Initials" @bind:event="oninput"
+                                   maxlength="3" placeholder=" " class="modern-input float-input" autocomplete="off" />
+                            <label class="float-label" for="player1Initials">Player 1</label>
+                            <span class="char-count">@(gameStartModel.Player1Initials?.Length ?? 0)/3</span>
+                        </div>
+                        <div class="float-input-group">
+                            <input id="player2Initials" @bind="gameStartModel.Player2Initials" @bind:event="oninput"
+                                   maxlength="3" placeholder=" " class="modern-input float-input" autocomplete="off" />
+                            <label class="float-label" for="player2Initials">Player 2</label>
+                            <span class="char-count">@(gameStartModel.Player2Initials?.Length ?? 0)/3</span>
+                        </div>
+                    </div>
+
+                    <div class="topic-select">
+                        <label style="font-size: var(--text-xs); font-weight: 600; opacity: 0.9; margin-left: 4px; margin-bottom: 4px; display:block;">Topic</label>
+                        <RadzenDropDown id="topic" Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics
+                                      Style="width: 100%; border-radius: 12px;" Placeholder="Pick a topic..." />
+                    </div>
+
+                    <button type="button" class="play-button" @onclick="StartGame">
+                        <span class="material-icons">play_arrow</span> Start Game
+                    </button>
+
+                    @if (validationError != null)
+                    {
+                        <div class="validation-toast">
+                            <span class="material-icons" style="font-size:1rem;">info_outline</span>
+                            @validationError
+                        </div>
+                    }
+                </RadzenStack>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .local-container {
+        padding: 1rem;
+        max-width: 520px;
+        margin: 0 auto;
+        padding-bottom: 90px;
+    }
+
+    .back-btn {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 0;
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, var(--rz-primary) 0%, var(--rz-secondary) 100%);
+        border-radius: 24px;
+        padding: 1.5rem;
+        color: white;
+        box-shadow: 0 12px 32px rgba(99,102,241,0.35);
+        position: relative;
+        overflow: visible;
+    }
+
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .hero-title {
+        font-size: var(--text-3xl);
+        font-weight: 900;
+        margin-bottom: 0.2rem;
+    }
+
+    .hero-subtitle {
+        opacity: 0.85;
+        margin-bottom: 1.25rem;
+        font-size: var(--text-sm);
+    }
+
+    .hero-mode-badge {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        background: rgba(255,255,255,0.2); color: #fff;
+        padding: 0.2rem 0.65rem; border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+        margin-bottom: 0.5rem;
+    }
+
+    .player-inputs {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .float-input-group {
+        flex: 1;
+        position: relative;
+    }
+
+    .float-input {
+        background: rgba(255,255,255,0.18);
+        border: 1.5px solid rgba(255,255,255,0.35);
+        border-radius: 12px;
+        padding: 1.35rem 0.75rem 0.45rem;
+        color: white;
+        font-weight: 700;
+        text-align: center;
+        width: 100%;
+        outline: none;
+        font-size: var(--text-lg);
+        transition: background 0.2s, border-color 0.2s;
+    }
+
+    .float-input:focus {
+        background: rgba(255,255,255,0.28);
+        border-color: white;
+    }
+
+    .float-label {
+        position: absolute;
+        top: 0.35rem;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: var(--text-xs);
+        font-weight: 700;
+        color: rgba(255,255,255,0.75);
+        pointer-events: none;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .char-count {
+        position: absolute;
+        bottom: 0.3rem;
+        right: 0.5rem;
+        font-size: 0.6rem;
+        color: rgba(255,255,255,0.45);
+        pointer-events: none;
+    }
+
+    .play-button {
+        background: white;
+        color: var(--rz-primary);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem;
+        font-weight: 800;
+        font-size: var(--text-lg);
+        font-family: var(--font-display, 'Poppins', sans-serif);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.15s;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        width: 100%;
+    }
+
+    .play-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+
+    .play-button:active {
+        transform: scale(0.98);
+        box-shadow: none;
+    }
+
+    .validation-toast {
+        background: rgba(239,68,68,0.18);
+        border: 1px solid rgba(239,68,68,0.4);
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: #fca5a5;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+</style>
+
+@code {
+    class GameStartModel
+    {
+        public string Player1Initials { get; set; } = "";
+        public string Player2Initials { get; set; } = "";
+        public string SelectedTopic { get; set; } = "";
+    }
+
+    GameStartModel gameStartModel = new GameStartModel();
+    string? validationError;
+
+    List<string> topics = new List<string>
+    {
+        "General Knowledge",
+        "Science",
+        "History",
+        "Sports",
+        "Geography",
+        "Technology",
+        "Entertainment"
+    };
+
+    void StartGame()
+    {
+        validationError = null;
+
+        if (string.IsNullOrWhiteSpace(gameStartModel.Player1Initials) || string.IsNullOrWhiteSpace(gameStartModel.Player2Initials))
+        {
+            validationError = "Enter initials for both players.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(gameStartModel.SelectedTopic))
+        {
+            validationError = "Pick a topic before starting.";
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/gamesetup?player1={Uri.EscapeDataString(gameStartModel.Player1Initials)}&player2={Uri.EscapeDataString(gameStartModel.Player2Initials)}&topic={Uri.EscapeDataString(gameStartModel.SelectedTopic)}");
+    }
+}

@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
 /**
  * UI and Navigation Tests for PoFunQuiz
@@ -63,52 +64,35 @@ test.describe('Navigation Tests', () => {
   });
 
   test('should navigate to diagnostics page', async ({ page }) => {
-    // Activate with FULL_STACK=1 — the /diag endpoint requires Azure Table Storage + OpenAI configured.
-    // When FULL_STACK is not set, mark as fixme (shows in report but doesn't block CI).
-    if (!process.env.FULL_STACK) {
-      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics navigation tests');
-      return;
-    }
-    await page.goto('/');
-    
-    // The diag endpoint is at /diag (registered in Program.cs, linked in the nav bar)
-    const diagLink = page.locator("a[href='/diag'], a:has-text('Diag')").first();
-    await diagLink.click();
-    
-    // /diag renders JSON, not a Blazor page — just verify URL changed and body is non-empty
-    await expect(page).toHaveURL(/\/diag/i);
-    const body = await page.locator('body').textContent();
+    // /api/diag reads config values and masks them — no live Azure connection required.
+    const response = await page.request.get('/api/diag');
+    expect(response.status()).toBe(200);
+    const body = await response.text();
     expect(body).toContain('environment');
+    expect(body).toContain('connections');
+    expect(body).toContain('azureOpenAI');
   });
 });
 
 test.describe('Diagnostics Page Tests', () => {
   // Activated when FULL_STACK=1 — /diag returns JSON from the live app
   test('should display health checks', async ({ page }) => {
-    if (!process.env.FULL_STACK) {
-      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics page tests');
-      return;
-    }
-    await page.goto('/diag');
-    const body = await page.locator('body').textContent();
+    const response = await page.request.get('/health');
+    // Health check returns 200 (Healthy) or 503 (Degraded/Unhealthy) — both are valid responses
+    expect([200, 503]).toContain(response.status());
+    const body = await response.text();
     expect(body).toBeTruthy();
-    // /diag exposes environment, connections, azureOpenAI, settings
-    expect(body).toContain('connections');
-    expect(body).toContain('azureOpenAI');
-    console.log('✅ /diag endpoint returned connection info');
+    expect(body).toContain('status');
+    console.log('✅ /health endpoint returned health status');
   });
 
   test('should have working refresh button', async ({ page }) => {
-    if (!process.env.FULL_STACK) {
-      test.fixme(true, 'Set FULL_STACK=1 to run diagnostics page tests');
-      return;
-    }
-    // /diag is a JSON endpoint — re-request proves it stays responsive
-    const r1 = await page.request.get('/diag');
+    // /api/diag is a JSON endpoint — two sequential requests prove it stays responsive
+    const r1 = await page.request.get('/api/diag');
     expect(r1.ok()).toBeTruthy();
-    const r2 = await page.request.get('/diag');
+    const r2 = await page.request.get('/api/diag');
     expect(r2.ok()).toBeTruthy();
-    console.log('✅ /diag responds consistently on repeated requests');
+    console.log('✅ /api/diag responds consistently on repeated requests');
   });
 });
 

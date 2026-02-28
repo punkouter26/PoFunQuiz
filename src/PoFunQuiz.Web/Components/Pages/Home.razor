@@ -1,11 +1,8 @@
 @page "/"
-@using PoFunQuiz.Web.Models
-@using Radzen
-@using Radzen.Blazor
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
-<PageTitle>PoFunQuiz - Home</PageTitle>
+<PageTitle>PoFunQuiz</PageTitle>
 
 <SectionContent SectionName="HeaderContent">
     <div class="d-flex align-items-center">
@@ -13,340 +10,185 @@
     </div>
 </SectionContent>
 
-<div class="dashboard-container">
-    <!-- Hero Section: Quick Play (Kept as form for E2E compatibility) -->
-    <div class="hero-card">
-        <div class="hero-content">
-            <h2 class="hero-title">Ready to Quiz?</h2>
-            <p class="hero-subtitle">Challenge yourself or a friend!</p>
-            
-            <div>
-                <RadzenStack Gap="1rem">
-                    <div class="player-inputs">
-                        <div class="float-input-group">
-                            <input id="player1Initials" @bind="gameStartModel.Player1Initials" @bind:event="oninput"
-                                   maxlength="3" placeholder=" " class="modern-input float-input" autocomplete="off" />
-                            <label class="float-label" for="player1Initials">Player 1</label>
-                            <span class="char-count">@(gameStartModel.Player1Initials?.Length ?? 0)/3</span>
-                        </div>
-                        <div class="float-input-group">
-                            <input id="player2Initials" @bind="gameStartModel.Player2Initials" @bind:event="oninput"
-                                   maxlength="3" placeholder=" " class="modern-input float-input" autocomplete="off" />
-                            <label class="float-label" for="player2Initials">Player 2</label>
-                            <span class="char-count">@(gameStartModel.Player2Initials?.Length ?? 0)/3</span>
-                        </div>
-                    </div>
-
-                    <div class="topic-select">
-                        <label style="font-size: var(--text-xs); font-weight: 600; opacity: 0.9; margin-left: 4px; margin-bottom: 4px; display:block;">Topic</label>
-                        <RadzenDropDown id="topic" Name="Topic" @bind-Value=@gameStartModel.SelectedTopic Data=@topics 
-                                      Style="width: 100%; border-radius: 12px;" Placeholder="Pick a topic..." />
-                    </div>
-
-                    <button type="button" class="play-button" @onclick="StartGame">
-                        <span class="material-icons">play_arrow</span> Start Game
-                    </button>
-
-                    @if (validationError != null)
-                    {
-                        <div class="validation-toast">
-                            <span class="material-icons" style="font-size:1rem;">info_outline</span>
-                            @validationError
-                        </div>
-                    }
-                </RadzenStack>
-            </div>
+<div class="landing-container">
+    <div class="landing-hero">
+        <div class="landing-logo">
+            <span class="material-icons logo-icon">quiz</span>
         </div>
+        <h1 class="landing-title">PoFunQuiz</h1>
+        <p class="landing-subtitle">Choose how you want to play</p>
     </div>
 
-    <!-- Dashboard Grid -->
-    <div class="dashboard-grid">
-        <!-- Multiplayer Card -->
-        <div class="dashboard-card multiplayer-card card-interactive" @onclick="@(() => NavigationManager.NavigateTo("/multiplayer"))">
-            <div class="card-icon-wrap mp-icon"><span class="material-icons">people</span></div>
-            <div class="card-text">
-                <h3>Multiplayer</h3>
-                <span>Join Lobby</span>
+    <div class="mode-grid">
+        <div class="mode-card local-card" @onclick="@(() => NavigationManager.NavigateTo("/local"))">
+            <div class="mode-icon-wrap local-icon">
+                <span class="material-icons">people_alt</span>
             </div>
-            <span class="material-icons card-arrow">chevron_right</span>
+            <div class="mode-body">
+                <h2 class="mode-title">Local Play</h2>
+                <p class="mode-desc">Two players, one device. Enter initials and battle it out!</p>
+            </div>
+            <span class="material-icons mode-arrow">chevron_right</span>
         </div>
 
-        <!-- Leaderboard Card -->
-        <div class="dashboard-card leaderboard-card card-interactive" @onclick="@(() => NavigationManager.NavigateTo("/leaderboard"))">
-            <div class="card-icon-wrap lb-icon"><span class="material-icons">emoji_events</span></div>
-            <div class="card-text">
-                <h3>Leaderboard</h3>
-                <span>Top Scores</span>
+        <div class="mode-card remote-card" @onclick="@(() => NavigationManager.NavigateTo("/multiplayer"))">
+            <div class="mode-icon-wrap remote-icon">
+                <span class="material-icons">wifi</span>
             </div>
-            <span class="material-icons card-arrow">chevron_right</span>
+            <div class="mode-body">
+                <h2 class="mode-title">Remote Play</h2>
+                <p class="mode-desc">Play online with a friend on separate devices via a shared lobby.</p>
+            </div>
+            <span class="material-icons mode-arrow">chevron_right</span>
         </div>
-        
+
+        <div class="mode-card leaderboard-card" @onclick="@(() => NavigationManager.NavigateTo("/leaderboard"))">
+            <div class="mode-icon-wrap lb-icon">
+                <span class="material-icons">emoji_events</span>
+            </div>
+            <div class="mode-body">
+                <h2 class="mode-title">Leaderboard</h2>
+                <p class="mode-desc">See the all-time top scores from players around the world.</p>
+            </div>
+            <span class="material-icons mode-arrow">chevron_right</span>
+        </div>
     </div>
 </div>
 
 <style>
-    .dashboard-container {
-        padding: 1rem;
-        max-width: 800px;
+    .landing-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1rem;
+        max-width: 520px;
         margin: 0 auto;
-        padding-bottom: 90px;
+        padding-bottom: 100px;
+        min-height: calc(100vh - 60px);
+        justify-content: center;
     }
 
-    /* Hero Card */
-    .hero-card {
+    .landing-hero {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .landing-logo {
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
         background: linear-gradient(135deg, var(--rz-primary) 0%, var(--rz-secondary) 100%);
-        border-radius: 24px;
-        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+    }
+
+    .logo-icon {
+        font-size: 2.2rem !important;
         color: white;
-        box-shadow: 0 12px 32px rgba(99,102,241,0.35);
-        margin-bottom: 1.25rem;
-        position: relative;
-        overflow: visible;
     }
 
-    .hero-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 300px;
-        height: 300px;
-        background: rgba(255,255,255,0.08);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-
-    .hero-title {
-        font-size: var(--text-3xl);
+    .landing-title {
+        font-size: var(--text-4xl);
         font-weight: 900;
-        margin-bottom: 0.2rem;
-    }
-
-    .hero-subtitle {
-        opacity: 0.85;
-        margin-bottom: 1.25rem;
-        font-size: var(--text-sm);
-    }
-
-    /* ── Floating Label Inputs ── */
-    .player-inputs {
-        display: flex;
-        gap: 1rem;
-    }
-
-    .float-input-group {
-        flex: 1;
-        position: relative;
-    }
-
-    .float-input {
-        background: rgba(255,255,255,0.18);
-        border: 1.5px solid rgba(255,255,255,0.35);
-        border-radius: 12px;
-        padding: 1.35rem 0.75rem 0.45rem;
-        color: white;
-        font-weight: 700;
-        text-align: center;
-        width: 100%;
-        outline: none;
-        font-size: var(--text-lg);
-        transition: background 0.2s, border-color 0.2s;
-    }
-
-    .float-input:focus {
-        background: rgba(255,255,255,0.28);
-        border-color: white;
-    }
-
-    .float-label {
-        position: absolute;
-        top: 0.35rem;
-        left: 0;
-        right: 0;
-        text-align: center;
-        font-size: var(--text-xs);
-        font-weight: 700;
-        color: rgba(255,255,255,0.75);
-        pointer-events: none;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .char-count {
-        position: absolute;
-        bottom: 0.3rem;
-        right: 0.5rem;
-        font-size: 0.6rem;
-        color: rgba(255,255,255,0.45);
-        pointer-events: none;
-    }
-
-    .play-button {
-        background: white;
-        color: var(--rz-primary);
-        border: none;
-        border-radius: 12px;
-        padding: 1rem;
-        font-weight: 800;
-        font-size: var(--text-lg);
+        background: linear-gradient(135deg, var(--rz-primary) 0%, var(--rz-secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0 0 0.4rem;
         font-family: var(--font-display, 'Poppins', sans-serif);
+    }
+
+    .landing-subtitle {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .mode-grid {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        cursor: pointer;
-        transition: transform 0.15s, box-shadow 0.15s;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        flex-direction: column;
+        gap: 0.85rem;
         width: 100%;
     }
 
-    .play-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
-    }
-
-    .play-button:active {
-        transform: scale(0.98);
-        box-shadow: none;
-    }
-
-    /* Validation toast */
-    .validation-toast {
-        background: rgba(239,68,68,0.18);
-        border: 1px solid rgba(239,68,68,0.4);
-        border-radius: 10px;
-        padding: 0.6rem 1rem;
-        font-size: var(--text-sm);
-        font-weight: 600;
-        color: #fca5a5;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-    }
-
-    /* ── Dashboard Grid ── */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.85rem;
-    }
-
-    .dashboard-card {
+    .mode-card {
         background: var(--surface-color, #fff);
         border-radius: 20px;
-        padding: 1.1rem 1rem;
+        padding: 1.25rem 1rem 1.25rem 1.25rem;
         display: flex;
         align-items: center;
-        gap: 0.85rem;
+        gap: 1rem;
         box-shadow: var(--shadow-md);
+        cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
+        border: 1.5px solid transparent;
         position: relative;
         overflow: hidden;
     }
 
-    .card-interactive {
-        cursor: pointer;
+    .mode-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.2s;
     }
 
-    .card-interactive:hover {
-        transform: translateY(-3px);
-        box-shadow: var(--shadow-lg);
-    }
+    .local-card::before        { background: linear-gradient(135deg, rgba(99,102,241,0.06) 0%, rgba(129,140,248,0.06) 100%); }
+    .remote-card::before       { background: linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(52,211,153,0.06) 100%); }
+    .leaderboard-card::before  { background: linear-gradient(135deg, rgba(245,158,11,0.06) 0%, rgba(251,191,36,0.06) 100%); }
 
-    .card-interactive:active {
-        transform: scale(0.97);
-        box-shadow: var(--shadow-sm);
-    }
+    .mode-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .mode-card:hover::before { opacity: 1; }
+    .mode-card:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
 
-    .card-icon-wrap {
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
+    .mode-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
     }
 
-    .card-icon-wrap .material-icons { font-size: 1.5rem; }
+    .mode-icon-wrap .material-icons { font-size: 1.7rem; color: white; }
 
-    .mp-icon { background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%); color: white; }
-    .lb-icon { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); color: white; }
-    .dc-icon { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); color: white; opacity: 0.5; }
+    .local-icon  { background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%); }
+    .remote-icon { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+    .lb-icon     { background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); }
 
-    .card-text { flex: 1; min-width: 0; }
+    .mode-body { flex: 1; min-width: 0; }
 
-    .card-text h3 {
+    .mode-title {
         font-size: var(--text-base);
-        font-weight: 700;
-        margin: 0 0 2px;
+        font-weight: 800;
+        margin: 0 0 3px;
         color: var(--text-primary);
+        font-family: var(--font-display, 'Poppins', sans-serif);
     }
 
-    .card-text span {
+    .mode-desc {
         font-size: var(--text-xs);
         color: var(--text-secondary);
+        margin: 0;
+        line-height: 1.4;
     }
 
-    .card-arrow {
+    .mode-arrow {
         color: var(--border-color);
-        font-size: 1.25rem !important;
-    }
-
-    @@media (max-width: 480px) {
-        .dashboard-grid { grid-template-columns: 1fr; }
+        font-size: 1.4rem !important;
+        flex-shrink: 0;
     }
 
     @@media (prefers-color-scheme: dark) {
-        .dashboard-card { background: var(--surface-color); }
+        .mode-card { background: var(--surface-color); }
     }
 </style>
 
 @code {
-    class GameStartModel
-    {
-        public string Player1Initials { get; set; } = "";
-        public string Player2Initials { get; set; } = "";
-        public string SelectedTopic { get; set; } = "";
-    }
-
-    GameStartModel gameStartModel = new GameStartModel();
-    string? validationError;
-
-    List<string> topics = new List<string>
-    {
-        "General Knowledge",
-        "Science",
-        "History",
-        "Sports",
-        "Geography",
-        "Technology",
-        "Entertainment"
-    };
-
-    void StartGame()
-    {
-        validationError = null;
-
-        if (string.IsNullOrWhiteSpace(gameStartModel.Player1Initials) || string.IsNullOrWhiteSpace(gameStartModel.Player2Initials))
-        {
-            validationError = "Enter initials for both players.";
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(gameStartModel.SelectedTopic))
-        {
-            validationError = "Pick a topic before starting.";
-            return;
-        }
-
-        NavigationManager.NavigateTo($"/gamesetup?player1={Uri.EscapeDataString(gameStartModel.Player1Initials)}&player2={Uri.EscapeDataString(gameStartModel.Player2Initials)}&topic={Uri.EscapeDataString(gameStartModel.SelectedTopic)}");
-    }
-
-    void ViewLeaderboard()
-    {
-        NavigationManager.NavigateTo("/leaderboard");
-    }
 }

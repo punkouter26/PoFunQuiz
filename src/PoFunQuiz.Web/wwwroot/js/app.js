@@ -23,30 +23,19 @@ window.focusElement = (element) => {
     }
 };
 
-// Handle element focusing for keyboard input
+// Handle element focusing for keyboard input.
+// Uses setTimeout so the focus call happens after Blazor Server's SignalR-based
+// navigation finishes — browsers block programmatic focus fired mid-transition.
 window.focusGameContainer = function (elementId) {
-    console.log("Attempting to focus element", elementId);
-    const element = document.getElementById(elementId);
-    if (element) {
-        try {
-            element.focus();
-            console.log("Element focused successfully");
-            
-            // Add a click event to ensure focus is maintained
-            element.addEventListener('click', function() {
-                this.focus();
-                console.log("Element refocused after click");
-            });
-            
-            return true;
-        } catch (e) {
-            console.error("Error focusing element:", e);
-            return false;
+    const tryFocus = () => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.focus({ preventScroll: true });
         }
-    } else {
-        console.warn("Element not found for focusing");
-        return false;
-    }
+    };
+    // Two attempts: immediate + short defer to handle both fast and slow renders.
+    tryFocus();
+    setTimeout(tryFocus, 150);
 };
 
 // Helper function to suppress default keyboard events when needed

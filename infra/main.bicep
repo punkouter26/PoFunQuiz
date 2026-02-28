@@ -15,6 +15,10 @@ param principalId string = ''
 @description('Resource group name for this application')
 param resourceGroupName string = 'PoFunQuiz'
 
+@description('App Service Plan SKU. F1 for dev/test, B1 for production.')
+@allowed(['F1', 'B1', 'B2', 'B3'])
+param appServiceSku string = 'F1'
+
 var tags = {
   'azd-env-name': environmentName
 }
@@ -33,6 +37,7 @@ module resources 'resources.bicep' = {
     principalId: principalId
     keyVaultEndpoint: 'https://kv-poshared.vault.azure.net/'
     storageTableEndpoint: storage.outputs.tableEndpoint
+    appServiceSku: appServiceSku
   }
 }
 

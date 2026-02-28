@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.SignalR;
+using PoFunQuiz.Web.Features.Quiz;
 
 namespace PoFunQuiz.Web.Features.Multiplayer;
 
 public class GameHub : Hub
 {
     private readonly MultiplayerLobbyService _lobbyService;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public GameHub(MultiplayerLobbyService lobbyService)
+    public GameHub(MultiplayerLobbyService lobbyService, IServiceScopeFactory scopeFactory)
     {
         _lobbyService = lobbyService;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<string> CreateGame(string playerName)
@@ -51,17 +54,49 @@ public class GameHub : Hub
         return new JoinGameResult { Success = false, FailReason = failReason };
     }
 
-    public async Task StartGame(string gameId)
+    /// <summary>Returns all games currently waiting for a second player.</summary>
+    public Task<IReadOnlyList<OpenGameInfo>> GetOpenGames()
+        => Task.FromResult(_lobbyService.GetOpenGames());
+
+    public async Task StartGame(string gameId, string topic)
     {
         // Authorization: only the host (Player 1) may start the game
         if (!_lobbyService.IsHost(gameId, Context.ConnectionId))
             throw new HubException("Only the host can start the game.");
 
+        var session = _lobbyService.GetSession(gameId)
+            ?? throw new HubException("Game not found.");
+
+        // Generate questions via a DI scope (IOpenAIService is Scoped, hub is Transient)
+        using var scope = _scopeFactory.CreateScope();
+        var openAI = scope.ServiceProvider.GetRequiredService<IOpenAIService>();
+        var questions = await openAI.GenerateQuizQuestionsAsync(topic, 5);
+
+        // Both players receive the identical question set — answered independently
+        session.Player1Questions = questions;
+        session.Player2Questions = questions;
+        session.StartTime = DateTime.UtcNow;
+
+        await Clients.Group(gameId).SendAsync("GameStarted", _lobbyService.MapToDto(session));
+    }
+
+    /// <summary>
+    /// Called when a remote player answers all questions or time expires.
+    /// When both players report finished, broadcasts GameFinished to the group.
+    /// </summary>
+    public async Task PlayerFinished(string gameId, int playerNumber)
+    {
+        if (playerNumber is not (1 or 2)) return;
+
         var session = _lobbyService.GetSession(gameId);
-        if (session != null)
+        if (session is null) return;
+
+        _lobbyService.MarkPlayerFinished(gameId, playerNumber);
+
+        if (_lobbyService.AreBothPlayersFinished(gameId))
         {
-            session.StartTime = DateTime.UtcNow;
-            await Clients.Group(gameId).SendAsync("GameStarted", _lobbyService.MapToDto(session));
+            session.EndTime = DateTime.UtcNow;
+            await Clients.Group(gameId).SendAsync("GameFinished", _lobbyService.MapToDto(session));
         }
     }
 

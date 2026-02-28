@@ -10,7 +10,7 @@ Accept: application/json
 ###
 
 ### Diagnostics — exposes masked connection strings, keys, settings
-GET {{baseUrl}}/diag
+GET {{baseUrl}}/api/diag
 Accept: application/json
 
 ###

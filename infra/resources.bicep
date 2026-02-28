@@ -13,6 +13,10 @@ param keyVaultEndpoint string = ''
 @description('Azure Storage Table endpoint for the app storage account')
 param storageTableEndpoint string = ''
 
+@description('App Service Plan SKU. Use F1 for dev/test, B1 for production.')
+@allowed(['F1', 'B1', 'B2', 'B3'])
+param appServiceSku string = 'F1'
+
 var resourceToken = uniqueString(resourceGroup().id)
 
 // ============================================================
@@ -29,17 +33,16 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
 }
 
 // ============================================================
-// App Service Plan — B1 tier (lowest paid tier; supports always-on + custom domains)
-// Use Free (F1) for dev/test by changing skuName to 'F1'
+// App Service Plan — tier driven by appServiceSku param (F1=Free for dev, B1=Basic for prod)
 // ============================================================
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: 'asp-pofunquiz-${resourceToken}'
   location: location
   tags: tags
   sku: {
-    name: 'B1'
-    tier: 'Basic'
-    size: 'B1'
+    name: appServiceSku
+    tier: appServiceSku == 'F1' ? 'Free' : 'Basic'
+    size: appServiceSku
     capacity: 1
   }
   kind: 'linux'

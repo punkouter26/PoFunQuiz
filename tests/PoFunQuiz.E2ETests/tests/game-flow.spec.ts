@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import type { Page } from '@playwright/test';
 
 /**
  * E2E Test Suite for PoFunQuiz Game
@@ -234,11 +235,8 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
   });
 
   test('should handle validation errors', async () => {
-    // Requires FULL_STACK=1 — validates gamesetup page behaviour post-navigation.
-    if (!process.env.FULL_STACK) {
-      test.fixme(true, 'Set FULL_STACK=1 to run gamesetup validation tests');
-      return;
-    }
+    // Validates that the home page blocks navigation when required fields are empty.
+    // No OpenAI or external services required — purely UI-level validation.
     await test.step('Attempt to start game without player initials', async () => {
       // Try to start without entering initials
       const startButton = page.locator('button:has-text("Start Game")');
@@ -262,11 +260,8 @@ test.describe('PoFunQuiz Complete Game Flow', () => {
   });
 
   test('should handle single player mode', async () => {
-    // Requires FULL_STACK=1 — verifies single-player guard on gamesetup.
-    if (!process.env.FULL_STACK) {
-      test.fixme(true, 'Set FULL_STACK=1 to run single-player mode tests');
-      return;
-    }
+    // Verifies that starting with only one player's initials keeps the user on the home page.
+    // No OpenAI or external services required — purely UI-level validation.
     await test.step('Play with only one player', async () => {
       // Enter only first player initials
       await page.locator('#player1Initials').fill('P1');

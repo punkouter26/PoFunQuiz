@@ -27,9 +27,10 @@ public static class WebApplicationExtensions
                 "default-src 'self'; " +
                 "script-src 'self' 'unsafe-inline'; " +      // Blazor requires inline scripts
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-                "font-src 'self' https://fonts.gstatic.com; " +
+                "font-src 'self' https://fonts.gstatic.com https://fonts.scalar.com; " +
                 "img-src 'self' data:; " +
                 connectSrc);                                  // SignalR + dev hot-reload WebSocket
+            context.Response.Headers.Append("X-Content-Type-Options", "nosniff");  // Prevent MIME sniffing
             await next();
         });
         return app;

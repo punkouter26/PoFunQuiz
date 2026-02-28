@@ -1,5 +1,6 @@
 @page "/game-board"
 @using PoFunQuiz.Web
+@using PoFunQuiz.Web.Features.Multiplayer
 @using PoFunQuiz.Web.Features.Quiz
 @using PoFunQuiz.Web.Models
 @using PoFunQuiz.Web.Components.Game
@@ -9,6 +10,7 @@
 @using Radzen.Blazor
 @inject NavigationManager Navigation
 @inject GameState GameState
+@inject GameClientService GameService
 @inject IJSRuntime JS
 @inject ILogger<GameBoard> Logger
 @implements IDisposable
@@ -42,34 +44,58 @@
                     </RadzenColumn>
                 </RadzenRow>
 
-                <!-- Player Boards -->
-                <RadzenRow Gutters="true">
-                    <!-- Player 1 Board -->
-                    <RadzenColumn Size="12" SizeMD="6" class="@(GetPlayerColumnClass(Player1HasFinished) + " rz-mb-3 rz-mb-md-0")">
-                        <PlayerBoard PlayerName="@GameState.CurrentGame.Player1.Initials"
-                                     Streak="@GameState.CurrentGame.Player1Streak"
-                                     CurrentQuestion="@GetCurrentQuestion(1)"
-                                     HasFinished="@Player1HasFinished"
-                                     FeedbackVisible="@Player1FeedbackVisible"
-                                     LastAnswerCorrect="@Player1LastAnswerCorrect"
-                                     SelectedAnswerIndex="@Player1JustSelectedAnswerIndex"
-                                     IsPlayer2="false"
-                                     OnOptionSelected="@(async (index) => await HandlePlayerAnswer(1, index))" />
-                    </RadzenColumn>
+                <!-- Player Boards — remote mode: single centred board; local mode: side-by-side -->
+                @if (GameState.IsRemoteMode)
+                {
+                    <RadzenRow Gutters="true">
+                        <RadzenColumn Size="12" SizeMD="8" class="@(GetPlayerColumnClass(LocalHasFinished) + " mx-auto")">
+                            <div class="remote-identity-bar">
+                                <span class="material-icons" style="font-size:1rem;">wifi</span>
+                                <span>You are <strong>Player @GameState.LocalPlayerNumber</strong></span>
+                                <span class="remote-opponent-badge">Opponent: @OpponentName</span>
+                            </div>
+                            <PlayerBoard PlayerName="@LocalPlayerName"
+                                         Streak="@LocalStreak"
+                                         CurrentQuestion="@GetCurrentQuestion(GameState.LocalPlayerNumber)"
+                                         HasFinished="@LocalHasFinished"
+                                         FeedbackVisible="@LocalFeedbackVisible"
+                                         LastAnswerCorrect="@LocalLastAnswerCorrect"
+                                         SelectedAnswerIndex="@LocalJustSelectedAnswerIndex"
+                                         IsPlayer2="false"
+                                         OnOptionSelected="@(async (index) => await HandlePlayerAnswer(GameState.LocalPlayerNumber, index))" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                }
+                else
+                {
+                    <RadzenRow Gutters="true">
+                        <!-- Player 1 Board -->
+                        <RadzenColumn Size="12" SizeMD="6" class="@(GetPlayerColumnClass(Player1HasFinished) + " rz-mb-3 rz-mb-md-0")">
+                            <PlayerBoard PlayerName="@GameState.CurrentGame.Player1.Initials"
+                                         Streak="@GameState.CurrentGame.Player1Streak"
+                                         CurrentQuestion="@GetCurrentQuestion(1)"
+                                         HasFinished="@Player1HasFinished"
+                                         FeedbackVisible="@Player1FeedbackVisible"
+                                         LastAnswerCorrect="@Player1LastAnswerCorrect"
+                                         SelectedAnswerIndex="@Player1JustSelectedAnswerIndex"
+                                         IsPlayer2="false"
+                                         OnOptionSelected="@(async (index) => await HandlePlayerAnswer(1, index))" />
+                        </RadzenColumn>
 
-                    <!-- Player 2 Board -->
-                    <RadzenColumn Size="12" SizeMD="6" class="@GetPlayerColumnClass(Player2HasFinished)">
-                        <PlayerBoard PlayerName="@GameState.CurrentGame.Player2.Initials"
-                                     Streak="@GameState.CurrentGame.Player2Streak"
-                                     CurrentQuestion="@GetCurrentQuestion(2)"
-                                     HasFinished="@Player2HasFinished"
-                                     FeedbackVisible="@Player2FeedbackVisible"
-                                     LastAnswerCorrect="@Player2LastAnswerCorrect"
-                                     SelectedAnswerIndex="@Player2JustSelectedAnswerIndex"
-                                     IsPlayer2="true"
-                                     OnOptionSelected="@(async (index) => await HandlePlayerAnswer(2, index))" />
-                    </RadzenColumn>
-                </RadzenRow>
+                        <!-- Player 2 Board -->
+                        <RadzenColumn Size="12" SizeMD="6" class="@GetPlayerColumnClass(Player2HasFinished)">
+                            <PlayerBoard PlayerName="@GameState.CurrentGame.Player2.Initials"
+                                         Streak="@GameState.CurrentGame.Player2Streak"
+                                         CurrentQuestion="@GetCurrentQuestion(2)"
+                                         HasFinished="@Player2HasFinished"
+                                         FeedbackVisible="@Player2FeedbackVisible"
+                                         LastAnswerCorrect="@Player2LastAnswerCorrect"
+                                         SelectedAnswerIndex="@Player2JustSelectedAnswerIndex"
+                                         IsPlayer2="true"
+                                         OnOptionSelected="@(async (index) => await HandlePlayerAnswer(2, index))" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                }
             </div>
         </div>
     }
@@ -92,6 +118,19 @@
     }
     
     .opacity-50 { opacity: 0.5; }
+    .mx-auto { margin-left: auto !important; margin-right: auto !important; }
+    .remote-identity-bar {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-size: var(--text-sm, 0.875rem); color: var(--text-secondary);
+        margin-bottom: 0.5rem; padding: 0.4rem 0.75rem;
+        background: var(--surface-alt, #f1f5f9); border-radius: var(--radius-input, 12px);
+    }
+    .remote-identity-bar .material-icons { color: var(--primary-color, #6366f1); }
+    .remote-opponent-badge {
+        margin-left: auto; font-weight: 600;
+        background: var(--primary-color, #6366f1); color: #fff;
+        padding: 0.1rem 0.5rem; border-radius: 999px; font-size: 0.75rem;
+    }
 
     /* L5: keyboard legend — only shown on md+ screens */
     .keyboard-legend {
@@ -137,6 +176,21 @@
     private bool Player2LastAnswerCorrect { get; set; } = false;
     private int? Player2JustSelectedAnswerIndex { get; set; } = null;
 
+    // ── Remote-mode computed helpers ───────────────────────────────────────────
+    private bool LocalHasFinished       => GameState.LocalPlayerNumber == 1 ? Player1HasFinished    : Player2HasFinished;
+    private bool LocalFeedbackVisible   => GameState.LocalPlayerNumber == 1 ? Player1FeedbackVisible : Player2FeedbackVisible;
+    private bool LocalLastAnswerCorrect => GameState.LocalPlayerNumber == 1 ? Player1LastAnswerCorrect : Player2LastAnswerCorrect;
+    private int? LocalJustSelectedAnswerIndex => GameState.LocalPlayerNumber == 1 ? Player1JustSelectedAnswerIndex : Player2JustSelectedAnswerIndex;
+    private string LocalPlayerName => GameState.LocalPlayerNumber == 1
+        ? (GameState.CurrentGame?.Player1.Initials ?? "P1")
+        : (GameState.CurrentGame?.Player2.Initials ?? "P2");
+    private string OpponentName => GameState.LocalPlayerNumber == 1
+        ? (GameState.CurrentGame?.Player2.Initials ?? "P2")
+        : (GameState.CurrentGame?.Player1.Initials ?? "P1");
+    private int LocalStreak => GameState.LocalPlayerNumber == 1
+        ? (GameState.CurrentGame?.Player1Streak ?? 0)
+        : (GameState.CurrentGame?.Player2Streak ?? 0);
+
     private string GetPlayerColumnClass(bool hasFinished) => hasFinished ? "opacity-50 " : "";
 
     private QuizQuestion? GetCurrentQuestion(int playerNumber)
@@ -165,12 +219,20 @@
             // L1 FIX: start independent stopwatches for each player
             _player1Stopwatch.Start();
             _player2Stopwatch.Start();
+
+            // Remote mode: subscribe to live score updates and the "both done" signal
+            if (GameState.IsRemoteMode)
+            {
+                await GameService.InitializeAsync(); // ensure hub connection is alive
+                GameService.OnScoreUpdated += HandleRemoteScoreUpdated;
+                GameService.OnGameFinished += HandleRemoteGameFinished;
+            }
         }
     }
 
     private async Task FocusGameContainer()
     {
-        try { await JS.InvokeVoidAsync("eval", $"document.getElementById('gameContainer').focus()"); } catch { }
+        try { await JS.InvokeVoidAsync("focusGameContainer", "gameContainer"); } catch { }
     }
 
     private void StartGameTimer()
@@ -197,7 +259,23 @@
     {
         if (GameState.CurrentGame == null) return;
 
-        // Player 1 Keys
+        if (GameState.IsRemoteMode)
+        {
+            // Remote: only the local device's player answers; always use keys 1–4
+            var lp = GameState.LocalPlayerNumber;
+            var finished = lp == 1 ? Player1HasFinished : Player2HasFinished;
+            var feedbackActive = lp == 1 ? Player1FeedbackVisible : Player2FeedbackVisible;
+            if (!finished && !feedbackActive)
+            {
+                if (e.Key == "1") await HandlePlayerAnswer(lp, 0);
+                else if (e.Key == "2") await HandlePlayerAnswer(lp, 1);
+                else if (e.Key == "3") await HandlePlayerAnswer(lp, 2);
+                else if (e.Key == "4") await HandlePlayerAnswer(lp, 3);
+            }
+            return;
+        }
+
+        // Local mode: Player 1 Keys
         if (!Player1HasFinished && !Player1FeedbackVisible)
         {
             if (e.Key == "1") await HandlePlayerAnswer(1, 0);
@@ -251,7 +329,16 @@
         }
 
         GameState.CurrentGame.AddAnswer(playerNumber, isCorrect, currentQuestion.BasePoints, speedMultiplier);
-        
+
+        // In remote mode, broadcast the updated score so the opponent's scoreboard refreshes
+        if (GameState.IsRemoteMode && GameState.RemoteGameId != null)
+        {
+            var updatedScore = playerNumber == 1
+                ? GameState.CurrentGame.Player1Score
+                : GameState.CurrentGame.Player2Score;
+            _ = GameService.UpdateScoreAsync(GameState.RemoteGameId!, playerNumber, updatedScore);
+        }
+
         // Trigger feedback delay
         ShowFeedbackThenAdvance(playerNumber);
         
@@ -303,6 +390,18 @@
                 {
                     EndGame();
                 }
+                else if (GameState.IsRemoteMode)
+                {
+                    // In remote mode the opponent is on a different device — track when we're done
+                    // and notify the server; EndGame fires via GameFinished event or the 60s timer.
+                    bool localDone = GameState.LocalPlayerNumber == 1 ? Player1HasFinished : Player2HasFinished;
+                    if (localDone)
+                    {
+                        CalculateTimeBonus(GameState.LocalPlayerNumber);
+                        _ = GameService.PlayerFinishedAsync(GameState.RemoteGameId!, GameState.LocalPlayerNumber);
+                    }
+                    StateHasChanged();
+                }
                 else
                 {
                     StateHasChanged();
@@ -336,7 +435,39 @@
         gameTimer?.Stop();
         if (GameState.CurrentGame == null) return;
         GameState.CurrentGame.EndTime = DateTime.UtcNow;
+
+        // In remote mode, notify the server that this player is done (timer-based end path).
+        if (GameState.IsRemoteMode && GameState.RemoteGameId != null)
+            _ = GameService.PlayerFinishedAsync(GameState.RemoteGameId!, GameState.LocalPlayerNumber);
+
         Navigation.NavigateTo("/results");
+    }
+
+    // ── Remote-event handlers ───────────────────────────────────────────────────
+
+    /// <summary>Updates the opponent's displayed score when a ScoreUpdated SignalR event arrives.</summary>
+    private void HandleRemoteScoreUpdated(GameStateDto state)
+    {
+        InvokeAsync(() =>
+        {
+            if (_gameEnded || GameState.CurrentGame == null) return;
+            // Set opponent's base score to their reported total score.
+            // Their streak/speed/time bonuses were never tracked locally, so base == total.
+            if (GameState.LocalPlayerNumber == 1)
+                GameState.CurrentGame.Player2BaseScore = state.Player2Score;
+            else
+                GameState.CurrentGame.Player1BaseScore = state.Player1Score;
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>Navigates to results when the server confirms both players have finished.</summary>
+    private void HandleRemoteGameFinished(GameStateDto _)
+    {
+        InvokeAsync(() =>
+        {
+            if (!_gameEnded) EndGame();
+        });
     }
 
     public void Dispose()
@@ -350,6 +481,11 @@
         {
             foreach (var t in _feedbackTimers) t.Dispose();
             _feedbackTimers.Clear();
+        }
+        if (GameState.IsRemoteMode)
+        {
+            GameService.OnScoreUpdated -= HandleRemoteScoreUpdated;
+            GameService.OnGameFinished -= HandleRemoteGameFinished;
         }
     }
 }

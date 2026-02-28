@@ -1,7 +1,9 @@
 @page "/multiplayer"
 @using PoFunQuiz.Web.Features.Multiplayer
+@using PoFunQuiz.Web.Models
 @inject GameClientService GameService
 @inject NavigationManager Navigation
+@inject GameState GameState
 @implements IDisposable
 @rendermode InteractiveServer
 
@@ -32,43 +34,56 @@
                     <RadzenTextBox @bind-Value="playerName" Placeholder="Enter your name" Style="width:100%;" />
                 </div>
 
-                <!-- Two-tab layout -->
-                <div class="mp-tabs">
-                    <button class="mp-tab @(activeTab == "create" ? "mp-tab-active" : "")"
-                            @onclick='@(() => activeTab = "create")'>
+                <!-- Action buttons -->
+                <div class="mp-action-row">
+                    <button class="mp-action-btn mp-btn-primary @(string.IsNullOrWhiteSpace(playerName) ? "mp-btn-disabled" : "")"
+                            @onclick="CreateGame" disabled="@string.IsNullOrWhiteSpace(playerName)">
                         <span class="material-icons">add_circle</span>
                         Create Game
                     </button>
-                    <button class="mp-tab @(activeTab == "join" ? "mp-tab-active" : "")"
-                            @onclick='@(() => activeTab = "join")'>
+                    <button class="mp-action-btn mp-btn-secondary @(string.IsNullOrWhiteSpace(playerName) ? "mp-btn-disabled" : "")"
+                            @onclick='@(async () => { activeTab = (activeTab == "join" ? "create" : "join"); if (activeTab == "join") await RefreshOpenGames(); })'
+                            disabled="@string.IsNullOrWhiteSpace(playerName)">
                         <span class="material-icons">login</span>
                         Join Game
                     </button>
                 </div>
 
-                @if (activeTab == "create")
+                @if (activeTab == "join")
                 {
-                    <div class="mp-tab-panel">
-                        <p class="mp-tab-hint">Create a new room and share the Game ID with a friend.</p>
-                        <button class="mp-action-btn mp-btn-primary @(string.IsNullOrWhiteSpace(playerName) ? "mp-btn-disabled" : "")"
-                                @onclick="CreateGame" disabled="@string.IsNullOrWhiteSpace(playerName)">
-                            <span class="material-icons">add_circle</span>
-                            Create New Game
+                    <div class="mp-join-panel">
+                        @if (isLoadingGames)
+                        {
+                            <div class="mp-games-loading">
+                                <span class="material-icons rotating">sync</span>
+                                Looking for open games…
+                            </div>
+                        }
+                        else if (openGames.Count == 0)
+                        {
+                            <div class="mp-no-games">
+                                <span class="material-icons">wifi_off</span>
+                                <span>No open games right now. Ask a friend to create one!</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="mp-join-hint">Select a game to join:</p>
+                            @foreach (var game in openGames)
+                            {
+                                <button class="mp-game-row @(string.IsNullOrWhiteSpace(playerName) ? "mp-btn-disabled" : "")"
+                                        @onclick="@(async () => await JoinOpenGame(game.GameId))"
+                                        disabled="@string.IsNullOrWhiteSpace(playerName)">
+                                    <span class="material-icons">person</span>
+                                    <span class="mp-game-host">@game.HostName</span>
+                                    <span class="mp-game-id">@game.GameId</span>
+                                    <span class="material-icons mp-game-join-icon">chevron_right</span>
+                                </button>
+                            }
+                        }
+                        <button class="mp-refresh-btn" @onclick="RefreshOpenGames">
+                            <span class="material-icons">refresh</span> Refresh
                         </button>
-                    </div>
-                }
-                else
-                {
-                    <div class="mp-tab-panel">
-                        <p class="mp-tab-hint">Enter the Game ID shared by your friend.</p>
-                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Style="width:100%;">
-                            <RadzenTextBox @bind-Value="gameIdToJoin" Placeholder="Enter Game ID" Style="flex:1;" />
-                            <button class="mp-action-btn mp-btn-secondary @(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin) ? "mp-btn-disabled" : "")"
-                                    @onclick="JoinGame"
-                                    disabled="@(string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(gameIdToJoin))">
-                                Join
-                            </button>
-                        </RadzenStack>
                     </div>
                 }
 
@@ -116,9 +131,27 @@
             {
                 @if (isHost && currentState.Player2Name != "Waiting...")
                 {
-                    <RadzenButton Text="Start Game" Icon="play_arrow" ButtonStyle="ButtonStyle.Success"
-                                  Style="width:100%; border-radius:var(--radius-input); padding:1rem; font-size:1.1rem; font-weight:700;"
-                                  Click="StartGame" />
+                    @if (isStartingGame)
+                    {
+                        <div class="mp-waiting">
+                            <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                                               Style="width:200px; height:4px;" />
+                            <p>Generating questions…</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mp-topic-section">
+                            <label class="mp-topic-label">Select Topic</label>
+                            <RadzenDropDown @bind-Value="selectedTopic" Data="@topics"
+                                            Style="width:100%; border-radius:var(--radius-input);"
+                                            Placeholder="Pick a topic..." />
+                        </div>
+                        <RadzenButton Text="Start Game" Icon="play_arrow" ButtonStyle="ButtonStyle.Success"
+                                      Disabled="@string.IsNullOrWhiteSpace(selectedTopic)"
+                                      Style="width:100%; border-radius:var(--radius-input); padding:1rem; font-size:1.1rem; font-weight:700; margin-top:0.75rem;"
+                                      Click="StartGame" />
+                    }
                 }
                 else
                 {
@@ -131,13 +164,11 @@
             }
             else
             {
-                <div class="mp-active-banner">
-                    <span class="material-icons">sports_esports</span>
-                    <span>Game in Progress!</span>
+                <div class="mp-waiting">
+                    <RadzenProgressBar Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate"
+                                       Style="width:200px; height:4px;" />
+                    <p>Starting game…</p>
                 </div>
-                <RadzenButton Text="Score +10" Icon="add" ButtonStyle="ButtonStyle.Primary"
-                              Style="width:100%; border-radius:var(--radius-input); margin-top:0.75rem;"
-                              Click="SimulateScore" />
             }
         </div>
     }
@@ -207,52 +238,98 @@
         letter-spacing: 0.04em;
     }
 
-    /* Two-tab selector */
-    .mp-tabs {
+    /* Action button row */
+    .mp-action-row {
         display: flex;
-        border-radius: var(--radius-input);
-        background: var(--surface-alt, #f1f5f9);
-        padding: 3px;
-        gap: 3px;
-    }
-
-    .mp-tab {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        padding: 0.6rem 0.5rem;
-        border: none;
-        background: transparent;
-        color: var(--text-secondary);
-        font-size: var(--text-sm, 0.875rem);
-        font-weight: 600;
-        border-radius: calc(var(--radius-input) - 3px);
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .mp-tab .material-icons { font-size: 1.1rem; }
-
-    .mp-tab-active {
-        background: var(--primary-color, #6366f1);
-        color: white !important;
-        box-shadow: var(--shadow-md);
-    }
-
-    .mp-tab-panel {
-        display: flex;
-        flex-direction: column;
         gap: 0.75rem;
     }
 
-    .mp-tab-hint {
-        font-size: var(--text-sm, 0.875rem);
+    .mp-action-row .mp-action-btn {
+        flex: 1;
+    }
+
+    /* Inline join panel */
+    .mp-join-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        animation: fadeSlideIn 0.18s ease;
+    }
+
+    .mp-join-hint {
+        font-size: var(--text-xs, 0.75rem);
         color: var(--text-secondary);
         margin: 0;
-        text-align: center;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
+
+    .mp-game-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.85rem 1rem;
+        border: 1.5px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-input);
+        background: var(--surface-color, #fff);
+        cursor: pointer;
+        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+        text-align: left;
+    }
+
+    .mp-game-row:hover:not(:disabled) {
+        border-color: var(--primary-color, #6366f1);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        transform: translateY(-1px);
+    }
+
+    .mp-game-row .material-icons { color: var(--primary-color, #6366f1); font-size: 1.2rem; }
+
+    .mp-game-host { flex: 1; font-weight: 700; font-size: var(--text-sm); color: var(--text-primary); }
+    .mp-game-id   { font-size: var(--text-xs); color: var(--text-secondary); font-family: monospace; }
+    .mp-game-join-icon { color: var(--text-secondary) !important; }
+
+    .mp-games-loading {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        padding: 0.5rem 0;
+    }
+
+    .mp-no-games {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        font-size: var(--text-sm);
+        padding: 0.5rem 0;
+        font-style: italic;
+    }
+
+    .mp-refresh-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: none;
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: var(--radius-input);
+        padding: 0.45rem 0.85rem;
+        font-size: var(--text-xs);
+        font-weight: 600;
+        color: var(--text-secondary);
+        cursor: pointer;
+        align-self: flex-start;
+        transition: border-color 0.15s, color 0.15s;
+    }
+
+    .mp-refresh-btn:hover { border-color: var(--primary-color, #6366f1); color: var(--primary-color, #6366f1); }
+
+    .rotating { animation: spin 0.9s linear infinite; }
+    @@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     /* Action buttons */
     .mp-action-btn {
@@ -420,18 +497,27 @@
 
 @code {
     private string playerName = string.Empty;
-    private string gameIdToJoin = string.Empty;
     private string activeTab = "create";
+    private List<OpenGameInfo> openGames = [];
+    private bool isLoadingGames = false;
     private GameStateDto? currentState;
     private bool isHost = false;
+    private bool isStartingGame = false;
     private string? errorMessage;
+    private string selectedTopic = string.Empty;
+
+    private static readonly List<string> topics =
+    [
+        "General Knowledge", "Science", "History", "Sports",
+        "Geography", "Technology", "Entertainment"
+    ];
 
     protected override async Task OnInitializedAsync()
     {
         await GameService.InitializeAsync();
         GameService.OnGameUpdated += UpdateState;
         GameService.OnPlayerJoined += (_) => InvokeAsync(StateHasChanged);
-        GameService.OnGameStarted += UpdateState;
+        GameService.OnGameStarted += HandleGameStarted;
         GameService.OnScoreUpdated += UpdateState;
     }
 
@@ -441,6 +527,47 @@
         {
             currentState = state;
             StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// Fires on both client devices when the host triggers StartGame.
+    /// Builds a local GameSession from the DTO, stamps remote context onto GameState, and navigates.
+    /// </summary>
+    private void HandleGameStarted(GameStateDto state)
+    {
+        InvokeAsync(() =>
+        {
+            if (state.Questions is not { Count: > 0 })
+            {
+                // Questions not ready yet (shouldn't happen, but guard gracefully)
+                currentState = state;
+                StateHasChanged();
+                return;
+            }
+
+            var session = new GameSession
+            {
+                GameId = state.GameId,
+                Player1 = new Player
+                {
+                    Name = state.Player1Name,
+                    Initials = state.Player1Name[..Math.Min(3, state.Player1Name.Length)].ToUpper()
+                },
+                Player2 = new Player
+                {
+                    Name = state.Player2Name,
+                    Initials = state.Player2Name[..Math.Min(3, state.Player2Name.Length)].ToUpper()
+                },
+                // Both players share the same question list; each progresses independently
+                Player1Questions = state.Questions,
+                Player2Questions = state.Questions,
+                StartTime = state.StartTime ?? DateTime.UtcNow
+            };
+
+            GameState.SetGame(session);
+            GameState.SetRemoteContext(isHost ? 1 : 2, state.GameId);
+            Navigation.NavigateTo("/game-board");
         });
     }
 
@@ -464,10 +591,10 @@
         };
     }
 
-    private async Task JoinGame()
+    private async Task JoinOpenGame(string gameId)
     {
         errorMessage = null;
-        var result = await GameService.JoinGameAsync(gameIdToJoin, playerName);
+        var result = await GameService.JoinGameAsync(gameId, playerName);
         if (result.Success)
         {
             isHost = false;
@@ -476,28 +603,30 @@
         {
             errorMessage = result.FailReason switch
             {
-                "already_started" => "That game has already started. You can't join mid-game.",
+                "already_started" => "That game has already started.",
                 "already_full"    => "That game already has two players.",
-                _                 => $"Game \"{gameIdToJoin.ToUpperInvariant()}\" not found. Check the ID and try again."
+                _                 => "Game not found — it may have been cancelled."
             };
+            await RefreshOpenGames();
         }
     }
+
+    private async Task RefreshOpenGames()
+    {
+        isLoadingGames = true;
+        StateHasChanged();
+        openGames = await GameService.GetOpenGamesAsync();
+        isLoadingGames = false;
+        StateHasChanged();
+    }
+
 
     private async Task StartGame()
     {
-        if (currentState != null)
+        if (currentState != null && !string.IsNullOrWhiteSpace(selectedTopic))
         {
-            await GameService.StartGameAsync(currentState.GameId);
-        }
-    }
-
-    private async Task SimulateScore()
-    {
-        if (currentState != null)
-        {
-            var playerNum = isHost ? 1 : 2;
-            var currentScore = isHost ? currentState.Player1Score : currentState.Player2Score;
-            await GameService.UpdateScoreAsync(currentState.GameId, playerNum, currentScore + 10);
+            isStartingGame = true;
+            await GameService.StartGameAsync(currentState.GameId, selectedTopic);
         }
     }
 
@@ -507,7 +636,7 @@
     public void Dispose()
     {
         GameService.OnGameUpdated -= UpdateState;
-        GameService.OnGameStarted -= UpdateState;
+        GameService.OnGameStarted -= HandleGameStarted;
         GameService.OnScoreUpdated -= UpdateState;
     }
 }

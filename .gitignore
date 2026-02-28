@@ -159,6 +159,11 @@ __blobstorage__/
 __queuestorage__/
 AzuriteConfig/
 
+# Local publish artifacts (not for source control)
+local-publish/
+local-app.zip
+app.zip
+
 # IDE settings
 .vscode/
 

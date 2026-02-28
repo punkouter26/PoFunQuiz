@@ -3,6 +3,7 @@ using PoFunQuiz.Web.Middleware;
 using PoFunQuiz.Web.Features.Quiz;
 using PoFunQuiz.Web.Logging;
 using Serilog;
+using Serilog.Sinks.ApplicationInsights.TelemetryConverters;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using System.Text.Json;
 using Scalar.AspNetCore;
@@ -107,6 +108,16 @@ try
                 fileSizeLimitBytes: 50_000_000,
                 rollOnFileSizeLimit: true);
 
+        // Serilog → Application Insights (direct sink — forwards all enriched properties
+        // including custom destructured objects that the OTel bridge may not carry)
+        var serilogAppInsightsConnStr = context.Configuration["ApplicationInsights:ConnectionString"]
+            ?? context.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"];
+        if (!string.IsNullOrWhiteSpace(serilogAppInsightsConnStr))
+        {
+            configuration.WriteTo.ApplicationInsights(
+                serilogAppInsightsConnStr,
+                TelemetryConverter.Traces);
+        }
 
     });
 
