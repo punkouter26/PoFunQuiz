@@ -85,18 +85,18 @@ jobs:
 
     - name: Health check gate
       run: |
-        echo "Waiting for deployment to stabilize..."
-        sleep 15
-        for i in $(seq 1 6); do
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://${{ env.APP_NAME }}.azurewebsites.net/health)
-          echo "Attempt $i/6 - /health returned $STATUS"
+        echo "Waiting for cold start to complete..."
+        sleep 60
+        for i in $(seq 1 12); do
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://${{ env.APP_NAME }}.azurewebsites.net/health)
+          echo "Attempt $i/12 - /health returned $STATUS"
           if [ "$STATUS" = "200" ]; then
             BODY=$(curl -s https://${{ env.APP_NAME }}.azurewebsites.net/health)
             echo "$BODY"
             echo "Deployment health check passed"
             exit 0
           fi
-          sleep 10
+          sleep 20
         done
-        echo "Health check failed after 75 seconds"
+        echo "Health check failed after ~4 minutes"
         exit 1
