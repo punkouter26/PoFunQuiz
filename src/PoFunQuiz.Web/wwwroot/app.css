@@ -498,3 +498,35 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ── Top Navigation ───────────────────────────── */
+.top-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.top-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    padding: 0.4rem;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.top-nav-item:hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.top-nav-item.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.top-nav-item .material-icons {
+    font-size: 22px;
+}

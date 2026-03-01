@@ -1,19 +1,8 @@
-﻿@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 
-<nav class="bottom-nav">
-    <NavLink class="nav-item" href="" Match="NavLinkMatch.All">
-        <span class="material-icons">home</span>
-        <span class="nav-label">Home</span>
+@if (Env.IsDevelopment())
+{
+    <NavLink class="top-nav-item" href="diag">
+        <span class="material-icons">settings</span>
     </NavLink>
-    <NavLink class="nav-item" href="leaderboard">
-        <span class="material-icons">emoji_events</span>
-        <span class="nav-label">Leaderboard</span>
-    </NavLink>
-    @if (Env.IsDevelopment())
-    {
-        <NavLink class="nav-item" href="diag">
-            <span class="material-icons">settings</span>
-            <span class="nav-label">Diag</span>
-        </NavLink>
-    }
-</nav>
+}

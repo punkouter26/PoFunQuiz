@@ -11,12 +11,18 @@
 <div class="app-layout">
     <header class="app-header">
         <div class="header-content">
-            <SectionOutlet SectionName="HeaderContent" />
-            <!-- Default Header Content if Section is empty (Fallback logic would require more complex state, 
-                 so we'll just put the default title in the Home page's SectionContent or use a default here if empty) -->
-             <div class="default-header" style="display: none;"> <!-- Hidden by default, pages should provide content -->
-                <span class="app-title" @onclick="@(() => NavigationManager.NavigateTo("/"))">PoFunQuiz</span>
-             </div>
+            <span class="app-title" role="button" tabindex="0"
+                  @onclick="@(() => NavigationManager.NavigateTo("/"))"
+                  @onkeydown="@((e) => { if (e.Key == "Enter" || e.Key == " ") NavigationManager.NavigateTo("/"); })">PoFunQuiz</span>
+            <nav class="top-nav">
+                <NavLink class="top-nav-item" href="" Match="NavLinkMatch.All">
+                    <span class="material-icons">home</span>
+                </NavLink>
+                <NavLink class="top-nav-item" href="leaderboard">
+                    <span class="material-icons">emoji_events</span>
+                </NavLink>
+                <NavMenu />
+            </nav>
         </div>
     </header>
 
@@ -25,6 +31,4 @@
             @Body
         </div>
     </main>
-
-    <NavMenu />
 </div>
