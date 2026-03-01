@@ -37,7 +37,7 @@
 .app-main {
     flex: 1;
     overflow-y: auto;
-    padding-bottom: 70px;
+    padding-bottom: 0;
     -webkit-overflow-scrolling: touch;
     position: relative;
 }
