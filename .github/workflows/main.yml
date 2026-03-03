@@ -82,7 +82,3 @@ jobs:
         az webapp restart \
           --name ${{ env.APP_NAME }} \
           --resource-group ${{ env.RESOURCE_GROUP }}
-
-
-        echo "Health check failed after ~4 minutes"
-        exit 1
