@@ -284,7 +284,7 @@
 
             if (sharedQuestions == null || sharedQuestions.Count == 0)
             {
-                ErrorMessage = "Failed to generate questions. Please try again.";
+                ErrorMessage = "No questions were returned by the AI service. Please try again.";
                 IsLoading = false;
                 return;
             }
@@ -302,10 +302,16 @@
             // an async render — this is expected and must not be treated as an error.
             throw;
         }
+        catch (InvalidOperationException ex)
+        {
+            Logger.LogError(ex, "Configuration or API error while generating quiz questions");
+            ErrorMessage = ex.Message;
+            IsLoading = false;
+        }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error generating quiz questions");
-            ErrorMessage = $"An error occurred: {ex.Message}";
+            Logger.LogError(ex, "Unexpected error generating quiz questions");
+            ErrorMessage = $"Unexpected error: {ex.Message}";
             IsLoading = false;
         }
     }

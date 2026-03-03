@@ -36,8 +36,17 @@ public static class QuizEndpoints
             activity?.SetTag("quiz.category", category ?? "General");
 
             var sw = Stopwatch.StartNew();
-            var questions = await openAIService.GenerateQuizQuestionsAsync(
-                string.IsNullOrWhiteSpace(category) ? "general knowledge" : category, count);
+            List<QuizQuestion> questions;
+            try
+            {
+                questions = await openAIService.GenerateQuizQuestionsAsync(
+                    string.IsNullOrWhiteSpace(category) ? "general knowledge" : category, count);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.LogError(ex, "Failed to generate quiz questions");
+                return Results.Problem(detail: ex.Message, statusCode: 503, title: "Quiz Generation Failed");
+            }
             sw.Stop();
 
             activity?.SetTag("quiz.generated_count", questions.Count);

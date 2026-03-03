@@ -49,11 +49,17 @@ public class OpenAIService : IOpenAIService
 
         _logger.LogInformation("OpenAI Configuration - Endpoint: {Endpoint}, DeploymentName: {DeploymentName}", endpoint, deploymentName);
 
-        if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey) || string.IsNullOrEmpty(deploymentName))
+        var missing = new List<string>();
+        if (string.IsNullOrEmpty(endpoint))      missing.Add("AzureOpenAI:Endpoint");
+        if (string.IsNullOrEmpty(apiKey))        missing.Add("AzureOpenAI:ApiKey");
+        if (string.IsNullOrEmpty(deploymentName)) missing.Add("AzureOpenAI:DeploymentName");
+
+        if (missing.Count > 0)
         {
-            _logger.LogError("Azure OpenAI configuration is missing. Endpoint: {Endpoint}, ApiKey: {ApiKeyPresent}, DeploymentName: {DeploymentName}",
-                endpoint, !string.IsNullOrEmpty(apiKey), deploymentName);
-            throw new ArgumentNullException("Azure OpenAI configuration is missing. Please check appsettings.json.");
+            var msg = $"Azure OpenAI is not configured. Missing secrets: {string.Join(", ", missing)}. "
+                    + "Run: dotnet user-secrets set \"<key>\" \"<value>\" inside src/PoFunQuiz.Web";
+            _logger.LogError("Azure OpenAI configuration missing: {MissingKeys}", string.Join(", ", missing));
+            throw new InvalidOperationException(msg);
         }
 
         var baseUri = new Uri(endpoint);
@@ -74,30 +80,35 @@ public class OpenAIService : IOpenAIService
             if (string.IsNullOrEmpty(jsonResponse))
             {
                 _logger.LogWarning("OpenAI returned an empty response for topic '{Topic}'", topic);
-                return new List<QuizQuestion>();
+                throw new InvalidOperationException("Azure OpenAI returned an empty response. The deployment may be overloaded or misconfigured.");
             }
 
             return DeserializeQuestions(jsonResponse, topic);
         }
+        catch (InvalidOperationException)
+        {
+            // Configuration error — re-throw so caller can surface the detailed message.
+            throw;
+        }
         catch (OperationCanceledException ex)
         {
             _logger.LogWarning(ex, "OpenAI request timed out or was cancelled for topic '{Topic}'", topic);
-            return new List<QuizQuestion>();
+            throw new InvalidOperationException($"Request timed out while generating questions for '{topic}'. Please try again.", ex);
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Network error calling OpenAI for topic '{Topic}'. Status: {StatusCode}", topic, ex.StatusCode);
-            return new List<QuizQuestion>();
+            throw new InvalidOperationException($"Network error reaching Azure OpenAI (HTTP {ex.StatusCode}). Check your endpoint and network connectivity.", ex);
         }
         catch (RequestFailedException ex)
         {
             _logger.LogError(ex, "Azure OpenAI API error for topic '{Topic}'. Status: {Status}, Code: {Code}", topic, ex.Status, ex.ErrorCode);
-            return new List<QuizQuestion>();
+            throw new InvalidOperationException($"Azure OpenAI returned an error: {ex.ErrorCode} (HTTP {ex.Status}). {ex.Message}", ex);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error generating quiz questions for topic '{Topic}'", topic);
-            return new List<QuizQuestion>();
+            throw new InvalidOperationException($"Unexpected error generating questions: {ex.Message}", ex);
         }
     }
 

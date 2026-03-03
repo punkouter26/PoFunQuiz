@@ -148,10 +148,11 @@ ServiceFabricBackup/
 
 # Environment settings
 .env
-appsettings.Development.json
 appsettings.local.json
-launchSettings.json
 .azure
+# Track dev config (no secrets — Key Vault URL only)
+!appsettings.Development.json
+!launchSettings.json
 
 # Azurite local storage (emulator files)
 __azurite_db*.json
@@ -166,6 +167,7 @@ app.zip
 
 # IDE settings
 .vscode/
+!.vscode/tasks.json
 
 # PoTune state
 .potune-state.json

@@ -70,7 +70,15 @@ public class GameHub : Hub
         // Generate questions via a DI scope (IOpenAIService is Scoped, hub is Transient)
         using var scope = _scopeFactory.CreateScope();
         var openAI = scope.ServiceProvider.GetRequiredService<IOpenAIService>();
-        var questions = await openAI.GenerateQuizQuestionsAsync(topic, 5);
+        List<Models.QuizQuestion> questions;
+        try
+        {
+            questions = await openAI.GenerateQuizQuestionsAsync(topic, 5);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new HubException($"Failed to generate questions: {ex.Message}");
+        }
 
         // Both players receive the identical question set — answered independently
         session.Player1Questions = questions;
